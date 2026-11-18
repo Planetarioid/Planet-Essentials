@@ -11,6 +11,13 @@ Planet Essentials is the central client-facing control and optimization mod in t
 - Other Planet mods may integrate with Essentials through the optional API bridge in Planet Lib.
 - Other Planet mods must retain standalone defaults when Essentials is absent.
 
+## Planet Lib integration
+- Planet Lib is pinned as a Git submodule and built as a sibling Gradle project.
+- Essentials compiles against Planet Lib's named-elements API but does not package it or require it at runtime; Planet Lib remains optional.
+- Essentials exposes the typed `planet_essentials_api` Fabric entrypoint at API version 1.
+- Integration descriptors are immutable, validated, deduplicated by mod ID, and exposed as read-only snapshots.
+- Missing Planet Lib leaves Essentials in standalone mode. Planet Lib owns API discovery and version negotiation, and must treat unavailable or incompatible Essentials APIs as soft failures.
+
 ## Module boundaries
 
 Planned internal areas:

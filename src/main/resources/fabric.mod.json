@@ -4,7 +4,9 @@
   "version": "${version}",
   "name": "Planet Essentials",
   "description": "The central configuration, diagnostics, and optimization hub for Planet Studios mods.",
-  "authors": ["Planet Studios"],
+  "authors": [
+    "Planet Studios"
+  ],
   "contact": {
     "homepage": "https://github.com/Planetarioid/Planet-Essentials",
     "sources": "https://github.com/Planetarioid/Planet-Essentials"
@@ -16,6 +18,9 @@
     ],
     "client": [
       "com.planetstudios.essentials.client.PlanetEssentialsClient"
+    ],
+    "planet_essentials_api": [
+      "com.planetstudios.essentials.integration.PlanetEssentialsApiImpl"
     ]
   },
   "mixins": [

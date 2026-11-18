@@ -18,11 +18,11 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [ ] Dedicated-server launch configuration
 
 ## 1. Planet Lib integration
-- [ ] Resolve Planet Lib as a real build dependency (pinned source project dependency; Loom verification pending)
-- [ ] Validate API contract version at startup
-- [ ] Register Planet Essentials integration metadata
-- [ ] Handle missing/incompatible bridge without crashing
-- [ ] Add integration tests against the actual Planet Lib artifact
+- [x] Resolve Planet Lib as a real build dependency (pinned source project dependency; compile-only because runtime integration is optional)
+- [x] Validate API contract version at startup (Planet Lib bridge negotiates API v1)
+- [x] Expose the typed Planet Essentials API entrypoint and accept validated integration metadata
+- [x] Handle missing/incompatible bridge without crashing (standalone Essentials mode; bridge failure is soft)
+- [x] Add integration tests against the pinned Planet Lib source project
 
 ## 2. Core configuration and settings
 - [x] Typed setting definitions with stable IDs, categories, defaults, and validation
