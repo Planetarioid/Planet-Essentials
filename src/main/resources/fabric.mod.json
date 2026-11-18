@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "planet_essentials",
+  "version": "${version}",
+  "name": "Planet Essentials",
+  "description": "The central configuration, integration, diagnostics, and optimization hub for Planet Studios mods.",
+  "authors": ["Planet Studios"],
+  "contact": {
+    "homepage": "https://github.com/Planetarioid/Planet-Essentials",
+    "sources": "https://github.com/Planetarioid/Planet-Essentials"
+  },
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.planetstudios.essentials.PlanetEssentials"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "planet_lib": ">=0.1.0-alpha.1"
+  }
+}
