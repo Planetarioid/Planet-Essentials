@@ -3,7 +3,7 @@
   "id": "planet_essentials",
   "version": "${version}",
   "name": "Planet Essentials",
-  "description": "The central configuration, integration, diagnostics, and optimization hub for Planet Studios mods.",
+  "description": "The central configuration, diagnostics, and optimization hub for Planet Studios mods.",
   "authors": ["Planet Studios"],
   "contact": {
     "homepage": "https://github.com/Planetarioid/Planet-Essentials",
@@ -13,12 +13,18 @@
   "entrypoints": {
     "main": [
       "com.planetstudios.essentials.PlanetEssentials"
+    ],
+    "client": [
+      "com.planetstudios.essentials.client.PlanetEssentialsClient"
     ]
   },
   "depends": {
     "fabricloader": ">=0.18.0",
     "minecraft": "~1.21.11",
     "java": ">=21",
+    "fabric-api": ">=0.141.6"
+  },
+  "suggests": {
     "planet_lib": ">=0.1.0-alpha.1"
   }
 }
