@@ -35,12 +35,12 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [ ] Thread-safety and lifecycle tests
 
 ## 3. Mod discovery and integration coordination
-- [ ] Read loaded mods from Planet Lib registry
-- [ ] Identify installed Planet Studios mods
-- [ ] Integration registration lifecycle
-- [ ] Optional-mod capability discovery
-- [ ] Graceful behavior for absent integrations
-- [ ] Avoid scanning or modifying arbitrary third-party files
+- [x] Read loaded mods from Planet Lib registry
+- [x] Identify installed Planet Studios mods
+- [x] Integration registration lifecycle
+- [x] Optional-mod capability discovery
+- [x] Graceful behavior for absent integrations
+- [x] Avoid scanning or modifying arbitrary third-party files (uses Fabric Loader and Planet Lib registries only)
 
 ## 4. Feature priority management
 - [ ] Read feature/provider metadata from Planet Lib
