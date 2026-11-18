@@ -2,6 +2,7 @@ package com.planetstudios.essentials.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -26,8 +27,10 @@ public final class ConfigStore {
                 return defaults;
             }
             try (var reader = Files.newBufferedReader(FILE)) {
-                EssentialsConfig config = GSON.fromJson(reader, EssentialsConfig.class);
-                if (config == null) throw new IOException("Configuration file was empty.");
+                JsonObject json = GSON.fromJson(reader, JsonObject.class);
+                if (json == null) throw new IOException("Configuration file was empty.");
+                EssentialsConfig config = GSON.fromJson(ConfigMigrator.migrate(json), EssentialsConfig.class);
+                if (config == null) throw new IOException("Configuration did not contain an object.");
                 config.validate();
                 return config;
             }
@@ -39,20 +42,22 @@ public final class ConfigStore {
 
     public static void save(EssentialsConfig config) {
         config.validate();
+        writeAtomically(FILE, GSON.toJson(config));
+    }
+
+    private static void writeAtomically(Path destination, String contents) {
         Path temporary = null;
         try {
-            Files.createDirectories(FILE.getParent());
-            temporary = Files.createTempFile(FILE.getParent(), "config-", ".tmp");
-            try (var writer = Files.newBufferedWriter(temporary)) {
-                GSON.toJson(config, writer);
-            }
+            Files.createDirectories(destination.getParent());
+            temporary = Files.createTempFile(destination.getParent(), "config-", ".tmp");
+            Files.writeString(temporary, contents);
             try {
-                Files.move(temporary, FILE, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
             } catch (java.nio.file.AtomicMoveNotSupportedException ignored) {
-                Files.move(temporary, FILE, StandardCopyOption.REPLACE_EXISTING);
+                Files.move(temporary, destination, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException exception) {
-            throw new IllegalStateException("Could not save Planet Essentials configuration at " + FILE, exception);
+            throw new IllegalStateException("Could not save Planet Essentials configuration at " + destination, exception);
         } finally {
             if (temporary != null) {
                 try { Files.deleteIfExists(temporary); } catch (IOException ignored) {}
