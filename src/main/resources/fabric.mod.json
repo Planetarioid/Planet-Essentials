@@ -18,6 +18,9 @@
       "com.planetstudios.essentials.client.PlanetEssentialsClient"
     ]
   },
+  "mixins": [
+    "planet_essentials.client.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=0.18.0",
     "minecraft": "~1.21.11",

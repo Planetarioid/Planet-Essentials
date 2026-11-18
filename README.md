@@ -2,32 +2,31 @@
 
 **The central hub for the Planet Studios Minecraft mod ecosystem.**
 
-Planet Essentials is a Fabric mod for Minecraft Java Edition **1.21.11**, targeting Java 21. It will provide the shared settings experience, diagnostics, integration coordination, and client optimization systems used across Planet Studios projects.
+Planet Essentials is a Fabric mod for Minecraft Java Edition **1.21.11**, targeting Java 21. It is designed to become the main in-game settings hub, integration coordinator, diagnostics center, and client optimization suite for Planet Studios projects.
 
 ## Development status
 
-This repository is at the initial project-foundation stage.
+The repository is in active development. The current implementation includes a validated configuration model, atomic config persistence, bounded FPS history, basic diagnostics UI, and a client-side replacement route for Minecraft's vanilla Options screen.
 
-- [x] Repository initialized
-- [x] Fabric Loom and Java 21 build configuration
-- [x] Minecraft 1.21.11 target
-- [x] Fabric mod metadata and entrypoint
-- [x] Continuous integration baseline
+- [x] Repository and Fabric build foundation
+- [x] Initial configuration and diagnostics foundation
+- [~] Planet Essentials settings hub replaces vanilla Options entry point
 - [ ] Planet Lib API integration
-- [ ] Core configuration and settings architecture
 - [ ] Mod discovery and integration coordination
 - [ ] Feature priority UI
-- [ ] Diagnostics interface
+- [ ] Complete diagnostics interface
 - [ ] Performance systems
 - [ ] Texture optimization engine
 - [ ] Shader system
-- [ ] In-game settings interface
+- [ ] Full settings navigation and profiles
 - [ ] Client and dedicated-server validation
 
-A checklist for each subsystem is maintained in [the development roadmap](docs/ROADMAP.md).
+See [the development roadmap](docs/ROADMAP.md) for subsystem checklists.
 
 ## Planned responsibilities
 
+- Main in-game settings hub, entered through Minecraft's normal Options button
+- Access to vanilla Minecraft settings through the hub
 - Central settings UI and configuration profiles
 - Integration with installed Planet Studios mods
 - Per-feature implementation priority controls
@@ -44,7 +43,7 @@ A checklist for each subsystem is maintained in [the development roadmap](docs/R
 - Avoid unnecessary work on tick and render paths.
 - Do not silently rewrite third-party configuration or behavior.
 - Optional Planet mods must remain optional.
-- When Planet Essentials is absent, other Planet mods should retain their standalone defaults.
+- When Planet Essentials is absent, other Planet mods retain their standalone defaults.
 - Settings and feature-priority choices must be reversible.
 
 ## Development environment
@@ -59,6 +58,6 @@ Build with `gradle clean build` and run tests with `gradle test`.
 
 ## Dependency note
 
-Planet Essentials is designed to use Planet Lib as its shared API foundation. The initial repository foundation declares the runtime mod dependency. Direct API usage will be wired once the library has a stable, consumable development artifact and the dependency can be resolved reproducibly in both local and CI builds.
+Planet Essentials is designed to use Planet Lib as its shared API foundation. Direct API usage will be wired once the library has a stable, consumable development artifact and the dependency can be resolved reproducibly in both local and CI builds.
 
 No license has been selected yet. Do not assume permission to redistribute or reuse this project.

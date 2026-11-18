@@ -26,13 +26,10 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [ ] Add integration tests against the actual Planet Lib artifact
 
 ## 2. Core configuration and settings
-- [ ] Configuration ownership and lifecycle design
-- [ ] Typed settings model
-- [ ] Defaults and schema versioning
-- [ ] Safe load/save/reload behavior
-- [ ] Atomic persistence and malformed-file recovery policy
-- [ ] Profile model
-- [ ] Profile import/export validation
+- [x] Initial typed configuration model and defaults
+- [x] Schema version field and validation
+- [x] Atomic persistence with malformed-file preservation
+- [~] Profile model and import/export validation
 - [ ] Settings migration tests
 - [ ] Thread-safety and lifecycle tests
 
@@ -56,10 +53,10 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [ ] Test deterministic resolution and reversibility
 
 ## 5. Diagnostics
+- [~] Bounded in-memory FPS history
+- [~] Diagnostics toggle and basic performance display
+- [x] Unit tests for bounded history and configuration validation
 - [ ] Diagnostics event collection integration
-- [ ] Performance metric definitions
-- [ ] Bounded history and retention controls
-- [ ] Diagnostics screen
 - [ ] Export diagnostics only on explicit user action
 - [ ] No background telemetry or personal-data collection
 - [ ] Verify low overhead when diagnostics are not open
@@ -101,8 +98,9 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [ ] GPU performance benchmarks
 
 ## 9. User interface
-- [ ] Main Planet Essentials screen
-- [ ] Navigation and subsystem sections
+- [~] Replace vanilla Options entry point with Planet Essentials hub
+- [~] Retain access to vanilla Minecraft settings from the hub
+- [ ] Main Planet Essentials navigation and subsystem sections
 - [ ] Search/filter settings
 - [ ] Per-mod settings panels
 - [ ] Feature-priority controls

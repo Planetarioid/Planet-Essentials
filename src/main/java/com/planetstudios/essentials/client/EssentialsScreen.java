@@ -5,10 +5,11 @@ import com.planetstudios.essentials.config.EssentialsConfig;
 import com.planetstudios.essentials.diagnostics.PerformanceMonitor;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.OptionsScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-/** Initial native Minecraft settings and diagnostics screen. */
+/** Initial native Minecraft settings hub and diagnostics screen. */
 public final class EssentialsScreen extends Screen {
     private final Screen parent;
 
@@ -29,12 +30,16 @@ public final class EssentialsScreen extends Screen {
             button.setMessage(diagnosticsLabel());
         }).bounds(center - 100, top + 34, 200, 20).build());
 
-        addRenderableWidget(Button.builder(Component.literal("Clear performance history"), button -> {
-            EssentialsRuntime.performance().clear();
+        addRenderableWidget(Button.builder(Component.literal("Vanilla Minecraft Settings"), button -> {
+            if (minecraft != null) minecraft.setScreen(new OptionsScreen(this, minecraft.options));
         }).bounds(center - 100, top + 60, 200, 20).build());
 
+        addRenderableWidget(Button.builder(Component.literal("Clear performance history"), button -> {
+            EssentialsRuntime.performance().clear();
+        }).bounds(center - 100, top + 86, 200, 20).build());
+
         addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose())
-                .bounds(center - 100, top + 100, 200, 20).build());
+                .bounds(center - 100, top + 120, 200, 20).build());
     }
 
     private static Component diagnosticsLabel() {
@@ -59,10 +64,10 @@ public final class EssentialsScreen extends Screen {
                 center, top + 16, 0xD8E8FF);
         graphics.drawCenteredString(font,
                 "Samples retained: " + monitor.sampleCount(),
-                center, top + 128, 0xAAAAAA);
+                center, top + 148, 0xAAAAAA);
         graphics.drawCenteredString(font,
                 "More optimization systems are added after profiling and validation.",
-                center, top + 142, 0x888888);
+                center, top + 162, 0x888888);
     }
 
     @Override
