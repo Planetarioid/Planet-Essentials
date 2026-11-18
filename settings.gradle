@@ -10,3 +10,12 @@ pluginManagement {
 }
 
 rootProject.name = "planet-essentials"
+
+// Planet Lib is pinned as a Git submodule. A composite build gives us a
+// reproducible project dependency without inventing unpublished Maven coordinates.
+includeBuild("Planet-Lib") {
+    dependencySubstitution {
+        substitute(module("com.planetstudios:planet-lib"))
+            .using(project(":"))
+    }
+}

@@ -13,12 +13,12 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Minecraft 1.21.11 and Java 21 targets
 - [x] Fabric metadata and common entrypoint
 - [x] CI build/test baseline
-- [ ] Reproducible Planet Lib development dependency
+- [x] Reproducible Planet Lib development dependency (pinned Git submodule + Gradle composite build)
 - [ ] Client launch configuration
 - [ ] Dedicated-server launch configuration
 
 ## 1. Planet Lib integration
-- [ ] Resolve Planet Lib as a real build dependency
+- [x] Resolve Planet Lib as a real build dependency (pinned source project dependency; external Maven publication remains a later distribution concern)
 - [ ] Validate API contract version at startup
 - [ ] Register Planet Essentials integration metadata
 - [ ] Handle missing/incompatible bridge without crashing
