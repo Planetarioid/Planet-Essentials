@@ -25,7 +25,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
     // Resolved to the pinned Planet-Lib submodule through settings.gradle.
-    modImplementation project(":Planet-Lib")
+    modImplementation project(path: ":Planet-Lib", configuration: "namedElements")
 
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
