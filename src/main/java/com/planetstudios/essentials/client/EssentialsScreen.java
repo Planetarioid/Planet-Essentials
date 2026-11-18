@@ -1,11 +1,11 @@
 package com.planetstudios.essentials.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
+import com.planetstudios.essentials.client.mixin.MinecraftMixin;
 import com.planetstudios.essentials.config.EssentialsConfig;
 import com.planetstudios.essentials.diagnostics.PerformanceMonitor;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.OptionsScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -31,7 +31,7 @@ public final class EssentialsScreen extends Screen {
         }).bounds(center - 100, top + 34, 200, 20).build());
 
         addRenderableWidget(Button.builder(Component.literal("Vanilla Minecraft Settings"), button -> {
-            if (minecraft != null) minecraft.setScreen(new OptionsScreen(this, minecraft.options));
+            if (minecraft != null) MinecraftMixin.openVanillaOptions(minecraft, this);
         }).bounds(center - 100, top + 60, 200, 20).build());
 
         addRenderableWidget(Button.builder(Component.literal("Clear performance history"), button -> {
