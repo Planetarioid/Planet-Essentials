@@ -13,6 +13,7 @@ public final class EssentialsConfig {
         if (activeProfile == null || !activeProfile.matches("[a-z0-9_-]{1,32}")) {
             activeProfile = "default";
         }
+        diagnosticsHistorySize = Math.max(20, Math.min(1200, diagnosticsHistorySize));
         SettingsRegistry.validate(this);
     }
 }
