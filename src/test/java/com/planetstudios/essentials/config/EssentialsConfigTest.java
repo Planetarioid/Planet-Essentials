@@ -26,10 +26,10 @@ class EssentialsConfigTest {
     }
 
     @Test
-    void restoresSchemaVersion() {
+    void restoresCurrentSchemaVersion() {
         EssentialsConfig config = new EssentialsConfig();
         config.schemaVersion = 999;
         config.validate();
-        assertEquals(1, config.schemaVersion);
+        assertEquals(ConfigMigrator.CURRENT_SCHEMA, config.schemaVersion);
     }
 }
