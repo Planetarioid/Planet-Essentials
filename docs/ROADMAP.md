@@ -57,7 +57,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [~] Bounded in-memory FPS history
 - [~] Diagnostics toggle and configurable history capacity
 - [x] Unit tests for bounded history and configuration validation
-- [ ] Diagnostics event collection integration
+- [x] Diagnostics event collection integration (local lifecycle and slow-tick events; bounded in-memory collector)
 - [ ] Export diagnostics only on explicit user action
 - [ ] No background telemetry or personal-data collection
 - [ ] Verify low overhead when diagnostics are not open
