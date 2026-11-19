@@ -59,7 +59,7 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Double-precision camera-relative section-origin transform utility with unit coverage
 - [x] Canonical 16-byte std140 camera-relative section-origin uniform payload and declaration contract
 - [x] Renderer-owned immutable GPU section-uniform allocation, binding injection, and terrain draw overload
-- [ ] Frustum and occlusion culling
+- [~] CPU section-AABB frustum culling utility and unit tests; active camera/frustum wiring and occlusion culling remain
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
 - [ ] Renderer-specific integration adapters and safe fallback negotiation
 - [ ] Actual GPU/driver limit detection
