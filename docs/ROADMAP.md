@@ -61,7 +61,8 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Double-precision camera-relative section-origin transform utility with unit coverage
 - [x] Canonical 16-byte std140 camera-relative section-origin uniform payload and declaration contract
 - [x] Renderer-owned immutable GPU section-uniform allocation, binding injection, and terrain draw overload
-- [~] CPU section-AABB frustum culling utility and unit tests; active camera/frustum wiring and occlusion culling remain
+- [x] Active LevelRenderer frame frustum snapshot and per-section AABB rejection before Prism terrain GPU upload/draw
+- [~] CPU section-AABB frustum culling utility and unit tests; occlusion culling and vanilla visibility-graph integration remain
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
 - [~] Opt-in full-attribute V1 terrain renderer adapter and per-world GPU cache integration; renderer-specific vanilla/Sodium/Canvas adapters and safe fallback negotiation remain
 - [x] Vanilla render-distance and simulation-distance option bounds extended to 2–64 chunks (server-imposed render-distance caps still apply)

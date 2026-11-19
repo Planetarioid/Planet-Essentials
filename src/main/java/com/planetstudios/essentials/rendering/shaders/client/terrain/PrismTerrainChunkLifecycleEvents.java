@@ -8,6 +8,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.level.chunk.LevelChunk;
 
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -17,9 +18,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Connects the revision-safe CPU section lifecycle to Fabric's real client
  * chunk lifecycle. State is isolated by ClientLevel identity so coordinates
  * from different dimensions/world sessions can never share a cache.
- *
- * <p>GPU owners may register an invalidator. GPU callbacks are always queued
- * onto the render thread; this class deliberately does not own adapter caches.</p>
  */
 public final class PrismTerrainChunkLifecycleEvents {
     private static final Map<ClientLevel, WorldState> WORLDS = new IdentityHashMap<>();
@@ -28,7 +26,6 @@ public final class PrismTerrainChunkLifecycleEvents {
 
     private PrismTerrainChunkLifecycleEvents() {}
 
-    /** Registers Fabric chunk and disconnect events once. */
     public static void registerFabricEvents() {
         if (!REGISTERED.compareAndSet(false, true)) return;
         ClientChunkEvents.CHUNK_LOAD.register((level, chunk) -> state(level));
@@ -36,31 +33,31 @@ public final class PrismTerrainChunkLifecycleEvents {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> clearAllWorlds());
     }
 
-    /** Returns the world-isolated lifecycle used by cooperating Prism providers. */
     public static PrismTerrainSectionLifecycle lifecycle(ClientLevel level) {
         return state(Objects.requireNonNull(level, "level")).lifecycle;
     }
 
-    /** Starts a revision-safe rebuild for one actual vanilla section compile. */
     public static PrismTerrainSectionLifecycle.BuildToken beginRebuild(
             ClientLevel level, int sectionX, int sectionY, int sectionZ) {
         return state(Objects.requireNonNull(level, "level")).lifecycle
                 .beginRebuild(sectionX, sectionY, sectionZ);
     }
 
-    /** Returns the CPU payload cache belonging to this exact client world. */
     public static PrismTerrainSectionCache cache(ClientLevel level) {
         return state(Objects.requireNonNull(level, "level")).cache;
     }
 
-    /** Register renderer-owned GPU invalidation without transferring cache ownership. */
+    /** Returns a stable point-in-time list of captured vanilla terrain for this world. */
+    public static List<PrismTerrainVertexData> snapshot(ClientLevel level) {
+        return cache(Objects.requireNonNull(level, "level")).snapshot();
+    }
+
     public static Registration registerGpuInvalidator(GpuInvalidator invalidator) {
         GpuInvalidator value = Objects.requireNonNull(invalidator, "invalidator");
         GPU_INVALIDATORS.add(value);
         return () -> GPU_INVALIDATORS.remove(value);
     }
 
-    /** Explicitly drops one world, useful for world replacement and renderer teardown. */
     public static void clearWorld(ClientLevel level) {
         if (level == null) return;
         WorldState removed;
@@ -85,7 +82,6 @@ public final class PrismTerrainChunkLifecycleEvents {
         WorldState world = state(level);
         int chunkX = chunk.getPos().x;
         int chunkZ = chunk.getPos().z;
-        // Both section-coordinate accessors return inclusive build-height section bounds.
         int minSectionY = level.getMinSectionY();
         int maxSectionY = level.getMaxSectionY();
         try {
@@ -101,6 +97,7 @@ public final class PrismTerrainChunkLifecycleEvents {
 
     private static void clearAllWorlds() {
         PrismTerrainFrameCoordinator.clearPublishedFrame();
+        PrismTerrainActiveFrustum.clear();
         Map<ClientLevel, WorldState> removed;
         synchronized (WORLDS) {
             removed = new IdentityHashMap<>(WORLDS);

@@ -200,3 +200,9 @@ The capture supports the vanilla `DefaultVertexFormat.BLOCK` layout (32-byte str
 Each layer is copied into an immutable `PrismTerrainVertexData` and published to the existing per-world CPU section cache only if its build token is still current. Unsupported vertex formats, malformed counts, and invalid section-local coordinates are rejected per layer and logged without interrupting vanilla compilation. The source `MeshData` remains owned by Minecraft and is never retained or closed by Prism.
 
 This completes automatic vanilla mesh *capture* and cache population. It does not yet suppress vanilla's own upload/draw, bind these cached vanilla payloads to selected shader programs automatically, or replace vanilla terrain on screen. The next stage is a renderer-owned draw path with a safe vanilla fallback, then active frustum extraction and visibility integration.
+
+## Active camera frustum integration
+
+`LevelRenderer.prepareCullFrustum` is now observed at RETURN. Prism stores a defensive copy of the exact frustum Minecraft prepared for the current frame, rather than relying on the debug-only captured-frustum API. The snapshot is cleared on disconnect. The opt-in terrain adapter tests each section's world-space 16×16×16 AABB against this active frustum before uploading a mesh to the GPU or issuing its draw. If no frame frustum has been published yet, the test fails open so terrain is not accidentally dropped during initialization.
+
+This removes off-screen sections from Prism's upload/draw work. It does not implement occlusion culling or use Minecraft's section visibility graph, so sections inside the camera frustum but hidden behind opaque geometry can still be submitted. Vanilla remains responsible for its own visibility and draw path.

@@ -33,12 +33,7 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Consumer;
 
-/**
- * Concrete opt-in GPU terrain adapter for cooperating Prism geometry providers.
- * It uploads immutable V1 payloads, retains per-world LRU allocations, binds the
- * camera-relative section UBO, and draws into the active main target at a Fabric
- * terrain stage. It does not intercept or replace vanilla chunk meshes.
- */
+/** Opt-in GPU terrain adapter for cooperating providers and captured vanilla payloads. */
 public final class PrismTerrainRendererAdapter implements AutoCloseable {
     private static final String DYNAMIC_TRANSFORMS = "DynamicTransforms";
     private static final Set<String> AUTOMATIC_UNIFORMS = Set.of("Projection", "Globals", "Fog");
@@ -73,7 +68,6 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
         }
     }
 
-    /** Creates and registers a cooperating terrain adapter. Call on the client thread. */
     public static PrismTerrainRendererAdapter register(String programId, PrismFrameStage stage, Provider provider) {
         PrismTerrainRendererAdapter adapter = new PrismTerrainRendererAdapter(programId, stage, provider);
         adapter.extractionRegistration = PrismTerrainFrameCoordinator.registerExtractor(adapter::extract);
@@ -88,6 +82,18 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
                     @Override public void clearWorld(ClientLevel level) { adapter.clearWorldCache(level); }
                 });
         return adapter;
+    }
+
+    /** Provider that streams the current world's automatically captured vanilla layer into this adapter. */
+    public static Provider capturedVanilla(String materialId) {
+        Objects.requireNonNull(materialId, "materialId");
+        return (context, submit) -> {
+            ClientLevel level = Minecraft.getInstance().level;
+            if (level == null) return;
+            for (PrismTerrainVertexData payload : PrismTerrainChunkLifecycleEvents.snapshot(level)) {
+                if (payload.materialId().equals(materialId)) submit.accept(payload);
+            }
+        };
     }
 
     private void extract(WorldExtractionContext context) {
@@ -171,6 +177,7 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
             passOpened = true;
             RenderSystem.bindDefaultUniforms(pass);
             for (PrismTerrainVertexData data : payloads) {
+                if (!PrismTerrainActiveFrustum.isVisible(data.sectionX(), data.sectionY(), data.sectionZ())) continue;
                 PrismTerrainGpuMesh mesh = cache.getOrUpload(device, data);
                 if (mesh == null) continue;
                 PrismTerrainCameraTransform transform = PrismTerrainCameraTransform.forSection(
@@ -188,7 +195,6 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
         } catch (RuntimeException failure) {
             PlanetEssentials.LOGGER.error("Prism terrain adapter '{}' failed draw submission", programId, failure);
         } finally {
-            // MappableRingBuffer fences the buffer before it is reused by a later frame.
             if (passOpened) sectionUniformRing.rotate();
         }
     }

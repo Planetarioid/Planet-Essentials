@@ -6,7 +6,8 @@
     "MinecraftMixin",
     "OptionsMixin",
     "SectionCompilerMixin",
-    "RenderSectionRegionAccessor"
+    "RenderSectionRegionAccessor",
+    "LevelRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

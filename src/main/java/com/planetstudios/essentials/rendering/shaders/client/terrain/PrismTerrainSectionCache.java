@@ -1,8 +1,10 @@
 package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -61,6 +63,11 @@ public final class PrismTerrainSectionCache {
     public synchronized PrismTerrainVertexData get(int sectionX, int sectionY, int sectionZ,
             String materialId, PrismFrameStage stage) {
         return entries.get(new Key(sectionX, sectionY, sectionZ, materialId, stage));
+    }
+
+    /** Immutable point-in-time payload list; iteration does not mutate LRU order. */
+    public synchronized List<PrismTerrainVertexData> snapshot() {
+        return List.copyOf(new ArrayList<>(entries.values()));
     }
 
     /** Invalidates every material/stage payload for a rebuilt or unloaded section. */
