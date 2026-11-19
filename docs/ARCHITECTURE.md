@@ -23,7 +23,7 @@ Planet Essentials is the client-facing control and optimization mod. It owns its
 - PNG signature, IHDR CRC, legal bit-depth/color-type combinations, encoding methods, dimensions, and pixel count are checked before ImageIO decode.
 - Encoded bytes are hard-capped before decode. The decoder uses a bounded worker pool (2 workers and a 64-job queue) and produces immutable CPU-side ARGB pixels only.
 - The decoded-pixel LRU is bounded by retained bytes (128 MiB default). Reload increments a generation and invalidates stale work/cache entries; client shutdown stops workers and clears pixels.
-- The decode service is lazy and does not pre-decode the entire resource pack.
+- Effective texture streams are resolved through Minecraft's active ResourceManager, retaining resource-pack priority and vanilla resource ownership.
 - GPU texture creation, registration, upload, disposal, and render interception are not yet wired. Vanilla rendering remains authoritative; this is not yet a completed rendering optimizer.
 
 ## Lifecycle and safety

@@ -6,12 +6,14 @@ import com.planetstudios.essentials.textures.TextureAssetCatalog;
 import com.planetstudios.essentials.textures.TextureDecodeLimits;
 import com.planetstudios.essentials.textures.TextureDecodeService;
 import com.planetstudios.essentials.textures.TexturePixelCache;
+import com.planetstudios.essentials.textures.TextureResourceDecoder;
 import com.planetstudios.essentials.textures.TextureResourceReloadListener;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.resources.Identifier;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -73,13 +75,13 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
     }
 
     /**
-     * Asynchronously decodes a caller-selected effective PNG resource stream.
-     * The caller remains responsible for obtaining that stream from Minecraft's
-     * active ResourceManager. Completion returns CPU pixels, not a GPU texture.
+     * Resolves the effective resource through Minecraft's active ResourceManager
+     * and decodes it off-thread. Only catalogued PNG texture assets are accepted.
      */
     public static CompletableFuture<com.planetstudios.essentials.textures.DecodedTexture> decodeTexture(
-            String resourceId, TextureDecodeService.InputStreamSource source) {
-        return TEXTURE_DECODER.decode(resourceId, source);
+            Identifier resourceId) {
+        return TextureResourceDecoder.decode(
+                Minecraft.getInstance().getResourceManager(), resourceId, TEXTURE_DECODER);
     }
 
     private static void record(DiagnosticEventType type) {

@@ -70,6 +70,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Bounded asynchronous CPU decode (2 workers, 64 queued jobs, immutable decoded pixels)
 - [x] Memory-aware decoded-pixel LRU cache (128 MiB default hard budget)
 - [x] Resource reload generation invalidation and client-shutdown cleanup
+- [x] Effective texture resource stream resolution through Minecraft ResourceManager
 - [~] Lazy decoder-to-Minecraft texture registration/render integration (CPU pipeline exists; GPU upload path not connected)
 - [ ] Mipmap and filtering policy
 - [ ] Resource-pack coexistence tests

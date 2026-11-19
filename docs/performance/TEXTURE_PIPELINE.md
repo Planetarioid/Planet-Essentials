@@ -2,12 +2,13 @@
 
 ## Current implementation
 
-The client texture pipeline now has four distinct stages:
+The client texture pipeline now has five distinct stages:
 
 1. **Discovery:** Minecraft's active client ResourceManager enumerates effective PNG identifiers. Pack priority remains owned by Minecraft. Discovery is bounded and stores metadata only.
 2. **Preflight and input bounds:** The PNG signature and IHDR CRC/fields are checked before image decoding. Width, height, pixel count, bit depth, and PNG methods are validated. The encoded stream is capped by `maxEncodedBytes`; the decoder never buffers more than that configured limit.
 3. **CPU decode:** PNG decoding runs through a bounded two-thread executor with a bounded 64-task queue. Decoding produces immutable CPU-side ARGB pixels. It does not touch OpenGL or the render thread.
 4. **Decoded pixel cache:** An access-order LRU cache is bounded by retained pixel bytes (128 MiB by default). A resource reload advances a generation, clears cached pixels, and makes stale queued/in-flight work unable to publish into the new generation.
+5. **Minecraft resource resolution:** The public client decode entry point accepts a Minecraft Identifier, validates it as a catalog-compatible PNG texture identity, and opens the effective resource through the active ResourceManager. The resource stream is owned and closed by the worker. Minecraft's resource-pack priority remains authoritative.
 
 ## Ownership and safety
 
@@ -21,7 +22,7 @@ The client texture pipeline now has four distinct stages:
 
 ## Explicit remaining work
 
-- Connect lazy decoding to Minecraft's actual texture lookup/registration path without changing resource-pack priority or vanilla fallback.
+- Connect decoded pixels to Minecraft's texture registration/atlas path without changing vanilla resource-pack priority or fallback.
 - Verify the exact 1.21.11 NativeImage/DynamicTexture/render-thread APIs and add GPU upload/disposal ownership.
 - Add mipmap/filtering policy only after upload integration and visual tests.
 - Test resource packs, animated textures, atlases, shaders, reload races, and GPU memory cleanup in a launched client.
