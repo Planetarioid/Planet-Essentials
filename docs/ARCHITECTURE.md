@@ -62,6 +62,7 @@ These are architectural boundaries, not a commitment to create empty packages be
 - Other Planet mods own their settings unless they explicitly register an integration.
 - Never silently rewrite another mod's configuration files.
 - Feature priority overrides are per capability, persistent, and reversible.
+- Runtime provider changes occur only through the provider's explicit Planet Lib lifecycle contract. Essentials never disables a mod or takes ownership of provider resources.
 - Missing or invalid settings must fall back to documented defaults.
 
 ## Verification levels

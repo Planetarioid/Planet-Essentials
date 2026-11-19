@@ -49,7 +49,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] User override controls (cycle registered implementations per capability)
 - [x] Reset to automatic selection
 - [x] Persist preferences safely (schema 3, validated per-capability overrides; stale entries retained)
-- [ ] Apply changes only through provider lifecycle contracts
+- [x] Apply changes only through provider lifecycle contracts (provider-owned onSelected/onDeselected callbacks with rollback on transition failure)
 - [x] Ensure choices are scoped to one capability; no whole-mod enable/disable
 - [x] Deterministic resolution and reversible override behavior covered by Planet Lib tests
 
