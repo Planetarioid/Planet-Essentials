@@ -93,15 +93,17 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         RenderSystem.assertOnRenderThread();
         ensureOpen();
         Objects.requireNonNull(pass, "pass");
-        if (!isValidFor(level, null) && (Minecraft.getInstance().level != level
-                || !ShaderPackRuntime.isEnabled()
-                || ShaderPackRuntime.pipelineSnapshot().generation() != shaderGeneration)) {
+        if (Minecraft.getInstance().level != level || !ShaderPackRuntime.isEnabled()
+                || ShaderPackRuntime.pipelineSnapshot().generation() != shaderGeneration) {
             throw new IllegalStateException("Prepared terrain group became stale before submission");
         }
 
         submissionState.begin();
         try {
             for (Draw draw : draws) {
+                // Mark the attempt before calling into the backend. If drawIndexed throws
+                // after partial command submission, vanilla must still not redraw this group.
+                submissionState.markDrawSubmissionStarted();
                 boolean submitted = PrismTerrainDrawExecutor.drawWithPipeline(
                         pass, program, pipeline, draw.mesh(), samplerBindings,
                         draw.sectionUniform(), externallyBoundUniforms,
@@ -109,7 +111,6 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
                 if (!submitted) {
                     throw new IllegalStateException("Prism terrain draw executor rejected a prepared draw");
                 }
-                submissionState.recordSubmittedDraw();
             }
             submissionState.complete();
         } catch (RuntimeException | Error failure) {
