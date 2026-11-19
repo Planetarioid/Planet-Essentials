@@ -12,11 +12,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
- * Small render-stage dispatcher backed by Fabric's renderer-compatible world events.
+ * Renderer-compatible drawing-stage dispatcher.
  *
- * Callbacks run on the drawing phase and must keep extraction/preparation work out
- * of the frame-critical path. A failing callback is disabled so it cannot crash every
- * subsequent frame or prevent other callbacks from running.
+ * Fabric drawing callbacks are integration points for custom geometry, not hooks
+ * that replace Minecraft's built-in terrain or entity material pipelines.
  */
 public final class PrismFrameStageRegistry {
     private static final Map<PrismFrameStage, CopyOnWriteArrayList<Entry>> CALLBACKS =
@@ -33,6 +32,8 @@ public final class PrismFrameStageRegistry {
 
     public static void registerFabricEvents() {
         if (!EVENTS_REGISTERED.compareAndSet(false, true)) return;
+        WorldRenderEvents.BEFORE_ENTITIES.register(
+                context -> dispatch(PrismFrameStage.BEFORE_ENTITIES, context));
         WorldRenderEvents.AFTER_ENTITIES.register(
                 context -> dispatch(PrismFrameStage.AFTER_ENTITIES, context));
         WorldRenderEvents.BEFORE_TRANSLUCENT.register(
