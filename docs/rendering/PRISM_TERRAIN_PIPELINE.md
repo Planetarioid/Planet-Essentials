@@ -2,38 +2,39 @@
 
 ## What this adds
 
-Prism has two bounded CPU-side terrain geometry contracts for cooperating renderer integrations:
+Prism terrain currently has:
 
-- A compact POSITION-only procedural quad mesh for shader-generated geometry.
-- A versioned full-attribute V1 vertex payload: XYZ position, UV, RGBA8 color, packed light, packed overlay, and packed normal.
-- A fixed 36-byte vertex stride with explicit offsets and a stable layout fingerprint.
-- Immutable payloads with defensive copies and a read-only little-endian byte view.
-- Section-local coordinates, finite UV validation, namespaced material IDs, and solid/cutout or translucent draw-stage classification.
-- A synchronized extraction queue with deterministic ordering, duplicate rejection, and per-frame mesh/vertex limits.
-- A bounded, LRU-evicted CPU section payload cache with explicit section invalidation and byte accounting.
+- A bounded CPU quad mesh builder and immutable extraction-to-draw frame handoff.
+- A versioned 36-byte full-attribute V1 payload: XYZ position, UV0, RGBA8 color, packed light, packed overlay, packed normal, and one byte of vertex padding.
+- A Minecraft 1.21.11 VertexFormat whose attribute offsets and stride are checked against the serializer.
+- Render-thread GPU upload into owned vertex buffers.
+- A render-thread-confined, 128 MiB default LRU GPU cache with replacement, eviction, section invalidation, and deterministic close.
+- A separate 32 MiB default LRU CPU cache for rebuild payloads.
 
-The full-attribute V1 layout is a CPU serialization contract. It does not yet claim byte-for-byte compatibility with Minecraft's internal VertexFormat, nor does it imply that the current position-only RenderPipeline can consume this payload. A future renderer bridge must explicitly map the layout to the active backend's vertex format and validate packed light, overlay, color, and normal semantics.
+The V1 serialized order is position, UV0, color, light (UV2), overlay (UV1), normal, one padding byte. Minecraft's normal element occupies three bytes; the final byte is explicit stride padding. This is now an explicit backend mapping rather than an assumption.
 
-## Intended lifecycle
+## Resource lifecycle
 
-1. A terrain integration starts a frame with PrismTerrainFrameQueue.beginFrame().
-2. Extraction workers build independent immutable mesh or vertex-data payloads.
-3. The integration publishes its extraction frame after workers finish.
-4. A CPU cache may retain bounded immutable payloads and invalidate all entries for a section after rebuild/unload.
-5. A renderer bridge consumes the immutable data at the matching draw stage and resolves the Prism material pipeline.
-6. The renderer adapter separately owns GPU allocations, synchronization, and render-thread disposal.
+1. CPU extraction builds immutable section payloads away from the GPU.
+2. The render thread uploads payloads using GpuDevice.createBuffer with vertex usage.
+3. PrismTerrainGpuCache owns the resulting GpuBuffer objects.
+4. Rebuild/unload invalidation closes all GPU allocations for the affected section.
+5. LRU eviction closes the oldest allocations before accounting them as released.
+6. Renderer/device teardown must call cache.close() on the render thread.
 
-## Critical boundary
+Borrowed mesh/buffer handles must not outlive their cache entry. Callers must never close borrowed buffers.
 
-This is a terrain mesh extraction and handoff foundation, not a replacement for Minecraft's vanilla chunk mesher or GPU chunk storage. Fabric 1.21.11's public WorldRenderEvents provide extraction and drawing extension points, but the documented drawing events occur around vanilla terrain rather than replacing its chunk compilation and upload path. Prism does not cancel or replace vanilla chunk rendering here.
+## Drawing boundary
 
-No terrain renderer bridge is registered by default. Until one is implemented and tested, vanilla terrain remains responsible for the world.
+The uploaded buffer uses the full V1 Minecraft vertex format. It must only be bound to a RenderPipeline created with PrismTerrainVertexLayout.minecraftVertexFormat() and a compatible shader interface. Prism's existing general shader backend still compiles POSITION-only pipelines by default. This change deliberately does not bind the full terrain buffer to those pipelines.
+
+No terrain renderer bridge is registered by default. Vanilla chunk compilation, chunk rebuild hooks, culling, actual terrain draw submission, and renderer-specific adapters remain unfinished. Vanilla terrain remains responsible for the world.
 
 ## Limits
 
-- Maximum 65,536 vertices per individual mesh or full-attribute payload.
-- Maximum 512 meshes and 1,048,576 vertices per published frame queue.
-- Default CPU section cache budget: 32 MiB, with least-recently-used eviction.
-- Position coordinates are section-local and constrained to [0, 16].
-- Full-attribute V1 stride is 36 bytes, encoded little-endian.
-- CPU payloads are immutable. GPU upload/cache, frustum/occlusion culling, chunk rebuild integration, draw submission, and GPU resource lifetime remain future work.
+- Maximum 65,536 vertices per individual payload.
+- Maximum 512 meshes and 1,048,576 vertices per published extraction frame.
+- CPU cache: 32 MiB default.
+- GPU cache: 128 MiB default.
+- Section-local positions are constrained to [0, 16].
+- GPU allocation and disposal are render-thread-only.

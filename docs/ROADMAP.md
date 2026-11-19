@@ -49,12 +49,13 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Built-in END_MAIN world post-process graph and final composite
 - [x] GPU fullscreen multi-pass execution, sampler mapping, target-slot reuse, and final composite
 - [x] Shader-pack multi-pass graph authoring and strict graph validation
-- [x] Bounded CPU terrain mesh builder and immutable extraction-to-draw frame handoff for cooperating integrations
-- [x] Versioned full-attribute CPU terrain vertex payload (XYZ, UV, RGBA8, packed light/overlay/normal)
-- [x] Bounded LRU CPU section payload cache with explicit section invalidation
+- [x] Bounded CPU terrain mesh builder and immutable extraction-to-draw frame handoff
+- [x] Versioned full-attribute terrain payload and matching Minecraft vertex-format mapping
+- [x] Render-thread GPU terrain buffer upload and owned allocation lifecycle
+- [x] Bounded LRU GPU terrain buffer cache with section invalidation and teardown
 - [ ] Vanilla chunk mesher integration and chunk rebuild lifecycle
-- [ ] Backend vertex-format mapping and terrain material pipeline variants
-- [ ] GPU terrain mesh upload/cache, culling, and draw submission
+- [ ] Terrain-specific shader-pack pipeline compilation and draw submission
+- [ ] Frustum and occlusion culling
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
 - [ ] Renderer-specific integration adapters and safe fallback negotiation
 - [ ] Actual GPU/driver limit detection
