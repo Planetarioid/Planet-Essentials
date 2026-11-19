@@ -159,15 +159,18 @@ public final class PrismTerrainDrawExecutor {
         if (mesh.vertexCount() <= 0 || mesh.vertexCount() % 4 != 0) {
             throw new IllegalArgumentException("Prism terrain mesh must contain complete quads");
         }
-        // Validate the complete binding set before mutating RenderPass state.
-        bindings.apply(pass, program.bindings(), externallyBoundUniforms);
-        pass.setPipeline(drawPipeline);
-        pass.setVertexBuffer(0, mesh.vertexBuffer());
         int indexCount = (mesh.vertexCount() / 4) * 6;
+        // Validate the explicit index range before any binding or RenderPass
+        // mutation. A rejected prepared buffer must leave the caller's pass
+        // untouched so the caller can safely choose its preflight fallback.
         if (explicitIndexBuffer != null
                 && !indexRangeFits(explicitIndexBuffer.size(), explicitIndexType, firstIndex, indexCount)) {
             throw new IllegalArgumentException("Prepared terrain index buffer cannot address the requested draw range");
         }
+        // Validate/apply bindings only after all CPU-checkable draw inputs pass.
+        bindings.apply(pass, program.bindings(), externallyBoundUniforms);
+        pass.setPipeline(drawPipeline);
+        pass.setVertexBuffer(0, mesh.vertexBuffer());
         if (explicitIndexBuffer == null) {
             var sequentialIndices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
             pass.setIndexBuffer(sequentialIndices.getBuffer(indexCount), sequentialIndices.type());
