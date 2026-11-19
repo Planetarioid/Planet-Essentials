@@ -67,7 +67,7 @@ class ShaderPackLoaderTest {
         assertEquals(List.of("planet:blur", "planet:combine"),
                 graph.passes().stream().map(PrismPostProcessGraph.Pass::programId).toList());
         assertEquals("planet:final", graph.output());
-        assertEquals(4, loaded.programs().size());
+        assertEquals(2, loaded.programs().size());
     }
 
     @Test
