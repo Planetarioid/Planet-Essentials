@@ -2,20 +2,17 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBackend;
 import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBindings;
 
 import java.util.Objects;
+import java.util.Set;
 
 /** Submits an uploaded V1 terrain mesh through a pipeline compiled for the matching vertex format. */
 public final class PrismTerrainDrawExecutor {
     private PrismTerrainDrawExecutor() {}
 
-    /**
-     * Draws a whole quad mesh and supplies its per-section origin uniform.
-     * The allocation must remain open until the submitted GPU work no longer
-     * references it. The renderer owns that lifetime.
-     */
     public static boolean draw(RenderPass pass,
             MinecraftShaderBackend.MinecraftCompiledProgram program,
             PrismTerrainGpuMesh mesh,
@@ -26,24 +23,32 @@ public final class PrismTerrainDrawExecutor {
         PrismTerrainSectionUniform.requireDeclared(program.bindings()::uniformBuffers);
         MinecraftShaderBindings completeBindings = Objects.requireNonNull(bindings, "bindings")
                 .withUniformBuffer(PrismTerrainSectionUniform.BINDING_NAME, sectionUniform.slice());
-        return drawValidated(pass, program, mesh, completeBindings);
+        return drawValidated(pass, program, mesh, completeBindings, Set.of());
     }
 
-    /**
-     * Draws a whole quad mesh into an already-open pass without injecting
-     * a section uniform. Kept for non-section terrain pipelines.
-     */
+    /** Draws using explicit bindings plus uniforms already installed by Minecraft. */
+    public static boolean draw(RenderPass pass,
+            MinecraftShaderBackend.MinecraftCompiledProgram program,
+            PrismTerrainGpuMesh mesh,
+            MinecraftShaderBindings bindings,
+            Set<String> externallyBoundUniforms) {
+        return drawValidated(pass, program, mesh, bindings,
+                Objects.requireNonNull(externallyBoundUniforms, "externallyBoundUniforms"));
+    }
+
+    /** Draws a whole quad mesh into an already-open pass without injecting a section uniform. */
     public static boolean draw(RenderPass pass,
             MinecraftShaderBackend.MinecraftCompiledProgram program,
             PrismTerrainGpuMesh mesh,
             MinecraftShaderBindings bindings) {
-        return drawValidated(pass, program, mesh, bindings);
+        return drawValidated(pass, program, mesh, bindings, Set.of());
     }
 
     private static boolean drawValidated(RenderPass pass,
             MinecraftShaderBackend.MinecraftCompiledProgram program,
             PrismTerrainGpuMesh mesh,
-            MinecraftShaderBindings bindings) {
+            MinecraftShaderBindings bindings,
+            Set<String> externallyBoundUniforms) {
         RenderSystem.assertOnRenderThread();
         Objects.requireNonNull(pass, "pass");
         Objects.requireNonNull(program, "program");
@@ -56,10 +61,13 @@ public final class PrismTerrainDrawExecutor {
             throw new IllegalArgumentException("Prism terrain mesh must contain complete quads");
         }
         // Validate the complete binding set before mutating RenderPass state.
-        bindings.apply(pass, program.bindings());
+        bindings.apply(pass, program.bindings(), externallyBoundUniforms);
         pass.setPipeline(program.pipeline());
         pass.setVertexBuffer(0, mesh.vertexBuffer());
-        pass.draw(0, mesh.vertexCount());
+        int indexCount = (mesh.vertexCount() / 4) * 6;
+        var sequentialIndices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+        pass.setIndexBuffer(sequentialIndices.getBuffer(indexCount), sequentialIndices.type());
+        pass.drawIndexed(0, 0, indexCount, 1);
         return true;
     }
 }

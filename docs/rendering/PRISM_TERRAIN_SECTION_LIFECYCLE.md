@@ -12,9 +12,9 @@
 ## Deliberate boundaries
 
 - This is actual chunk load/unload integration, not a vanilla chunk rebuild hook. Fabric's client chunk events do not expose the internal section mesher's completed vertex payload or a reliable rebuild token.
-- No GPU invalidator is registered by default because no concrete terrain renderer adapter currently owns the `PrismTerrainGpuCache` in the live render pipeline.
+- `PrismTerrainRendererAdapter` can register a concrete GPU invalidator for its per-ClientLevel `PrismTerrainGpuCache`. The adapter is opt-in and no provider is registered by default.
 - The bridge does not replace vanilla terrain rendering, infer dimension identifiers from coordinates, or upload terrain itself.
-- A future adapter must register its invalidator, scope its GPU cache to the supplied `ClientLevel`, and perform cache destruction only on the render thread.
+- The opt-in adapter registers its invalidator, scopes each GPU cache to the supplied `ClientLevel`, and performs cache destruction on the render thread. Vanilla chunk mesh extraction and rebuild integration remain separate work.
 
 ## Verification
 

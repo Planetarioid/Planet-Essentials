@@ -30,7 +30,7 @@ Borrowed mesh/buffer handles must not outlive their cache entry. Callers must ne
 
 Terrain programs are compiled through MinecraftShaderBackend.compileTerrain(), which declares the V1 Minecraft vertex format and QUADS mode. PrismTerrainDrawExecutor accepts only a program compiled through this terrain path, validates all shader bindings before changing pass state, binds the uploaded vertex buffer, and submits the complete quad vertex range.
 
-The executor is a cooperating-renderer API, not an automatic vanilla chunk renderer replacement. No terrain renderer bridge is registered by default. Vanilla chunk compilation, chunk rebuild hooks, culling, world-stage scheduling, camera-relative transforms, and renderer-specific adapters remain unfinished. Vanilla terrain remains responsible for the world.
+The executor is a cooperating-renderer API, not an automatic vanilla chunk renderer replacement. `PrismTerrainRendererAdapter.register(programId, stage, provider)` now provides an opt-in end-to-end path for providers that can supply immutable V1 section payloads. It extracts payloads at END_EXTRACTION, uploads and caches them per ClientLevel, binds the section-origin and Minecraft default uniforms, and draws indexed QUADS into the main color/depth target at BEFORE_ENTITIES or BEFORE_TRANSLUCENT. It also registers chunk-unload GPU invalidation. No provider is registered by default, and vanilla terrain remains responsible for ordinary world geometry.
 
 ## Limits
 
@@ -146,3 +146,37 @@ This is a reusable culling primitive, not automatic camera integration. A render
 ## Section rebuild lifecycle
 
 `PrismTerrainSectionLifecycle` issues revision tokens for section rebuilds, invalidates cached CPU payloads at rebuild start, rejects stale asynchronous results, and invalidates a chunk's section range on unload. The API is synchronized and unit-tested. Callers must provide the actual dimension section range and keep lifecycle state scoped to the active world. Vanilla chunk-builder hooks and render-thread GPU-cache invalidation are not yet connected.
+
+
+## Opt-in GPU terrain renderer adapter
+
+`PrismTerrainRendererAdapter` joins the V1 payload, GPU cache, section
+uniform, terrain shader compiler, and Fabric draw stages. Register it with a
+selected-pack program ID, a stage, and a provider callback. Providers emit
+immutable `PrismTerrainVertexData` payloads during END_EXTRACTION only.
+
+The adapter publishes a bounded immutable payload list (512 payloads and
+1,048,576 vertices maximum), uploads changed payloads through a per-`ClientLevel`
+128 MiB LRU cache, and submits indexed QUADS into the main color/depth target.
+GPU cache entries compare SHA-256 payload identities so unchanged sections
+are not re-uploaded every frame. The draw executor uses Minecraft's
+sequential quad index buffer rather than issuing a non-indexed draw for
+QUADS.
+
+The selected shader program is recompiled through the terrain V1 vertex format
+on demand and cached by shader generation plus source hash. Terrain pipeline
+identifiers are distinct from general POSITION-only identifiers, preventing
+the two vertex formats from aliasing the same GPU pipeline identity.
+
+A compatible terrain shader declares `PrismSection` and
+`DynamicTransforms` as explicit UBOs. It may also declare Minecraft's
+`Projection`, `Globals`, and `Fog` defaults, which the adapter binds through
+`RenderSystem.bindDefaultUniforms`. Other custom UBOs, texel buffers, and
+samplers are rejected by this first adapter rather than silently left unbound.
+
+Per-section uniform payloads are written into a `MappableRingBuffer` with
+GPU-fenced rotation, avoiding one new uniform allocation per section per
+frame. The adapter is opt-in and consumes provider-supplied terrain. It does
+not intercept vanilla section meshing, extract Minecraft's existing chunk
+buffers, replace vanilla terrain, or yet construct a frustum from the active
+camera.

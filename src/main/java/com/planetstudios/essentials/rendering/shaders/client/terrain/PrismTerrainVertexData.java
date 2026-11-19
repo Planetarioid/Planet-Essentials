@@ -3,6 +3,9 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Objects;
 
 /** Immutable, versioned full-attribute terrain payload with a stable little-endian encoding. */
@@ -13,11 +16,12 @@ public final class PrismTerrainVertexData {
     private final PrismFrameStage stage;
     private final byte[] bytes;
     private final int vertexCount;
+    private final String contentHash;
 
     private PrismTerrainVertexData(int x, int y, int z, String material, PrismFrameStage stage,
             byte[] bytes, int count) {
         sectionX=x; sectionY=y; sectionZ=z; materialId=material; this.stage=stage;
-        this.bytes=bytes.clone(); vertexCount=count;
+        this.bytes=bytes.clone(); vertexCount=count; contentHash=hash(this.bytes);
     }
     public static Builder builder(int x,int y,int z,String material,PrismFrameStage stage) {
         return new Builder(x,y,z,material,stage);
@@ -28,8 +32,13 @@ public final class PrismTerrainVertexData {
     public int strideBytes(){return PrismTerrainVertexLayout.STRIDE;}
     public int vertexCount(){return vertexCount;} public int byteSize(){return bytes.length;}
     public long estimatedCpuBytes(){return bytes.length;}
+    public String contentHash(){return contentHash;}
     public byte[] bytes(){return bytes.clone();}
     public ByteBuffer readOnlyBuffer(){return ByteBuffer.wrap(bytes).asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);}
+    private static String hash(byte[] bytes) {
+        try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); }
+        catch (NoSuchAlgorithmException impossible) { throw new IllegalStateException("SHA-256 is unavailable", impossible); }
+    }
 
     public static final class Builder {
         private final int x,y,z;

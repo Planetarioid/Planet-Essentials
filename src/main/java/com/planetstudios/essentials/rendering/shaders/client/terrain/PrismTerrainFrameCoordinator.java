@@ -132,7 +132,6 @@ public final class PrismTerrainFrameCoordinator {
 
     private static void draw(PrismFrameStage stage, WorldRenderContext context) {
         PrismTerrainFrame frame = publishedFrame;
-        if (frame.meshes(stage).isEmpty()) return;
         for (DrawEntry entry : DRAWERS.get(stage)) {
             if (!entry.enabled.get()) continue;
             try {

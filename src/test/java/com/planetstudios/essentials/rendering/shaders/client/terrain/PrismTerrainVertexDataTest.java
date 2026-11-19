@@ -16,12 +16,23 @@ class PrismTerrainVertexDataTest {
         assertEquals(144,data.byteSize()); assertEquals(4,data.vertexCount());
         assertEquals(ByteOrder.LITTLE_ENDIAN,data.readOnlyBuffer().order());
         assertTrue(data.readOnlyBuffer().isReadOnly());
+        assertEquals(64, data.contentHash().length());
     }
     @Test void payloadIsDefensiveAndBuilderIsSingleUse() {
         var b=PrismTerrainVertexData.builder(0,0,0,"example:stone",PrismFrameStage.BEFORE_ENTITIES)
                 .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1));
         var data=b.build(); byte[] copy=data.bytes(); copy[0]=99;
         assertNotEquals(99,data.bytes()[0]); assertThrows(IllegalStateException.class,b::build);
+    }
+    @Test void contentHashIsStableAndChangesWithVertexPayload() {
+        var first = PrismTerrainVertexData.builder(0,0,0,"example:stone",PrismFrameStage.BEFORE_ENTITIES)
+                .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1)).build();
+        var same = PrismTerrainVertexData.builder(0,0,0,"example:stone",PrismFrameStage.BEFORE_ENTITIES)
+                .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1)).build();
+        var changed = PrismTerrainVertexData.builder(0,0,0,"example:stone",PrismFrameStage.BEFORE_ENTITIES)
+                .addQuad(v(0,0,0,0,0),v(2,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1)).build();
+        assertEquals(first.contentHash(), same.contentHash());
+        assertNotEquals(first.contentHash(), changed.contentHash());
     }
     @Test void rejectsNonFiniteUvAndOutOfSectionPosition() {
         assertThrows(IllegalArgumentException.class,()->v(Float.NaN,0,0,0,0));

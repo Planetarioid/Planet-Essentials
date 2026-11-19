@@ -9,11 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Render-thread-confined, byte-bounded LRU cache for uploaded terrain vertex buffers.
- * The cache owns every mesh it stores and closes allocations on replacement, eviction,
- * section invalidation, and clear/device teardown.
- */
+/** Render-thread-confined, byte-bounded LRU cache for uploaded terrain vertex buffers. */
 public final class PrismTerrainGpuCache implements AutoCloseable {
     public static final long DEFAULT_MAX_BYTES=128L*1024L*1024L;
     private final long maxBytes;
@@ -25,6 +21,16 @@ public final class PrismTerrainGpuCache implements AutoCloseable {
     public PrismTerrainGpuCache(long maxBytes){
         if(maxBytes<=0)throw new IllegalArgumentException("GPU cache byte budget must be positive");
         this.maxBytes=maxBytes;
+    }
+
+    /** Returns an existing allocation when its immutable source payload is unchanged. */
+    public PrismTerrainGpuMesh getOrUpload(GpuDevice device, PrismTerrainVertexData data) {
+        RenderSystem.assertOnRenderThread(); ensureOpen();
+        Objects.requireNonNull(data, "data");
+        PrismTerrainGpuMesh existing = entries.get(Key.of(data));
+        if (existing != null && existing.matches(data)) return existing;
+        if (!put(device, data)) return null;
+        return entries.get(Key.of(data));
     }
 
     /** Uploads first, then atomically replaces/evicts entries after successful allocation. */
@@ -41,9 +47,7 @@ public final class PrismTerrainGpuCache implements AutoCloseable {
             Iterator<Map.Entry<Key,PrismTerrainGpuMesh>> it=entries.entrySet().iterator();
             if(!it.hasNext())break;
             PrismTerrainGpuMesh eldest=it.next().getValue();
-            currentBytes-=eldest.gpuBytes();
-            it.remove();
-            eldest.close();
+            currentBytes-=eldest.gpuBytes(); it.remove(); eldest.close();
         }
         entries.put(key,replacement);
         currentBytes+=replacement.gpuBytes();
@@ -64,8 +68,25 @@ public final class PrismTerrainGpuCache implements AutoCloseable {
             Map.Entry<Key,PrismTerrainGpuMesh> entry=it.next();
             Key key=entry.getKey();
             if(key.x==x&&key.y==y&&key.z==z){
-                currentBytes-=entry.getValue().gpuBytes();
-                it.remove(); entry.getValue().close(); removed++;
+                currentBytes-=entry.getValue().gpuBytes(); it.remove(); entry.getValue().close(); removed++;
+            }
+        }
+        return removed;
+    }
+
+    /** Invalidates all vertical section allocations for one chunk. */
+    public int invalidateChunk(int chunkX, int chunkZ) {
+        RenderSystem.assertOnRenderThread(); ensureOpen();
+        int removed = 0;
+        Iterator<Map.Entry<Key,PrismTerrainGpuMesh>> it = entries.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Key,PrismTerrainGpuMesh> entry = it.next();
+            Key key = entry.getKey();
+            if (key.x == chunkX && key.z == chunkZ) {
+                currentBytes -= entry.getValue().gpuBytes();
+                it.remove();
+                entry.getValue().close();
+                removed++;
             }
         }
         return removed;
@@ -80,14 +101,12 @@ public final class PrismTerrainGpuCache implements AutoCloseable {
     public int size(){RenderSystem.assertOnRenderThread();ensureOpen();return entries.size();}
     public long currentBytes(){RenderSystem.assertOnRenderThread();ensureOpen();return currentBytes;}
     public long maxBytes(){return maxBytes;}
-
     private void ensureOpen(){if(closed)throw new IllegalStateException("Prism terrain GPU cache is closed");}
     @Override public void close(){
         RenderSystem.assertOnRenderThread();
         if(closed)return;
         clear();closed=true;
     }
-
     private record Key(int x,int y,int z,String material,PrismFrameStage stage){
         static Key of(PrismTerrainVertexData data){
             return new Key(data.sectionX(),data.sectionY(),data.sectionZ(),data.materialId(),data.stage());

@@ -55,13 +55,13 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Bounded LRU GPU terrain buffer cache with section invalidation and teardown
 - [x] Terrain-specific shader compilation path and validated quad draw executor
 - [x] Fabric END_EXTRACTION frame publication and BEFORE_ENTITIES/BEFORE_TRANSLUCENT terrain scheduling bridge for cooperating providers
-- [~] Revision-token section rebuild lifecycle, stale-result rejection, per-ClientLevel CPU caches, Fabric chunk load/unload hooks, stale published-frame removal, and render-thread GPU invalidator SPI; vanilla chunk mesher/rebuild hooks and concrete GPU adapters remain
+- [~] Revision-token rebuild lifecycle, per-ClientLevel CPU caches, Fabric chunk load/unload hooks, stale-frame removal, render-thread GPU invalidation, and opt-in V1 GPU terrain adapter; vanilla chunk mesher/rebuild hooks and active camera culling remain
 - [x] Double-precision camera-relative section-origin transform utility with unit coverage
 - [x] Canonical 16-byte std140 camera-relative section-origin uniform payload and declaration contract
 - [x] Renderer-owned immutable GPU section-uniform allocation, binding injection, and terrain draw overload
 - [~] CPU section-AABB frustum culling utility and unit tests; active camera/frustum wiring and occlusion culling remain
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
-- [ ] Renderer-specific integration adapters and safe fallback negotiation
+- [~] Opt-in full-attribute V1 terrain renderer adapter and per-world GPU cache integration; renderer-specific vanilla/Sodium/Canvas adapters and safe fallback negotiation remain
 - [ ] Actual GPU/driver limit detection
 - [ ] In-game visual tests, GPU memory tests, benchmarks
 

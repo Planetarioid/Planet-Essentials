@@ -8,7 +8,9 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import com.planetstudios.essentials.rendering.shaders.ShaderBindingLayout;
 import com.planetstudios.essentials.rendering.shaders.ShaderBindingValidator;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.Map;
 import java.util.Objects;
 
@@ -62,8 +64,20 @@ public final class MinecraftShaderBindings {
     }
 
     public void apply(RenderPass pass, ShaderBindingLayout layout) {
+        apply(pass, layout, Set.of());
+    }
+
+    /**
+     * Applies explicit resources while accounting for Minecraft default uniforms
+     * already bound through RenderSystem.bindDefaultUniforms(pass).
+     */
+    public void apply(RenderPass pass, ShaderBindingLayout layout, Set<String> externallyBoundUniformBuffers) {
         Objects.requireNonNull(pass, "pass");
-        validate(layout);
+        Objects.requireNonNull(layout, "layout");
+        Objects.requireNonNull(externallyBoundUniformBuffers, "externallyBoundUniformBuffers");
+        Set<String> suppliedUniforms = new HashSet<>(uniformBuffers.keySet());
+        suppliedUniforms.addAll(externallyBoundUniformBuffers);
+        ShaderBindingValidator.validate(layout, suppliedUniforms, texelBuffers.keySet(), samplers.keySet());
         applyValidated(pass);
     }
 

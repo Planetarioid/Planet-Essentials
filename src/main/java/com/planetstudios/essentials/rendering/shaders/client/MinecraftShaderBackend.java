@@ -62,11 +62,13 @@ public final class MinecraftShaderBackend implements ShaderBackend {
                     "RenderSystem.tryGetDevice() returned null");
         }
         String suffix = spec.contentHash();
-        Identifier pipelineId = Identifier.fromNamespaceAndPath("planet_essentials", "prism/generated/" + suffix);
+        String formatPath = terrainV1 ? "terrain/" : "general/";
+        Identifier pipelineId = Identifier.fromNamespaceAndPath(
+                "planet_essentials", "prism/generated/" + formatPath + suffix);
         Identifier vertexId = Identifier.fromNamespaceAndPath(
-                "planet_essentials", "prism/generated/" + suffix + ".vsh");
+                "planet_essentials", "prism/generated/" + formatPath + suffix + ".vsh");
         Identifier fragmentId = Identifier.fromNamespaceAndPath(
-                "planet_essentials", "prism/generated/" + suffix + ".fsh");
+                "planet_essentials", "prism/generated/" + formatPath + suffix + ".fsh");
 
         RenderPipeline.Builder builder = RenderPipeline.builder(new RenderPipeline.Snippet[0])
                 .withLocation(pipelineId)
