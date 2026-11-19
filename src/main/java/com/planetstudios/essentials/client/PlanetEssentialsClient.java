@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 public final class PlanetEssentialsClient implements ClientModInitializer {
  private static final long SLOW_TICK_THRESHOLD_NANOS=50_000_000L;
  private static long tickStartedAtNanos;
+ private static boolean diagnosticsEnabledForCurrentTick;
  @Override public void onInitializeClient(){
   EssentialsRuntime.initialize();
   ClientLifecycleEvents.CLIENT_STARTED.register(client->record(DiagnosticEventType.CLIENT_STARTED));
@@ -17,10 +18,13 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
   ClientPlayConnectionEvents.JOIN.register((handler,sender,client)->record(DiagnosticEventType.WORLD_JOINED));
   ClientPlayConnectionEvents.DISCONNECT.register((handler,client)->record(DiagnosticEventType.WORLD_LEFT));
   ClientTickEvents.START_CLIENT_TICK.register(client->{
-   tickStartedAtNanos=EssentialsRuntime.config().diagnosticsEnabled?System.nanoTime():0L;
+   // Read the synchronized config once per tick. The disabled path avoids clock reads,
+   // monitor lookups, sample/event creation, and collector locking.
+   diagnosticsEnabledForCurrentTick=EssentialsRuntime.config().diagnosticsEnabled;
+   tickStartedAtNanos=diagnosticsEnabledForCurrentTick?System.nanoTime():0L;
   });
   ClientTickEvents.END_CLIENT_TICK.register(client->{
-   if(!EssentialsRuntime.config().diagnosticsEnabled){tickStartedAtNanos=0L;return;}
+   if(!diagnosticsEnabledForCurrentTick){tickStartedAtNanos=0L;return;}
    if(client.level!=null)EssentialsRuntime.performance().recordFps(Minecraft.getInstance().getFps());
    if(tickStartedAtNanos!=0L){
     long elapsed=System.nanoTime()-tickStartedAtNanos;
