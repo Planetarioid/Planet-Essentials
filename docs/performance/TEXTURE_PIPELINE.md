@@ -12,6 +12,8 @@ The client texture pipeline now has five distinct stages:
 
 6. **Opt-in GPU registration adapter:** Decoded ARGB pixels can be explicitly registered as a Minecraft-managed DynamicTexture. Native pixel allocation/fill is performed before dispatching DynamicTexture creation and TextureManager registration to the client thread. Generated identifiers live in the Planet Essentials namespace and are derived from a stable SHA-256 of the source identifier, so this path never overwrites vanilla/resource-pack identifiers. The adapter tracks only textures it owns and releases them on resource reload and client shutdown. This is an integration API, not a replacement for vanilla texture lookup or atlas loading.
 
+7. **Bounded CPU mip-chain generation:** An opt-in mip policy can produce conventional floor-halved levels, with a strict generated-byte budget and level cap. The high-quality mode uses area-weighted filtering in linear-light sRGB with premultiplied alpha, preventing transparent-color fringes and reducing gamma-space darkening. A nearest-sample mode is available for pixel-art/data textures; mipmaps can also be disabled. This currently produces immutable CPU levels only. The DynamicTexture adapter still registers level zero, so GPU mip-level upload and sampler selection are not yet wired.
+
 ## Ownership and safety
 
 - Minecraft remains the source of truth for resource-pack priority and resource identifiers.
@@ -28,6 +30,6 @@ The client texture pipeline now has five distinct stages:
 
 - Integrate the explicit DynamicTexture adapter into an actual consumer only after in-game validation. Atlas interception remains intentionally out of scope for this first adapter.
 - Launch Minecraft 1.21.11 and verify NativeImage pixel colors, texture binding, reload disposal, and GPU resource cleanup.
-- Add mipmap/filtering policy only after upload integration and visual tests.
-- Test resource packs, animated textures, atlases, shaders, reload races, and GPU memory cleanup in a launched client.
+- Wire the generated CPU mip chain into a verified GPU texture allocation/upload path and sampler policy; current DynamicTexture registration still uploads only level zero.
+- Test resource packs, animated textures, atlases, shaders, reload races, mip transitions, and GPU memory cleanup in a launched client.
 - Benchmark decode time, allocation, retained heap, resource reload time, and frame pacing against vanilla.

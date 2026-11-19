@@ -25,7 +25,8 @@ Planet Essentials is the client-facing control and optimization mod. It owns its
 - The decoded-pixel LRU is bounded by retained bytes (128 MiB default). Reload increments a generation and invalidates stale work/cache entries; client shutdown stops workers and clears pixels.
 - Effective texture streams are resolved through Minecraft's active ResourceManager, retaining resource-pack priority and vanilla resource ownership.
 - An explicit opt-in adapter converts immutable ARGB pixels to NativeImage and registers a Minecraft-managed DynamicTexture under a collision-resistant Planet Essentials identifier. CPU pixel preparation is separate from client-thread DynamicTexture construction/registration. Only adapter-owned identifiers are released on reload/shutdown. It does not intercept vanilla loads, replace atlases, or alter resource-pack priority.
-- Actual GPU allocation, visual correctness, mipmap/filter behavior, and runtime leak checks remain unverified in a launched client; this is not yet a completed rendering optimizer.
+- A bounded CPU mip-chain generator now supports no-mipmap, nearest-sample, and area-weighted linear-light sRGB filtering with premultiplied alpha. Odd source dimensions are area-resampled so edge pixels contribute. Generated levels obey both a maximum-level count and a hard generated-byte budget. GPU upload currently uses only level zero; mip-level allocation/upload and sampler selection remain future integration work.
+- Actual GPU allocation, visual correctness, mipmap transitions, and runtime leak checks remain unverified in a launched client; this is not yet a completed rendering optimizer.
 
 ## Lifecycle and safety
 - Common initialization remains dedicated-server safe; client-only work stays behind client entrypoints.

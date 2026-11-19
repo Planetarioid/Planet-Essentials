@@ -72,7 +72,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Resource reload generation invalidation and client-shutdown cleanup
 - [x] Effective texture resource stream resolution through Minecraft ResourceManager
 - [~] Lazy decoder-to-Minecraft texture registration/render integration (explicit DynamicTexture adapter implemented; in-game GPU verification and real consumer integration pending)
-- [ ] Mipmap and filtering policy
+- [~] CPU mipmap policy and bounded mip-chain generation (GPU mip-level upload and sampler selection pending)
 - [ ] Resource-pack coexistence tests
 - [ ] Failure fallback to vanilla resource behavior
 - [ ] Benchmark memory, load time, and frame-time impact
