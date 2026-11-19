@@ -70,7 +70,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Audio processing review (source-level boundaries and verification protocol documented in docs/performance/AUDIO_PROCESSING_REVIEW.md; no bottleneck measured and no audio optimization implemented)
 - [x] Particle processing review (source-level boundaries and verification protocol documented in docs/performance/PARTICLE_PROCESSING_REVIEW.md; no bottleneck measured and no particle optimization implemented)
 - [x] Animation processing review (source-level boundaries and verification protocol documented in docs/performance/ANIMATION_PROCESSING_REVIEW.md; no bottleneck measured and no animation optimization implemented)
-- [ ] Network-related work limited to safe client-side improvements
+- [x] Network processing review (safe client-side observation and investigation boundaries documented in docs/performance/NETWORK_PROCESSING_REVIEW.md; no packet behavior changes, bottleneck measured, or network optimization implemented)
 - [ ] Per-system enable/disable controls
 - [ ] Benchmark correctness and performance impact
 - [ ] Compatibility test matrix
