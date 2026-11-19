@@ -63,3 +63,23 @@ terrain integrations. It does not obtain vanilla chunk meshes, alter vanilla
 chunk rebuilds, or replace vanilla terrain rendering. Camera-relative transforms,
 GPU cache upload policy, frustum/occlusion culling, and actual renderer adapters
 remain separate work. Consumers must perform GPU operations on the render thread.
+
+
+## Camera-relative section transforms
+
+`PrismTerrainCameraTransform` converts integer section indices to a
+camera-relative section origin. It multiplies section indices by 16 and
+subtracts the camera's double-precision world position before converting the
+result to floats. This avoids first converting large absolute world
+coordinates to floats.
+
+The transform is a lightweight per-draw value. Terrain vertex payloads and
+cached GPU buffers remain section-local and reusable as the camera moves. A
+cooperating renderer should provide the transform as its section-origin
+uniform (or equivalent model transform) and keep the existing local vertex
+coordinates unchanged.
+
+This utility is unit-tested for negative sections, fractional camera positions,
+large world coordinates, local-coordinate bounds, and payload immutability.
+It does not yet wire a concrete section-origin uniform into a production
+renderer or replace vanilla chunk rendering.
