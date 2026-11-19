@@ -6,22 +6,22 @@ Planet Essentials is a Fabric mod for Minecraft Java Edition **1.21.11**, target
 
 ## Development status
 
-The repository is in active development. The current implementation includes a validated configuration model, atomic config persistence, bounded FPS history, basic diagnostics UI, and a client-side replacement route for Minecraft's vanilla Options screen.
+The repository is in active development. Implemented foundations include typed configuration and profiles, bounded local diagnostics, explicit diagnostics export, mod discovery through Planet Lib, feature-priority controls, and a route from Minecraft's normal Options entry point to the Essentials settings hub.
 
 - [x] Repository and Fabric build foundation
-- [x] Initial configuration and diagnostics foundation
+- [x] Configuration, migrations, profiles, and persistence tests
+- [x] Planet Lib API bridge and loaded-mod/capability discovery
+- [x] Feature-priority settings and provider lifecycle integration
+- [x] Local diagnostics collection and explicit JSON export
+- [~] Diagnostics runtime-overhead verification
 - [~] Planet Essentials settings hub replaces vanilla Options entry point
-- [ ] Planet Lib API integration
-- [ ] Mod discovery and integration coordination
-- [ ] Feature priority UI
-- [ ] Complete diagnostics interface
-- [ ] Performance systems
+- [ ] Performance bottleneck investigation and optimization systems
 - [ ] Texture optimization engine
 - [ ] Shader system
-- [ ] Full settings navigation and profiles
+- [ ] Full settings navigation and per-mod panels
 - [ ] Client and dedicated-server validation
 
-See [the development roadmap](docs/ROADMAP.md) for subsystem checklists.
+See [the development roadmap](docs/ROADMAP.md) and [baseline profiling protocol](docs/performance/BASELINE_PROFILING.md) for the tracked work.
 
 ## Planned responsibilities
 
@@ -58,6 +58,6 @@ Build with `gradle clean build` and run tests with `gradle test`.
 
 ## Dependency note
 
-Planet Essentials is designed to use Planet Lib as its shared API foundation. Direct API usage will be wired once the library has a stable, consumable development artifact and the dependency can be resolved reproducibly in both local and CI builds.
+Planet Essentials builds against a pinned Planet Lib Git submodule as a sibling Gradle project. Planet Lib is compile-time only in Essentials and remains optional at runtime.
 
 No license has been selected yet. Do not assume permission to redistribute or reuse this project.

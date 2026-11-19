@@ -60,10 +60,10 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Diagnostics event collection integration (local lifecycle and slow-tick events; bounded in-memory collector)
 - [x] Export diagnostics only on explicit user action (manual button; local JSON file; bounded snapshot; no background export)
 - [x] No background telemetry or personal-data collection (export contains only timestamps, FPS values, event types, and durations)
-- [~] Verify low overhead when diagnostics are not open (disabled tick path now performs one cached config read and avoids clock reads, monitor lookups, sample/event creation, and collector locking; runtime profiling still required)
+- [~] Verify low overhead when diagnostics are not open (disabled tick path avoids clock reads, sampling, event creation, and collector locking after one cached config read; runtime profiling still required)
 
 ## 6. Performance architecture
-- [ ] Establish baseline profiling methodology
+- [x] Establish baseline profiling methodology (repeatable scenarios, environment controls, frame-time/CPU/GPU/JVM metrics, diagnostics A/B procedure, acceptance criteria documented in docs/performance/BASELINE_PROFILING.md)
 - [ ] Identify measurable CPU bottlenecks
 - [ ] Identify measurable GPU/render bottlenecks
 - [ ] Memory allocation and cache strategy
@@ -125,4 +125,4 @@ A feature is not marked complete merely because its class exists. Build verifica
 
 ## Verification record
 
-CI verifies compilation, unit tests, JAR contents, and artifact creation. In-game behavior and runtime overhead remain unverified until tested in Minecraft.
+CI verifies compilation, unit tests, JAR contents, and artifact creation. In-game behavior and runtime profiling remain unverified until tested in Minecraft.
