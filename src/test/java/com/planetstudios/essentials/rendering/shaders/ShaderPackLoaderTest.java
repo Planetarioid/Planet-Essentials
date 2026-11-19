@@ -43,7 +43,7 @@ class ShaderPackLoaderTest {
         String valid = MANIFEST.replace("\"programs\":",
                 "\"worldPostProcessProgram\": \"planet:world\", \"programs\":");
         assertEquals("planet:world", ShaderPackManifest.parse(valid).worldPostProcessProgram());
-        String invalid = valid.replace("planet:world", "planet:missing");
+        String invalid = valid.replace("\"worldPostProcessProgram\": \"planet:world\"", "\"worldPostProcessProgram\": \"planet:missing\"");
         assertThrows(IllegalArgumentException.class, () -> ShaderPackManifest.parse(invalid));
     }
 
