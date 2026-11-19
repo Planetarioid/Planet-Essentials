@@ -32,7 +32,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Named profile create/save/load/delete storage
 - [x] Profile import/export validation and safe profile names
 - [x] Tests for registry, migration, profile persistence, and malformed imports
-- [ ] Thread-safety and lifecycle tests
+- [x] Thread-safety and lifecycle tests (serialized config/profile persistence; concurrent diagnostics and profile-store tests)
 
 ## 3. Mod discovery and integration coordination
 - [x] Read loaded mods from Planet Lib registry

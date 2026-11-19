@@ -23,17 +23,17 @@ public final class EssentialsRuntime {
         if (!profileStore.listProfiles().contains("default")) profileStore.save("default", config);
     }
 
-    public static EssentialsConfig config() {
+    public static synchronized EssentialsConfig config() {
         ensureInitialized();
         return config;
     }
 
-    public static PerformanceMonitor performance() {
+    public static synchronized PerformanceMonitor performance() {
         ensureInitialized();
         return performanceMonitor;
     }
 
-    public static ProfileStore profiles() {
+    public static synchronized ProfileStore profiles() {
         ensureInitialized();
         return profileStore;
     }

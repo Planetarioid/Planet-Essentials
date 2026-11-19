@@ -32,7 +32,7 @@ public final class ProfileStore {
         return normalized;
     }
 
-    public List<String> listProfiles() {
+    public synchronized List<String> listProfiles() {
         try {
             Files.createDirectories(directory);
             try (Stream<Path> files = Files.list(directory)) {
@@ -46,13 +46,13 @@ public final class ProfileStore {
         }
     }
 
-    public void save(String name, EssentialsConfig config) {
+    public synchronized void save(String name, EssentialsConfig config) {
         String safeName = normalizeName(name);
         config.validate();
         writeAtomically(profilePath(safeName), GSON.toJson(config));
     }
 
-    public EssentialsConfig load(String name) {
+    public synchronized EssentialsConfig load(String name) {
         String safeName = normalizeName(name);
         Path path = profilePath(safeName);
         try (var reader = Files.newBufferedReader(path)) {
@@ -68,7 +68,7 @@ public final class ProfileStore {
     }
 
     /** Imports a validated JSON profile into the managed profile directory. */
-    public void importProfile(String name, Path source) {
+    public synchronized void importProfile(String name, Path source) {
         String safeName = normalizeName(name);
         try (var reader = Files.newBufferedReader(source)) {
             JsonObject json = GSON.fromJson(reader, JsonObject.class);
@@ -83,12 +83,12 @@ public final class ProfileStore {
     }
 
     /** Exports a profile to a user-selected path. */
-    public void exportProfile(String name, Path destination) {
+    public synchronized void exportProfile(String name, Path destination) {
         EssentialsConfig config = load(name);
         writeAtomically(destination, GSON.toJson(config));
     }
 
-    public boolean delete(String name) {
+    public synchronized boolean delete(String name) {
         String safeName = normalizeName(name);
         try {
             return Files.deleteIfExists(profilePath(safeName));

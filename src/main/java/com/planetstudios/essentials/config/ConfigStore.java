@@ -18,7 +18,7 @@ public final class ConfigStore {
 
     private ConfigStore() {}
 
-    public static EssentialsConfig load() {
+    public static synchronized EssentialsConfig load() {
         try {
             Files.createDirectories(FILE.getParent());
             if (!Files.exists(FILE)) {
@@ -40,7 +40,7 @@ public final class ConfigStore {
         }
     }
 
-    public static void save(EssentialsConfig config) {
+    public static synchronized void save(EssentialsConfig config) {
         config.validate();
         writeAtomically(FILE, GSON.toJson(config));
     }
