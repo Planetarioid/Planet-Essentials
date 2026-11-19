@@ -4,6 +4,7 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBackend;
 import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBindings;
+import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 
