@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicBoolean;
+import com.planetstudios.essentials.PlanetEssentials;
 
 /**
  * Observes vanilla terrain render-group inputs at the synchronous call boundary.
@@ -24,21 +26,34 @@ public final class PrismTerrainRenderGroupBoundary {
 
     private PrismTerrainRenderGroupBoundary() {}
 
+    private static final AtomicBoolean CAPTURE_WARNING_REPORTED = new AtomicBoolean();
+
     public static void begin(ChunkSectionsToRender input, ChunkSectionLayerGroup group, GpuSampler sampler) {
-        Objects.requireNonNull(input, "input");
-        Objects.requireNonNull(group, "group");
-        Objects.requireNonNull(sampler, "sampler");
+        try {
+            Objects.requireNonNull(input, "input");
+            Objects.requireNonNull(group, "group");
+            Objects.requireNonNull(sampler, "sampler");
 
-        EnumMap<ChunkSectionLayer, List<?>> draws = new EnumMap<>(ChunkSectionLayer.class);
-        for (ChunkSectionLayer layer : group.layers()) {
-            List<?> layerDraws = input.drawsPerLayer().get(layer);
-            draws.put(layer, layerDraws == null ? List.of() : List.copyOf(layerDraws));
+            EnumMap<ChunkSectionLayer, List<?>> draws = new EnumMap<>(ChunkSectionLayer.class);
+            for (ChunkSectionLayer layer : group.layers()) {
+                List<?> layerDraws = input.drawsPerLayer().get(layer);
+                draws.put(layer, layerDraws == null ? List.of() : List.copyOf(layerDraws));
+            }
+
+            GpuBufferSlice[] sectionInfos = input.chunkSectionInfos();
+            PrismTerrainVanillaPassSnapshot pass =
+                    PrismTerrainVanillaPassSnapshot.capture(input, group, sampler);
+            CURRENT.set(new Snapshot(group, sampler, input.textureView(), draws,
+                    input.maxIndicesRequired(), sectionInfos, pass, SEQUENCE.incrementAndGet()));
+        } catch (RuntimeException captureFailure) {
+            // Instrumentation must never become a reason vanilla terrain fails to render.
+            CURRENT.remove();
+            if (CAPTURE_WARNING_REPORTED.compareAndSet(false, true)) {
+                PlanetEssentials.LOGGER.warn(
+                        "Prism terrain pass observation is unavailable; vanilla rendering remains untouched",
+                        captureFailure);
+            }
         }
-
-        GpuBufferSlice[] sectionInfos = input.chunkSectionInfos();
-        PrismTerrainVanillaPassSnapshot pass = PrismTerrainVanillaPassSnapshot.capture(input, group, sampler);
-        CURRENT.set(new Snapshot(group, sampler, input.textureView(), draws,
-                input.maxIndicesRequired(), sectionInfos, pass, SEQUENCE.incrementAndGet()));
     }
 
     public static void end() {
@@ -90,6 +105,11 @@ public final class PrismTerrainRenderGroupBoundary {
             int count = 0;
             for (ChunkSectionLayer layer : group.layers()) count += drawCount(layer);
             return count;
+        }
+
+        /** Builds an evidence-only state record for a layer in this captured group. */
+        public PrismTerrainRenderPassState renderStateFor(ChunkSectionLayer layer) {
+            return PrismTerrainRenderPassState.fromVanillaSnapshot(layer, passInputs);
         }
     }
 }
