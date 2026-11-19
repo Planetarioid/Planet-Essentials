@@ -2,7 +2,7 @@ package com.planetstudios.essentials.rendering.shaders;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -55,7 +55,7 @@ class ShaderPackLoaderTest {
 
     @Test
     void rejectsMissingAndOversizedSources() {
-        assertThrows(NullPointerException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> ShaderPackLoader.load(MANIFEST, (id, limit) -> null));
         assertThrows(IllegalArgumentException.class,
                 () -> ShaderPackLoader.load(MANIFEST,
@@ -64,18 +64,44 @@ class ShaderPackLoaderTest {
 
     @Test
     void validatesDuplicateProgramIds() {
-        String duplicate = MANIFEST.replace(
-                "\"id\": \"planet:world\",",
-                "\"id\": \"planet:world\",");
-        String doubled = duplicate.replace(
-                "              ]",
-                """
-                          , {
-                            "id": "planet:world",
-                            "vertex": "planet:shaders/world.vsh",
-                            "fragment": "planet:shaders/world.fsh"
-                          }
-                      ]""");
-        assertThrows(IllegalArgumentException.class, () -> ShaderPackManifest.parse(doubled));
+        String duplicate = """
+                {
+                  "schema": 1,
+                  "id": "planet:sample",
+                  "name": "Sample Pack",
+                  "version": "1.0.0",
+                  "programs": [
+                    {"id":"planet:world","vertex":"planet:shaders/a.vsh","fragment":"planet:shaders/a.fsh"},
+                    {"id":"planet:world","vertex":"planet:shaders/b.vsh","fragment":"planet:shaders/b.fsh"}
+                  ]
+                }
+                """;
+        assertThrows(IllegalArgumentException.class, () -> ShaderPackManifest.parse(duplicate));
+    }
+
+    @Test
+    void resolvesSharedShaderSourcesOnlyOnceAndCountsUniqueBytes() {
+        AtomicInteger reads = new AtomicInteger();
+        String shared = "#version 150\nvoid main() {}";
+        String manifest = """
+                {
+                  "schema": 1,
+                  "id": "planet:sample",
+                  "name": "Sample Pack",
+                  "version": "1.0.0",
+                  "programs": [
+                    {"id":"planet:first","vertex":"planet:shaders/shared.vsh","fragment":"planet:shaders/shared.fsh"},
+                    {"id":"planet:second","vertex":"planet:shaders/shared.vsh","fragment":"planet:shaders/shared.fsh"}
+                  ]
+                }
+                """;
+        var loaded = ShaderPackLoader.load(manifest, (id, limit) -> {
+            reads.incrementAndGet();
+            return shared;
+        });
+        assertEquals(2, reads.get());
+        assertEquals(shared.getBytes(java.nio.charset.StandardCharsets.UTF_8).length * 2L,
+                loaded.sourceBytes());
+        assertEquals(2, loaded.programs().size());
     }
 }

@@ -22,9 +22,7 @@ public final class ShaderPackLoader {
         for (ShaderPackManifest.Program program : manifest.programs()) {
             String vertex = readBounded(resolver, program.vertex(), sourceCache);
             String fragment = readBounded(resolver, program.fragment(), sourceCache);
-            long totalBytes = sourceCache.values().stream()
-                    .mapToLong(source -> source.getBytes(StandardCharsets.UTF_8).length)
-                    .sum();
+            long totalBytes = uniqueSourceBytes(sourceCache);
             if (totalBytes > MAX_TOTAL_SOURCE_BYTES) {
                 throw new IllegalArgumentException("Shader pack source budget exceeds 16 MiB");
             }
@@ -32,19 +30,23 @@ public final class ShaderPackLoader {
                     program.id(),
                     Map.of(ShaderStage.VERTEX, vertex, ShaderStage.FRAGMENT, fragment)));
         }
-        long totalBytes = sourceCache.values().stream()
+        return new LoadedPack(manifest, programs, uniqueSourceBytes(sourceCache));
+    }
+
+    private static long uniqueSourceBytes(Map<String, String> sourceCache) {
+        return sourceCache.values().stream()
                 .mapToLong(source -> source.getBytes(StandardCharsets.UTF_8).length)
                 .sum();
-        return new LoadedPack(manifest, programs, totalBytes);
     }
 
     private static String readBounded(
             ShaderResourceResolver resolver, String resourceId, Map<String, String> sourceCache) {
         String cached = sourceCache.get(resourceId);
         if (cached != null) return cached;
-        String source = Objects.requireNonNull(
-                resolver.readUtf8(resourceId, ShaderProgramSpec.MAX_SOURCE_BYTES),
-                "Missing shader source: " + resourceId);
+        String source = resolver.readUtf8(resourceId, ShaderProgramSpec.MAX_SOURCE_BYTES);
+        if (source == null) {
+            throw new IllegalArgumentException("Missing shader source: " + resourceId);
+        }
         int bytes = source.getBytes(StandardCharsets.UTF_8).length;
         if (bytes == 0 || bytes > ShaderProgramSpec.MAX_SOURCE_BYTES || source.isBlank()) {
             throw new IllegalArgumentException("Invalid or oversized shader source: " + resourceId);
