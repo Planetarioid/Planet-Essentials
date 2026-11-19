@@ -7,6 +7,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,6 +29,7 @@ public final class TextureDecodeService implements AutoCloseable {
     private final TextureDecodeLimits limits;
     private final TexturePixelCache cache;
     private final ThreadPoolExecutor executor;
+    private final Set<CompletableFuture<DecodedTexture>> pending = ConcurrentHashMap.newKeySet();
     private volatile boolean closed;
 
     public TextureDecodeService(TextureDecodeLimits limits, TexturePixelCache cache) {
@@ -49,6 +52,12 @@ public final class TextureDecodeService implements AutoCloseable {
         CompletableFuture<DecodedTexture> result = new CompletableFuture<>();
         if (closed) {
             result.completeExceptionally(new IllegalStateException("Texture decoder is closed"));
+            return result;
+        }
+        pending.add(result);
+        result.whenComplete((decoded, failure) -> pending.remove(result));
+        if (closed) {
+            result.completeExceptionally(new CancellationException("Texture decoder is closed"));
             return result;
         }
 
@@ -95,8 +104,17 @@ public final class TextureDecodeService implements AutoCloseable {
 
     @Override
     public void close() {
+        if (closed) {
+            return;
+        }
         closed = true;
         executor.shutdownNow();
+        CancellationException cancellation =
+                new CancellationException("Texture decoder shut down before decode completed");
+        for (CompletableFuture<DecodedTexture> future : pending) {
+            future.completeExceptionally(cancellation);
+        }
+        pending.clear();
         cache.clear();
     }
 }
