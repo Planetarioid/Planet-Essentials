@@ -46,6 +46,23 @@ class PrismTerrainVanillaPassSnapshotTest {
     }
 
     @Test
+    void quadVertexCountsProduceExactSequentialIndexRequirements() {
+        assertEquals(0, PrismTerrainVanillaPassSnapshot.IndexBufferInput.indexCountForQuadVertexCount(0));
+        assertEquals(6, PrismTerrainVanillaPassSnapshot.IndexBufferInput.indexCountForQuadVertexCount(4));
+        assertEquals(24, PrismTerrainVanillaPassSnapshot.IndexBufferInput.indexCountForQuadVertexCount(16));
+        assertThrows(IllegalArgumentException.class, () ->
+                PrismTerrainVanillaPassSnapshot.IndexBufferInput.indexCountForQuadVertexCount(3));
+        assertThrows(IllegalArgumentException.class, () ->
+                PrismTerrainVanillaPassSnapshot.IndexBufferInput.indexCountForQuadVertexCount(-4));
+    }
+
+    @Test
+    void indexRequirementRejectsIntegerOverflow() {
+        assertThrows(IllegalArgumentException.class, () ->
+                PrismTerrainVanillaPassSnapshot.IndexBufferInput.indexCountForQuadVertexCount(Integer.MAX_VALUE - 3));
+    }
+
+    @Test
     void vanillaPassOptionsRepresentNoClearOrExplicitScissor() {
         var options = new PrismTerrainVanillaPassSnapshot.PassOptions(
                 OptionalInt.empty(), OptionalDouble.empty(), false, Optional.empty(), Optional.empty());
