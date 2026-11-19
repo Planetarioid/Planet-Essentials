@@ -59,6 +59,7 @@ These are architectural boundaries, not a commitment to create empty packages be
 - Every optimization needs a correctness check and a before/after benchmark.
 - Baseline measurements must follow docs/performance/BASELINE_PROFILING.md; methodology completion does not imply any measured baseline or verified performance gain.
 - CPU candidates are only hypotheses until confirmed by a Java Flight Recording using docs/performance/CPU_BOTTLENECK_INVESTIGATION.md. Do not implement speculative hot-path changes.
+- GPU/render candidates are only hypotheses until confirmed by repeatable frame-presentation and GPU telemetry using docs/performance/GPU_BOTTLENECK_INVESTIGATION.md. Do not infer a GPU bottleneck from utilization alone or implement speculative render changes.
 
 ## Configuration rules
 
