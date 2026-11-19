@@ -51,6 +51,7 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Shader-pack multi-pass graph authoring and strict graph validation
 - [x] Bounded CPU terrain mesh builder and immutable extraction-to-draw frame handoff for cooperating integrations
 - [x] Versioned full-attribute CPU terrain vertex payload (XYZ, UV, RGBA8, packed light/overlay/normal)
+- [x] Bounded LRU CPU section payload cache with explicit section invalidation
 - [ ] Vanilla chunk mesher integration and chunk rebuild lifecycle
 - [ ] Backend vertex-format mapping and terrain material pipeline variants
 - [ ] GPU terrain mesh upload/cache, culling, and draw submission
