@@ -50,6 +50,20 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         this.externallyBoundUniforms = Set.copyOf(externallyBoundUniforms);
         this.draws = List.copyOf(draws);
         if (this.draws.isEmpty()) throw new IllegalArgumentException("Prepared render group cannot be empty");
+        int requiredIndexCount = 0;
+        for (Draw draw : this.draws) {
+            if (draw.descriptor().layer() != layer) {
+                throw new IllegalArgumentException("Prepared draw belongs to a different terrain layer");
+            }
+            int drawIndexCount = PrismTerrainVanillaPassSnapshot.IndexBufferInput
+                    .indexCountForQuadVertexCount(draw.mesh().vertexCount());
+            requiredIndexCount = Math.max(requiredIndexCount, drawIndexCount);
+        }
+        if (indexBuffer.indexCount() < requiredIndexCount
+                || !PrismTerrainDrawExecutor.indexRangeFits(indexBuffer.buffer().size(),
+                        indexBuffer.type(), 0, requiredIndexCount)) {
+            throw new IllegalArgumentException("Prepared sequential index buffer cannot cover every draw in the group");
+        }
     }
 
     public ClientLevel level() { return level; }
