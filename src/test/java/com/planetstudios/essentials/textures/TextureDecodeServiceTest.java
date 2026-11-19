@@ -53,6 +53,50 @@ class TextureDecodeServiceTest {
             assertEquals(1, cache.generation());
         }
     }
+
+    @Test
+    void reloadImmediatelyCancelsInflightDecodeAndPreventsStaleCachePublication() throws Exception {
+        TexturePixelCache cache = new TexturePixelCache(1024);
+        TextureDecodeService service = new TextureDecodeService(TextureDecodeLimits.DEFAULT, cache);
+        CountDownLatch sourceOpened = new CountDownLatch(1);
+        CountDownLatch allowSourceToFinish = new CountDownLatch(1);
+        CountDownLatch streamClosed = new CountDownLatch(1);
+        byte[] data = png();
+        try {
+            var future = service.decode("minecraft:textures/reload-race.png", () -> {
+                sourceOpened.countDown();
+                try {
+                    if (!allowSourceToFinish.await(5, TimeUnit.SECONDS)) {
+                        throw new java.io.IOException("Timed out waiting for reload test");
+                    }
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new java.io.IOException("Interrupted", interrupted);
+                }
+                return new ByteArrayInputStream(data) {
+                    @Override
+                    public void close() throws java.io.IOException {
+                        super.close();
+                        streamClosed.countDown();
+                    }
+                };
+            });
+
+            assertTrue(sourceOpened.await(5, TimeUnit.SECONDS));
+            assertEquals(1, service.pendingTasks());
+            assertEquals(1, service.onResourceReload());
+            assertThrows(CancellationException.class, future::join);
+            assertEquals(0, service.pendingTasks());
+
+            allowSourceToFinish.countDown();
+            assertTrue(streamClosed.await(5, TimeUnit.SECONDS));
+            assertEquals(0, cache.size());
+        } finally {
+            allowSourceToFinish.countDown();
+            service.close();
+        }
+    }
+
     @Test
     void shutdownCompletesQueuedDecodeFuturesInsteadOfLeavingThemPending() throws Exception {
         TexturePixelCache cache = new TexturePixelCache(1024);
