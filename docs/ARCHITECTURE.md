@@ -28,8 +28,8 @@ Planet Essentials is the central client-facing control and optimization mod in t
 - FPS monitoring and lifecycle/slow-tick event collection have independent persisted switches.
 - A disabled subsystem must stop creating new samples/events; existing bounded history is retained until explicitly cleared or evicted.
 - Settings are registry-backed, validated, profile-persisted, and changed through the Essentials UI.
-- Future optimization engines must register a real setting only when the engine exists and its toggle is wired to actual activation/deactivation. Do not expose placeholder toggles for planned systems.
-- A system toggle must not silently disable a whole mod or override a provider selected through Planet Lib. Feature-priority selection remains a separate, per-capability mechanism.
+- Future optimization engines register real settings only when implemented and wired to actual activation/deactivation. No placeholder toggles.
+- A system toggle must not silently disable a whole mod or override a provider selected through Planet Lib. Feature-priority selection remains separate and per-capability.
 
 ## Lifecycle rules
 - Common initialization remains safe on a dedicated server.
@@ -42,10 +42,12 @@ Planet Essentials is the central client-facing control and optimization mod in t
 
 ## Performance and correctness rules
 - Profile before optimizing; every optimization needs correctness checks and before/after benchmarks.
-- Baseline methodology is in docs/performance/BASELINE_PROFILING.md; it does not imply measurements.
+- Baseline environment control and capture steps are in docs/performance/BASELINE_PROFILING.md.
+- Benchmark and correctness acceptance gates are in docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md. They require repeated controlled A/B runs, a predeclared primary metric, guardrail metrics, automated/runtime/visual/compatibility checks, and an explicit Accepted/Rejected/Inconclusive outcome.
+- A protocol document is not a benchmark result. No performance gain may be claimed until a real report has passed the acceptance gates.
 - CPU and GPU investigations remain deferred until real recordings/telemetry are available.
 - Memory/cache constraints are in docs/performance/MEMORY_ALLOCATION_AND_CACHE_STRATEGY.md.
-- Audio, particle, animation, and network boundaries are documented in their respective review files. Those reviews do not claim optimizations.
+- Audio, particle, animation, and network boundaries are documented in their respective review files; those reviews do not claim optimizations.
 - Network behavior remains owned by Minecraft; Essentials must not modify packets, keepalives, timeouts, or server-authoritative behavior.
 - Avoid per-frame allocations and premature object pooling.
 - Resource-backed caches must be invalidated on reload and released on shutdown.

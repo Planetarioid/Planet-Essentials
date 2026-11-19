@@ -72,7 +72,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Animation processing review documented; no animation optimization implemented
 - [x] Network processing review documented; no packet behavior changes or network optimization implemented
 - [x] Per-system enable/disable controls (Diagnostics master switch plus independent FPS-monitoring and event-collection switches; persisted in schema 4; future optimization engines will register their own controls when implemented)
-- [ ] Benchmark correctness and performance impact
+- [~] Benchmark correctness and performance impact protocol documented in docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md; no optimization has been benchmarked or accepted yet
 - [ ] Compatibility test matrix
 
 ## 7. Texture optimization engine
