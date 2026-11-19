@@ -41,9 +41,10 @@ class TextureDecodeServiceTest {
     @Test
     void resourceReloadInvalidatesCachedPixels() throws Exception {
         TexturePixelCache cache = new TexturePixelCache(1024);
+        byte[] data = png();
         try (TextureDecodeService service = new TextureDecodeService(TextureDecodeLimits.DEFAULT, cache)) {
             service.decode("minecraft:textures/test.png",
-                    () -> new ByteArrayInputStream(png())).get(5, TimeUnit.SECONDS);
+                    () -> new ByteArrayInputStream(data)).get(5, TimeUnit.SECONDS);
             assertEquals(1, cache.size());
             service.onResourceReload();
             assertEquals(0, cache.size());
