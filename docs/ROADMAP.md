@@ -69,7 +69,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Memory allocation and cache strategy documented (bounded ownership, invalidation, reload/shutdown cleanup, allocation-aware hot-path rules in docs/performance/MEMORY_ALLOCATION_AND_CACHE_STRATEGY.md; runtime profiling and implementation review remain separate)
 - [x] Audio processing review (source-level boundaries and verification protocol documented in docs/performance/AUDIO_PROCESSING_REVIEW.md; no bottleneck measured and no audio optimization implemented)
 - [x] Particle processing review (source-level boundaries and verification protocol documented in docs/performance/PARTICLE_PROCESSING_REVIEW.md; no bottleneck measured and no particle optimization implemented)
-- [ ] Animation processing review
+- [x] Animation processing review (source-level boundaries and verification protocol documented in docs/performance/ANIMATION_PROCESSING_REVIEW.md; no bottleneck measured and no animation optimization implemented)
 - [ ] Network-related work limited to safe client-side improvements
 - [ ] Per-system enable/disable controls
 - [ ] Benchmark correctness and performance impact
