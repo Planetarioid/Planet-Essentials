@@ -3,6 +3,7 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.resources.Identifier;
+import com.planetstudios.essentials.rendering.shaders.ShaderCompileException;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -24,11 +25,13 @@ public final class PrismTerrainVanillaPipelineCache {
 
     private PrismTerrainVanillaPipelineCache() {}
 
-    public static RenderPipeline resolve(RenderPipeline prismShaderPipeline,
-            PrismTerrainVanillaPassSnapshot.LayerInput vanillaLayer) {
+    public static RenderPipeline resolve(MinecraftShaderBackend.MinecraftCompiledProgram program,
+            PrismTerrainVanillaPassSnapshot.LayerInput vanillaLayer) throws ShaderCompileException {
         RenderSystem.assertOnRenderThread();
-        Objects.requireNonNull(prismShaderPipeline, "prismShaderPipeline");
+        Objects.requireNonNull(program, "program");
         Objects.requireNonNull(vanillaLayer, "vanillaLayer");
+        if (!program.supportsTerrainV1()) throw new IllegalArgumentException("A terrain V1 program is required");
+        RenderPipeline prismShaderPipeline = program.pipeline();
         if (!vanillaLayer.pipelineApplied() || vanillaLayer.state() == null) {
             throw new IllegalArgumentException("Cannot clone state for a vanilla layer with no draws");
         }
@@ -40,6 +43,7 @@ public final class PrismTerrainVanillaPipelineCache {
             if (cached != null) return cached;
 
             RenderPipeline created = buildForVanillaState(prismShaderPipeline, vanillaLayer.state());
+            MinecraftShaderBackend.precompileVariant(program, created);
             byVanilla.put(vanillaLayer.pipeline(), created);
             return created;
         }

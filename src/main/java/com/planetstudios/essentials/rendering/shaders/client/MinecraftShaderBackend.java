@@ -18,6 +18,8 @@ import com.mojang.blaze3d.shaders.UniformType;
 import net.minecraft.resources.Identifier;
 
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Set;
 
 /** Minecraft 1.21.11 GPU pipeline compiler. */
@@ -88,9 +90,41 @@ public final class MinecraftShaderBackend implements ShaderBackend {
             });
             if (compiled == null) throw new IllegalStateException("Minecraft returned no compiled render pipeline");
             return new MinecraftCompiledProgram(
-                    spec.id(), spec.contentHash(), spec.bindings(), pipeline, compiled, terrainV1);
+                    spec.id(), spec.contentHash(), spec.bindings(), pipeline, compiled, terrainV1,
+                    vertexId, fragmentId, spec.source(ShaderStage.VERTEX), spec.source(ShaderStage.FRAGMENT));
         } catch (RuntimeException failure) {
             throw new ShaderCompileException(spec.id(), "Minecraft shader pipeline compilation failed",
+                    failure.getClass().getSimpleName() + ": " + String.valueOf(failure.getMessage()));
+        }
+    }
+
+    /**
+     * Precompiles a fixed-function-state variant using the exact shader source
+     * strings owned by the already-compiled Prism program. RenderPass can then
+     * select the variant without falling back to resource-manager shader lookup.
+     */
+    public static void precompileVariant(MinecraftCompiledProgram program, RenderPipeline variant)
+            throws ShaderCompileException {
+        RenderSystem.assertOnRenderThread();
+        if (program == null || variant == null) {
+            throw new IllegalArgumentException("Program and pipeline variant are required");
+        }
+        GpuDevice device = RenderSystem.tryGetDevice();
+        if (device == null) {
+            throw new ShaderCompileException(program.programId(),
+                    "Minecraft GPU device is unavailable", "Cannot precompile a terrain pipeline variant");
+        }
+        try {
+            CompiledRenderPipeline compiled = device.precompilePipeline(variant, (id, type) -> {
+                if (type == ShaderType.VERTEX && program.vertexShaderId.equals(id)) return program.vertexSource;
+                if (type == ShaderType.FRAGMENT && program.fragmentShaderId.equals(id)) return program.fragmentSource;
+                return null;
+            });
+            if (compiled == null) throw new IllegalStateException("Minecraft returned no compiled pipeline variant");
+            program.rememberVariant(variant, compiled);
+        } catch (RuntimeException failure) {
+            throw new ShaderCompileException(program.programId(),
+                    "Minecraft terrain pipeline variant compilation failed",
                     failure.getClass().getSimpleName() + ": " + String.valueOf(failure.getMessage()));
         }
     }
@@ -102,14 +136,26 @@ public final class MinecraftShaderBackend implements ShaderBackend {
         private final ShaderBindingLayout bindings;
         private final RenderPipeline pipeline;
         private final boolean terrainV1;
+        private final Identifier vertexShaderId;
+        private final Identifier fragmentShaderId;
+        private final String vertexSource;
+        private final String fragmentSource;
+        private final Map<RenderPipeline, CompiledRenderPipeline> variants = new IdentityHashMap<>();
         @SuppressWarnings("unused")
         private final CompiledRenderPipeline compiled;
 
         private MinecraftCompiledProgram(String programId, String sourceHash,
                 ShaderBindingLayout bindings, RenderPipeline pipeline,
-                CompiledRenderPipeline compiled, boolean terrainV1) {
+                CompiledRenderPipeline compiled, boolean terrainV1,
+                Identifier vertexShaderId, Identifier fragmentShaderId,
+                String vertexSource, String fragmentSource) {
             this.programId=programId; this.sourceHash=sourceHash; this.bindings=bindings;
             this.pipeline=pipeline; this.compiled=compiled; this.terrainV1=terrainV1;
+            this.vertexShaderId=vertexShaderId; this.fragmentShaderId=fragmentShaderId;
+            this.vertexSource=vertexSource; this.fragmentSource=fragmentSource;
+        }
+        private synchronized void rememberVariant(RenderPipeline pipeline, CompiledRenderPipeline compiled) {
+            variants.put(pipeline, compiled);
         }
         public RenderPipeline pipeline(){return pipeline;}
         public ShaderBindingLayout bindings(){return bindings;}
