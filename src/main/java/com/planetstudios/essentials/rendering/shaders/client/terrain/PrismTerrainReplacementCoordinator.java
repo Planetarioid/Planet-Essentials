@@ -152,6 +152,29 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
         }
     }
 
+    /**
+     * Prepares a replacement plan directly from the live vanilla render-group
+     * snapshot. The captured ordered draw list is already in vanilla submission
+     * order (including translucent reversal), so this overload never reverses it
+     * a second time. It remains preparation-only; vanilla rendering is untouched.
+     */
+    public PrismTerrainReplacementPlan.Plan prepare(ClientLevel level,
+            PrismTerrainRenderGroupBoundary.Snapshot snapshot,
+            ChunkSectionLayer layer,
+            String programId,
+            boolean frameReady) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        Objects.requireNonNull(layer, "layer");
+        PrismTerrainVanillaPassSnapshot.LayerInput layerInput =
+                snapshot.passInputs().layers().get(layer);
+        if (layerInput == null || !layerInput.pipelineApplied()) {
+            return fallback(0, PrismTerrainReplacementGate.FallbackReason.EMPTY_GROUP);
+        }
+        return prepare(level, layerInput.orderedDraws(),
+                PrismTerrainVanillaDrawIndex.snapshot(), layer,
+                snapshot.renderStateFor(layer), programId, frameReady, false);
+    }
+
     public synchronized int cachedWorldCount() {
         return worlds.size();
     }
