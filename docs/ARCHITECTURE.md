@@ -1,7 +1,20 @@
 # Planet Essentials Architecture
 
 ## Role and dependency direction
-Planet Essentials is the client-facing control and optimization mod. It owns its settings UI and optimization engines. Planet Lib is the shared API/metadata layer and must not depend on Essentials. Other Planet mods integrate optionally and retain standalone defaults.
+Planet Essentials is the client-facing control and optimization mod. It owns its settings UI, diagnostics, integration coordination, and optimization engines. Planet Lib is the shared API/metadata layer and must not depend on Essentials. Other Planet mods integrate optionally and retain standalone defaults.
+
+## Planet Prism Rendering Engine (PPRE)
+**Planet Prism Rendering Engine**, abbreviated **Prism** or **PPRE**, is the internal name for Planet Essentials' custom rendering architecture. It is an umbrella system, not a claim that every planned backend is implemented.
+
+Prism is divided into independently testable layers:
+- **Asset layer:** resource discovery, metadata validation, bounded decode, immutable CPU pixels, and cache policy.
+- **GPU resource layer:** explicit GPU allocation, uploads, sampler configuration, registration, ownership, and disposal.
+- **Shader layer:** shader definitions, capability checks, compilation, diagnostics, reload, and safe fallback.
+- **Render integration layer:** narrow consumer adapters that opt into Prism without globally replacing vanilla rendering or atlas behavior.
+- **Compatibility layer:** resource-pack precedence, renderer coexistence, capability negotiation, and fallback decisions.
+- **Measurement layer:** correctness fixtures, lifecycle tests, allocation accounting, and controlled performance benchmarks.
+
+Layer boundaries are intentional. CPU decode must not access GPU state. GPU work must run on the supported client/render execution context. A failed optimized path must return control to Minecraft's ordinary resource/render path. Prism must not synthesize player input, alter server-authoritative behavior, or claim performance gains without measurements.
 
 ## Discovery and integration
 - Mod discovery uses Planet Lib's immutable snapshot of Fabric-loaded mods and declared capabilities.
@@ -24,9 +37,9 @@ Planet Essentials is the client-facing control and optimization mod. It owns its
 - Encoded bytes are hard-capped before decode. The decoder uses a bounded worker pool (2 workers and a 64-job queue) and produces immutable CPU-side ARGB pixels only.
 - The decoded-pixel LRU is bounded by retained bytes (128 MiB default). Reload increments a generation and invalidates stale work/cache entries; client shutdown stops workers and clears pixels.
 - Effective texture streams are resolved through Minecraft's active ResourceManager, retaining resource-pack priority and vanilla resource ownership.
-- An explicit opt-in adapter converts immutable ARGB pixels and generated mip levels to NativeImage, allocates an RGBA8 GpuTexture with the corresponding mip count, uploads each level through CommandEncoder, creates a clamped linear sampler, and registers a Minecraft-managed AbstractTexture view under a collision-resistant Planet Essentials identifier. CPU preparation is separate from RenderSystem GPU work. Only adapter-owned identifiers are released on reload/shutdown. It does not intercept vanilla loads, replace atlases, or alter resource-pack priority.
-- A bounded CPU mip-chain generator now supports no-mipmap, nearest-sample, and area-weighted linear-light sRGB filtering with premultiplied alpha. Odd source dimensions are area-resampled so edge pixels contribute. Generated levels obey both a maximum-level count and a hard generated-byte budget. The opt-in GPU adapter now allocates and uploads every generated mip level and supplies a matching sampler. Backend behavior, visual correctness, and resource cleanup remain runtime-unverified.
-- Actual GPU allocation, visual correctness, mipmap transitions, and runtime leak checks remain unverified in a launched client; this is not yet a completed rendering optimizer.
+- An explicit opt-in adapter converts immutable ARGB pixels and generated mip levels to NativeImage, allocates an RGBA8 GpuTexture with the corresponding mip count, uploads each level through CommandEncoder, creates a clamped linear sampler, and registers a Minecraft-managed AbstractTexture view under a collision-resistant Planet Essentials identifier. CPU preparation is separate from GPU work. Only adapter-owned identifiers are released on reload/shutdown. It does not intercept vanilla loads, replace atlases, or alter resource-pack priority.
+- A bounded CPU mip-chain generator supports no-mipmap, nearest-sample, and area-weighted linear-light sRGB filtering with premultiplied alpha. Generated levels obey both a maximum-level count and a hard generated-byte budget.
+- Source implementation, unit tests, and CI build verification exist. Actual GPU allocation, visual correctness, mip transitions, consumer integration, runtime resource cleanup, and performance remain unverified in a launched client.
 
 ## Lifecycle and safety
 - Common initialization remains dedicated-server safe; client-only work stays behind client entrypoints.

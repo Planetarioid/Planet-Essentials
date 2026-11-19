@@ -4,6 +4,8 @@
 
 Planet Essentials is a Fabric mod for Minecraft Java Edition **1.21.11**, targeting Java 21. It is designed to become the main in-game settings hub, integration coordinator, diagnostics center, and client optimization suite for Planet Studios projects.
 
+Its custom rendering initiative is named the **Planet Prism Rendering Engine (PPRE)**. Prism is the umbrella architecture for texture processing, GPU resource management, shader systems, rendering capabilities, and compatibility. It is an active development project, not a claim of completed renderer functionality.
+
 ## Development status
 
 The repository is in active development. Implemented foundations include typed configuration and profiles, bounded local diagnostics, explicit diagnostics export, mod discovery through Planet Lib, feature-priority controls, and a route from Minecraft's normal Options entry point to the Essentials settings hub.
@@ -15,13 +17,12 @@ The repository is in active development. Implemented foundations include typed c
 - [x] Local diagnostics collection and explicit JSON export
 - [~] Diagnostics runtime-overhead verification
 - [~] Planet Essentials settings hub replaces vanilla Options entry point
-- [ ] Performance bottleneck investigation and optimization systems
-- [ ] Texture optimization engine
-- [ ] Shader system
+- [~] Prism texture pipeline source implementation and CI verification; client runtime and consumer integration pending
+- [ ] Prism shader and rendering backend
 - [ ] Full settings navigation and per-mod panels
 - [ ] Client and dedicated-server validation
 
-See [the development roadmap](docs/ROADMAP.md), [baseline profiling protocol](docs/performance/BASELINE_PROFILING.md), [benchmark and correctness protocol](docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md), and [compatibility test matrix](docs/COMPATIBILITY_TEST_MATRIX.md) for tracked work and verification requirements.
+See [the development roadmap](docs/ROADMAP.md), [Prism architecture](docs/rendering/PRISM_RENDERING_ENGINE.md), [baseline profiling protocol](docs/performance/BASELINE_PROFILING.md), [benchmark and correctness protocol](docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md), and [compatibility test matrix](docs/COMPATIBILITY_TEST_MATRIX.md) for tracked work and verification requirements.
 
 ## Planned responsibilities
 
@@ -32,8 +33,7 @@ See [the development roadmap](docs/ROADMAP.md), [baseline profiling protocol](do
 - Per-feature implementation priority controls
 - Diagnostics and performance visibility
 - CPU, GPU, memory, rendering, audio, particle, and animation optimization systems
-- Dedicated texture optimization engine
-- Shader management and rendering system
+- **Planet Prism Rendering Engine (PPRE)** for texture processing, shader management, GPU resource lifecycle, and rendering optimizations
 
 ## Design principles
 
@@ -45,6 +45,7 @@ See [the development roadmap](docs/ROADMAP.md), [baseline profiling protocol](do
 - Optional Planet mods must remain optional.
 - When Planet Essentials is absent, other Planet mods retain their standalone defaults.
 - Settings and feature-priority choices must be reversible.
+- Never replace vanilla rendering paths until the optimized path has correctness, fallback, and compatibility coverage.
 
 ## Development environment
 

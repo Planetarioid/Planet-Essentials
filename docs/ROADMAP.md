@@ -54,7 +54,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 
 ## 6. Performance architecture
 - [x] Baseline profiling methodology documented; no actual baseline
-- [~] CPU investigation deferred by user pending JFR
+- [~] CPU investigation deferred pending Java Flight Recorder data
 - [~] GPU/render investigation deferred pending measurements
 - [x] Memory/cache strategy documented; no measured gains
 - [x] Audio, particle, animation, and network boundaries reviewed; no optimizations claimed
@@ -62,7 +62,8 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [~] Benchmark protocol documented; no optimization accepted yet
 - [~] Compatibility matrix documented; runtime combinations untested
 
-## 7. Texture optimization engine
+## 7. Planet Prism Rendering Engine (PPRE): texture subsystem
+- [x] Prism architecture name and subsystem boundaries documented
 - [x] Effective resource discovery through Minecraft ResourceManager, bounded metadata catalog, deterministic immutable snapshots
 - [x] Texture metadata and format validation (namespace, resource identity, path safety, PNG format, and path-based category validation)
 - [x] PNG signature, IHDR CRC, dimensions, pixel-count, bit-depth, and method preflight
@@ -71,21 +72,22 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Memory-aware decoded-pixel LRU cache (128 MiB default hard budget)
 - [x] Resource reload generation invalidation and client-shutdown cleanup
 - [x] Effective texture resource stream resolution through Minecraft ResourceManager
-- [~] Lazy decoder-to-Minecraft texture registration/render integration (explicit GpuTexture-backed AbstractTexture adapter implemented with mip upload and sampler; in-game verification and real consumer integration pending)
-- [x] CPU mipmap policy and bounded mip-chain generation (bounded CPU levels uploaded to matching GPU mip levels; runtime sampling verification pending)
+- [~] Lazy decoder-to-Minecraft texture registration/render integration (GpuTexture-backed AbstractTexture adapter implemented; client runtime and real consumer integration pending)
+- [x] CPU mipmap policy and bounded mip-chain generation
 - [ ] Resource-pack coexistence tests
 - [x] Explicit opt-in API fallback returns the original vanilla resource identifier when decode or GPU registration fails
 - [ ] Benchmark memory, load time, and frame-time impact
 - [ ] Verify no visual corruption or resource leaks
 
-## 8. Shader system
+## 8. Prism shader and rendering subsystem
 - [ ] Shader architecture and supported pipeline boundaries
-- [ ] Shader resource lifecycle
-- [ ] Shader configuration model
-- [ ] Shader compilation and error reporting
-- [ ] GPU capability detection
-- [ ] Graceful fallback paths
+- [ ] Shader resource lifecycle and reload invalidation
+- [ ] Shader configuration model integrated with settings/profiles
+- [ ] Shader compilation and actionable error reporting
+- [ ] GPU capability detection and backend limits
+- [ ] Graceful fallback paths that preserve vanilla rendering
 - [ ] Resource-pack and other-renderer compatibility review
+- [ ] Narrow real consumer integration, avoiding global vanilla interception
 - [ ] Visual correctness tests
 - [ ] GPU performance benchmarks
 
@@ -114,4 +116,4 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [ ] Version tag and release artifact
 
 ## Verification record
-CI verifies compilation, unit tests, JAR contents, and artifact creation. In-game behavior, dedicated-server behavior, runtime compatibility, and performance gains remain unverified until tested.
+The latest main-branch CI run verifies compilation, unit tests, distributable JAR contents, and artifact creation. In-game behavior, dedicated-server behavior, runtime compatibility, and performance gains remain unverified until tested.

@@ -1,4 +1,6 @@
-# Texture Pipeline
+# Prism Texture Pipeline
+
+The texture pipeline is the first implemented subsystem under the **Planet Prism Rendering Engine (PPRE)**. Prism is the broader rendering architecture; this document covers only its texture-processing stage.
 
 ## Current implementation
 
@@ -33,7 +35,7 @@ The GPU adapter allocates and uploads all generated CPU levels and configures a 
 
 ## Explicit remaining work
 
-- Integrate the opt-in adapter into an actual texture consumer only after in-game validation. The client API now has an explicit fallback variant that returns the original resource identifier on decode or registration failure; consumers must use that identifier with Minecraft's normal resource/atlas path. Atlas interception remains intentionally out of scope for this first adapter.
+- Integrate the opt-in adapter into an actual texture consumer only after in-game validation. The client API has an explicit fallback variant that returns the original resource identifier when decode or registration fails; consumers must use that identifier with Minecraft's normal resource/atlas path. Atlas interception remains intentionally out of scope for this first adapter.
 - Launch Minecraft 1.21.11 and verify NativeImage pixel colors, texture binding, reload disposal, GPU resource cleanup, and mip-level sampling.
 - Add automated tests for resource-pack priority/coexistence using real ResourceManager fixtures or a suitable client test harness. The fallback selection helper has isolated unit coverage, but actual vanilla rendering fallback still needs a launched-client test.
 - Test resource packs, animated textures, atlases, shaders, reload races, mip transitions, and GPU memory cleanup in a launched client.
@@ -41,4 +43,4 @@ The GPU adapter allocates and uploads all generated CPU levels and configures a 
 
 ## Verification boundary
 
-CI currently verifies compilation, unit tests, distributable JAR contents, and artifact creation. It does not launch Minecraft, exercise the GPU backend, prove resource-pack compatibility, or measure performance. No FPS or memory improvement is claimed until controlled benchmarks are run.
+CI verifies compilation, unit tests, distributable JAR contents, and artifact creation. It does not launch Minecraft, exercise the GPU backend, prove resource-pack compatibility, or measure performance. No FPS or memory improvement is claimed until controlled benchmarks are run.
