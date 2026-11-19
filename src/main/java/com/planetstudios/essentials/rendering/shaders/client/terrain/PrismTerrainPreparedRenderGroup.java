@@ -24,6 +24,7 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
     private final ChunkSectionLayer layer;
     private final MinecraftShaderBackend.MinecraftCompiledProgram program;
     private final RenderPipeline pipeline;
+    private final PrismTerrainVanillaPassSnapshot.PreparedIndexBuffer indexBuffer;
     private final MinecraftShaderBindings samplerBindings;
     private final Set<String> externallyBoundUniforms;
     private final List<Draw> draws;
@@ -32,8 +33,8 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
     public PrismTerrainPreparedRenderGroup(ClientLevel level, long snapshotSequence,
             long shaderGeneration, ChunkSectionLayer layer,
             MinecraftShaderBackend.MinecraftCompiledProgram program,
-            RenderPipeline pipeline, MinecraftShaderBindings samplerBindings,
-            Set<String> externallyBoundUniforms, List<Draw> draws) {
+            RenderPipeline pipeline, PrismTerrainVanillaPassSnapshot.PreparedIndexBuffer indexBuffer,
+            MinecraftShaderBindings samplerBindings, Set<String> externallyBoundUniforms, List<Draw> draws) {
         this.level = Objects.requireNonNull(level, "level");
         if (snapshotSequence <= 0 || shaderGeneration <= 0) {
             throw new IllegalArgumentException("Prepared render-group generations must be positive");
@@ -43,6 +44,7 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         this.layer = Objects.requireNonNull(layer, "layer");
         this.program = Objects.requireNonNull(program, "program");
         this.pipeline = Objects.requireNonNull(pipeline, "pipeline");
+        this.indexBuffer = Objects.requireNonNull(indexBuffer, "indexBuffer");
         this.samplerBindings = Objects.requireNonNull(samplerBindings, "samplerBindings");
         this.externallyBoundUniforms = Set.copyOf(externallyBoundUniforms);
         this.draws = List.copyOf(draws);
@@ -55,6 +57,7 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
     public ChunkSectionLayer layer() { return layer; }
     public MinecraftShaderBackend.MinecraftCompiledProgram program() { return program; }
     public RenderPipeline pipeline() { return pipeline; }
+    public PrismTerrainVanillaPassSnapshot.PreparedIndexBuffer indexBuffer() { return indexBuffer; }
     public MinecraftShaderBindings samplerBindings() { return samplerBindings; }
     public Set<String> externallyBoundUniforms() { return externallyBoundUniforms; }
     public List<Draw> draws() { ensureOpen(); return draws; }
