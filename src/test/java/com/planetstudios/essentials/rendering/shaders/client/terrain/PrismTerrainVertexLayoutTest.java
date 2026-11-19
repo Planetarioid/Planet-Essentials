@@ -6,13 +6,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class PrismTerrainVertexLayoutTest {
     @Test void minecraftFormatMatchesSerializedStrideAndAttributeOffsets() {
         var format=PrismTerrainVertexLayout.minecraftVertexFormat();
+        int[] offsets=format.getOffsetsByElement();
         assertEquals(36,format.getVertexSize());
-        assertEquals(0,format.getOffset(0));
-        assertEquals(12,format.getOffset(1));
-        assertEquals(20,format.getOffset(2));
-        assertEquals(24,format.getOffset(3));
-        assertEquals(28,format.getOffset(4));
-        assertEquals(32,format.getOffset(5));
+        assertArrayEquals(new int[]{0,12,20,24,28,32},offsets);
         assertEquals(6,format.getElements().size());
     }
 }
