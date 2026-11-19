@@ -5,6 +5,7 @@ import com.planetstudios.essentials.PlanetEssentials;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackResourceReloadListener;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStageRegistry;
+import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainFrameCoordinator;
 import com.planetstudios.essentials.rendering.shaders.client.PrismWorldPostProcessor;
 import com.planetstudios.essentials.rendering.shaders.client.PrismRendererCompatibility;
 import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
@@ -50,6 +51,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         TextureResourceReloadListener.register(TEXTURE_ASSETS, TEXTURE_DECODER);
         ShaderPackResourceReloadListener.register();
         PrismFrameStageRegistry.registerFabricEvents();
+        PrismTerrainFrameCoordinator.registerFabricEvents();
         PrismWorldPostProcessor.register();
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> record(DiagnosticEventType.CLIENT_STARTED));

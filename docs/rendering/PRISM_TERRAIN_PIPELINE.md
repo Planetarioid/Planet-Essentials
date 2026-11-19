@@ -40,3 +40,26 @@ The executor is a cooperating-renderer API, not an automatic vanilla chunk rende
 - GPU cache: 128 MiB default.
 - Section-local positions are constrained to [0, 16].
 - GPU allocation, draw submission, and disposal are render-thread-only.
+
+
+## Fabric frame lifecycle bridge
+
+`PrismTerrainFrameCoordinator` connects the bounded frame queue to Fabric API
+0.141.6's Minecraft 1.21.11 world-render lifecycle:
+
+1. Registered extraction providers run at `WorldRenderEvents.END_EXTRACTION`,
+   after vanilla render-state extraction and before drawing begins.
+2. Providers submit immutable `PrismTerrainMesh` instances through
+   `PrismTerrainFrameCoordinator.submit`. Submission is rejected outside the
+   extraction callback window.
+3. The coordinator publishes one immutable, deterministically ordered frame.
+   A failed provider is disabled without preventing other providers from running.
+4. Registered terrain renderers receive the published frame at
+   `BEFORE_ENTITIES` or `BEFORE_TRANSLUCENT`, filtered to their requested stage.
+   Renderer failures disable only the failing renderer.
+
+The coordinator is a lifecycle and extension-point bridge for cooperating
+terrain integrations. It does not obtain vanilla chunk meshes, alter vanilla
+chunk rebuilds, or replace vanilla terrain rendering. Camera-relative transforms,
+GPU cache upload policy, frustum/occlusion culling, and actual renderer adapters
+remain separate work. Consumers must perform GPU operations on the render thread.

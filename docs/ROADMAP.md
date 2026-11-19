@@ -54,8 +54,9 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Render-thread GPU terrain buffer upload and owned allocation lifecycle
 - [x] Bounded LRU GPU terrain buffer cache with section invalidation and teardown
 - [x] Terrain-specific shader compilation path and validated quad draw executor
+- [x] Fabric END_EXTRACTION frame publication and BEFORE_ENTITIES/BEFORE_TRANSLUCENT terrain scheduling bridge for cooperating providers
 - [ ] Vanilla chunk mesher integration and chunk rebuild lifecycle
-- [ ] World-stage scheduling and camera-relative terrain transforms
+- [ ] Camera-relative terrain transforms and renderer-specific GPU submission
 - [ ] Frustum and occlusion culling
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
 - [ ] Renderer-specific integration adapters and safe fallback negotiation
