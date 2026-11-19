@@ -86,6 +86,11 @@ public final class ShaderSettingsScreen extends Screen {
         graphics.drawCenteredString(font, "Discovered packs: " + packs.size(),
                 center, height / 4 + 134, 0xAAAAAA);
         graphics.drawCenteredString(font, status, center, height / 4 + 158, 0xAAAAAA);
+        String compileFailure = ShaderPackRuntime.pipelineSnapshot().lastFailure();
+        if (!compileFailure.isBlank()) {
+            graphics.drawCenteredString(font, "Last compile error: " + compileFailure,
+                    center, height / 4 + 194, 0xFF7777);
+        }
         graphics.drawCenteredString(font, "Disabling shaders bypasses Prism effects without restarting.",
                 center, height / 4 + 178, 0x888888);
     }

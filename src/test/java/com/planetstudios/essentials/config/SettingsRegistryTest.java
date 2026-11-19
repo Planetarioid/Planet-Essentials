@@ -6,9 +6,11 @@ class SettingsRegistryTest {
   assertTrue(SettingsRegistry.find("diagnostics.enabled").isPresent());
   assertTrue(SettingsRegistry.find("systems.performance_monitoring").isPresent());
   assertTrue(SettingsRegistry.find("systems.event_collection").isPresent());
-  assertEquals(5,SettingsRegistry.all().size());
+  assertTrue(SettingsRegistry.find("shaders.enabled").isPresent());
+  assertEquals(6,SettingsRegistry.all().size());
   assertEquals(3,SettingsRegistry.inCategory("diagnostics").size());
   assertEquals(2,SettingsRegistry.inCategory("systems").size());
+  assertEquals(1,SettingsRegistry.inCategory("shaders").size());
  }
  @Test void settingWritesAreTypeAndRangeChecked(){
   EssentialsConfig config=new EssentialsConfig();
@@ -25,5 +27,12 @@ class SettingsRegistryTest {
   SettingsRegistry.find("systems.event_collection").orElseThrow().set(config,false);
   assertFalse(config.performanceMonitoringEnabled);
   assertFalse(config.eventCollectionEnabled);
+ }
+ @Test void shaderSwitchIsOptInAndIndependentFromDiagnostics(){
+  EssentialsConfig config=new EssentialsConfig();
+  assertFalse(config.shadersEnabled);
+  SettingsRegistry.find("shaders.enabled").orElseThrow().set(config,true);
+  assertTrue(config.shadersEnabled);
+  assertTrue(config.diagnosticsEnabled);
  }
 }
