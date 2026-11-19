@@ -1,7 +1,6 @@
 package com.planetstudios.essentials.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
-import com.planetstudios.essentials.client.mixin.MinecraftMixin;
 import com.planetstudios.essentials.config.SettingsRegistry;
 import com.planetstudios.essentials.diagnostics.PerformanceMonitor;
 import net.minecraft.client.gui.GuiGraphics;
@@ -9,47 +8,74 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-/** Main Planet Essentials settings hub. */
+/** Planet client-style settings hub. */
 public final class EssentialsScreen extends Screen {
     private final Screen parent;
-    public EssentialsScreen(Screen parent) { super(Component.literal("Planet Essentials")); this.parent=parent; }
 
-    @Override protected void init() {
-        int center=width/2,top=height/4;
-        addRenderableWidget(Button.builder(Component.literal("Performance & Diagnostics"),button->
-                minecraft.setScreen(new SettingsCategoryScreen(this,"diagnostics")))
-                .bounds(center-100,top+24,200,20).build());
-        addRenderableWidget(Button.builder(Component.literal("System Controls"),button->
-                minecraft.setScreen(new SettingsCategoryScreen(this,"systems")))
-                .bounds(center-100,top+50,200,20).build());
-        addRenderableWidget(Button.builder(Component.literal("Shader Settings"),button->
-                minecraft.setScreen(new ShaderSettingsScreen(this)))
-                .bounds(center-100,top+76,200,20).build());
-        addRenderableWidget(Button.builder(Component.literal("Configuration Profiles"),button->
-                minecraft.setScreen(new ProfilesScreen(this)))
-                .bounds(center-100,top+102,200,20).build());
-        addRenderableWidget(Button.builder(Component.literal("Feature Priority Management"),button->
-                minecraft.setScreen(new FeaturePriorityScreen(this)))
-                .bounds(center-100,top+128,200,20).build());
-        addRenderableWidget(Button.builder(Component.literal("Vanilla Minecraft Settings"),button->
-                MinecraftMixin.openVanillaOptions(minecraft,this))
-                .bounds(center-100,top+154,200,20).build());
-        addRenderableWidget(Button.builder(Component.literal("Done"),button->onClose())
-                .bounds(center-100,top+184,200,20).build());
+    public EssentialsScreen(Screen parent) {
+        super(Component.literal("PLANET CLIENT"));
+        this.parent = parent;
     }
 
-    @Override public void render(GuiGraphics graphics,int mouseX,int mouseY,float partialTick) {
-        renderBackground(graphics,mouseX,mouseY,partialTick);super.render(graphics,mouseX,mouseY,partialTick);
-        int center=width/2,top=height/4;
-        graphics.drawCenteredString(font,title,center,top,0xFFFFFF);
-        var config=EssentialsRuntime.config();
-        if(config.showPerformanceScreen&&config.diagnosticsEnabled&&config.performanceMonitoringEnabled){
-            PerformanceMonitor monitor=EssentialsRuntime.performance();
-            graphics.drawCenteredString(font,"Latest FPS: "+monitor.latestFps(),center,top+222,0xD8E8FF);
-            graphics.drawCenteredString(font,String.format(java.util.Locale.ROOT,"Average FPS: %.1f",monitor.averageFps()),center,top+234,0xD8E8FF);
-            graphics.drawCenteredString(font,"Samples retained: "+monitor.sampleCount(),center,top+246,0xAAAAAA);
+    @Override
+    protected void init() {
+        int center = width / 2;
+        int top = Math.max(72, height / 4 - 12);
+        int buttonWidth = Math.min(320, width - 48);
+        int left = center - buttonWidth / 2;
+
+        addRenderableWidget(clientButton("Performance  /  Diagnostics", left, top + 46,
+                buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "diagnostics"))));
+        addRenderableWidget(clientButton("System Controls", left, top + 73,
+                buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "systems"))));
+        addRenderableWidget(clientButton("Prism  /  Shader Engine", left, top + 100,
+                buttonWidth, () -> minecraft.setScreen(new ShaderSettingsScreen(this))));
+        addRenderableWidget(clientButton("Configuration Profiles", left, top + 127,
+                buttonWidth, () -> minecraft.setScreen(new ProfilesScreen(this))));
+        addRenderableWidget(clientButton("Feature Priorities", left, top + 154,
+                buttonWidth, () -> minecraft.setScreen(new FeaturePriorityScreen(this))));
+        addRenderableWidget(Button.builder(Component.literal("CLOSE"), button -> onClose())
+                .bounds(center - 70, top + 194, 140, 20).build());
+    }
+
+    private Button clientButton(String label, int x, int y, int width, Runnable action) {
+        return Button.builder(Component.literal(label), button -> action.run())
+                .bounds(x, y, width, 22).build();
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        renderBackground(graphics, mouseX, mouseY, partialTick);
+        int center = width / 2;
+        int top = Math.max(72, height / 4 - 12);
+        int panelWidth = Math.min(380, width - 24);
+        int left = center - panelWidth / 2;
+        graphics.fill(0, 0, width, height, 0xB5080D18);
+        graphics.fill(left, top - 26, left + panelWidth, top + 224, 0xEE111B2B);
+        graphics.fill(left, top - 26, left + panelWidth, top - 23, 0xFF55C7FF);
+        graphics.fill(left + 12, top + 28, left + panelWidth - 12, top + 29, 0x553F91B5);
+        graphics.drawCenteredString(font, title, center, top - 12, 0xFFF4FAFF);
+        graphics.drawCenteredString(font, "SETTINGS  /  SYSTEMS  /  RENDERING", center, top + 8, 0xFF8FAFC8);
+        super.render(graphics, mouseX, mouseY, partialTick);
+
+        var config = EssentialsRuntime.config();
+        int infoY = top + 232;
+        if (config.showPerformanceScreen && config.diagnosticsEnabled && config.performanceMonitoringEnabled) {
+            PerformanceMonitor monitor = EssentialsRuntime.performance();
+            graphics.drawCenteredString(font, "FPS  " + monitor.latestFps()
+                    + "     AVG  " + String.format(java.util.Locale.ROOT, "%.1f", monitor.averageFps()),
+                    center, infoY, 0xFFD8E8FF);
+            infoY += 13;
         }
-        graphics.drawCenteredString(font,"Registered settings: "+SettingsRegistry.all().size(),center,height-18,0x888888);
+        graphics.drawCenteredString(font, "SETTINGS REGISTERED  " + SettingsRegistry.all().size(),
+                center, infoY, 0xFF71869D);
+        graphics.drawCenteredString(font, "PLANET STUDIOS  •  CLIENT CONFIGURATION",
+                center, height - 14, 0xFF52677F);
     }
-    @Override public void onClose(){EssentialsRuntime.save();minecraft.setScreen(parent);}
+
+    @Override
+    public void onClose() {
+        EssentialsRuntime.save();
+        minecraft.setScreen(parent);
+    }
 }

@@ -66,7 +66,7 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [ ] In-game visual tests, GPU memory tests, benchmarks
 
 ## 9. UI
-- [~] Main settings hub and registry-driven pages
+- [~] Planet client-style settings hub and Prism shader panel; full vanilla settings-category migration, registry-driven pages, accessibility, and localization remain
 - [x] Shader enable/disable and discovered pack selection screen
 - [ ] Pack search/filter, per-mod panels, reset flows, accessibility/localization
 

@@ -1,7 +1,6 @@
 package com.planetstudios.essentials.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
-import com.planetstudios.essentials.rendering.shaders.ShaderPackCatalog;
 import com.planetstudios.essentials.rendering.shaders.ShaderPackLoader;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import net.minecraft.client.Minecraft;
@@ -9,18 +8,16 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-
-import java.util.ArrayList;
 import java.util.List;
 
-/** In-game Prism shader enable/disable and discovered pack selection. */
+/** Client-style Prism shader control panel. */
 public final class ShaderSettingsScreen extends Screen {
     private final Screen parent;
-    private String status = "Shaders are opt-in. Vanilla rendering is used when disabled.";
+    private String status = "Prism is opt-in. Vanilla rendering remains the fallback.";
     private List<ShaderPackLoader.LoadedPack> packs = List.of();
 
     public ShaderSettingsScreen(Screen parent) {
-        super(Component.literal("Prism Shader Settings"));
+        super(Component.literal("PRISM  /  SHADERS"));
         this.parent = parent;
     }
 
@@ -28,71 +25,72 @@ public final class ShaderSettingsScreen extends Screen {
     protected void init() {
         packs = ShaderPackRuntime.catalogSnapshot().packs();
         int center = width / 2;
+        int top = Math.max(76, height / 4);
+        int w = Math.min(320, width - 48);
+        int x = center - w / 2;
         var config = EssentialsRuntime.config();
 
-        addRenderableWidget(Button.builder(shaderToggleLabel(), button -> {
+        addRenderableWidget(Button.builder(toggleLabel(), button -> {
             config.shadersEnabled = !config.shadersEnabled;
             EssentialsRuntime.save();
-            button.setMessage(shaderToggleLabel());
-            status = config.shadersEnabled
-                    ? "Prism enabled. A selected and successfully compiled pack is required."
+            button.setMessage(toggleLabel());
+            status = config.shadersEnabled ? "Prism enabled. A valid selected pack is required."
                     : "Prism disabled. Vanilla rendering remains active.";
-        }).bounds(center - 150, height / 4 + 30, 300, 20).build());
+        }).bounds(x, top + 28, w, 22).build());
 
-        addRenderableWidget(Button.builder(Component.literal("Select next shader pack"), button -> {
+        addRenderableWidget(Button.builder(Component.literal("CYCLE ACTIVE SHADER PACK"), button -> {
             refreshPacks();
             if (packs.isEmpty()) {
-                status = "No valid Prism shader packs were discovered in active resource packs.";
+                status = "No valid Prism packs found in active resource packs.";
                 return;
             }
             List<String> ids = packs.stream().map(pack -> pack.manifest().id()).toList();
-            String current = config.selectedShaderPack;
-            int index = ids.indexOf(current);
+            int index = ids.indexOf(config.selectedShaderPack);
             config.selectedShaderPack = ids.get((index + 1) % ids.size());
             EssentialsRuntime.save();
             ShaderPackRuntime.selectPack(config.selectedShaderPack);
-            status = "Selected: " + config.selectedShaderPack + ". Compilation queued.";
-        }).bounds(center - 150, height / 4 + 58, 300, 20).build());
+            status = "Selected " + config.selectedShaderPack + ". Compilation queued.";
+        }).bounds(x, top + 56, w, 22).build());
 
-        addRenderableWidget(Button.builder(Component.literal("Rescan shader packs"), button -> {
+        addRenderableWidget(Button.builder(Component.literal("RESCAN RESOURCE PACKS"), button -> {
             ShaderPackRuntime.reload(Minecraft.getInstance().getResourceManager());
             refreshPacks();
-            status = "Shader-pack rescan and compilation queued.";
-        }).bounds(center - 150, height / 4 + 86, 300, 20).build());
+            status = "Pack discovery and compilation queued.";
+        }).bounds(x, top + 84, w, 22).build());
 
-        addRenderableWidget(Button.builder(Component.literal("Back"), button -> minecraft.setScreen(parent))
-                .bounds(center - 100, height - 42, 200, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("BACK"), button -> minecraft.setScreen(parent))
+                .bounds(center - 65, height - 42, 130, 20).build());
     }
 
-    private void refreshPacks() {
-        packs = ShaderPackRuntime.catalogSnapshot().packs();
-    }
+    private void refreshPacks() { packs = ShaderPackRuntime.catalogSnapshot().packs(); }
 
-    private Component shaderToggleLabel() {
-        return Component.literal("Prism shaders: "
+    private Component toggleLabel() {
+        return Component.literal("PRISM SHADERS  /  "
                 + (EssentialsRuntime.config().shadersEnabled ? "ON" : "OFF"));
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
-        super.render(graphics, mouseX, mouseY, partialTick);
         int center = width / 2;
-        graphics.drawCenteredString(font, title, center, height / 4, 0xFFFFFF);
-        graphics.drawCenteredString(font, "Selected pack: "
-                + (EssentialsRuntime.config().selectedShaderPack.isBlank()
-                ? "None" : EssentialsRuntime.config().selectedShaderPack),
-                center, height / 4 + 118, 0xD8E8FF);
-        graphics.drawCenteredString(font, "Discovered packs: " + packs.size(),
-                center, height / 4 + 134, 0xAAAAAA);
-        graphics.drawCenteredString(font, status, center, height / 4 + 158, 0xAAAAAA);
-        String compileFailure = ShaderPackRuntime.pipelineSnapshot().lastFailure();
-        if (!compileFailure.isBlank()) {
-            graphics.drawCenteredString(font, "Last compile error: " + compileFailure,
-                    center, height / 4 + 194, 0xFF7777);
+        int top = Math.max(76, height / 4);
+        int panelWidth = Math.min(380, width - 24);
+        int left = center - panelWidth / 2;
+        graphics.fill(0, 0, width, height, 0xB5080D18);
+        graphics.fill(left, top - 28, left + panelWidth, top + 210, 0xEE111B2B);
+        graphics.fill(left, top - 28, left + panelWidth, top - 25, 0xFF55C7FF);
+        graphics.drawCenteredString(font, title, center, top - 12, 0xFFF4FAFF);
+        super.render(graphics, mouseX, mouseY, partialTick);
+        graphics.drawCenteredString(font, "ACTIVE PACK", center, top + 116, 0xFF8FAFC8);
+        graphics.drawCenteredString(font, EssentialsRuntime.config().selectedShaderPack.isBlank()
+                ? "NONE SELECTED" : EssentialsRuntime.config().selectedShaderPack,
+                center, top + 130, 0xFFD8E8FF);
+        graphics.drawCenteredString(font, "DISCOVERED  " + packs.size(), center, top + 148, 0xFF8FAFC8);
+        graphics.drawCenteredString(font, status, center, top + 170, 0xFFB5C5D8);
+        String failure = ShaderPackRuntime.pipelineSnapshot().lastFailure();
+        if (!failure.isBlank()) {
+            graphics.drawCenteredString(font, "COMPILE ERROR  " + failure, center, top + 190, 0xFFFF7777);
         }
-        graphics.drawCenteredString(font, "Disabling shaders bypasses Prism effects without restarting.",
-                center, height / 4 + 178, 0x888888);
     }
 
     @Override
