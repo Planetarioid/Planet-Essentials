@@ -393,6 +393,16 @@ public record PrismTerrainVanillaPassSnapshot(
             GpuBufferSlice fog,
             GpuBuffer globals,
             GpuBufferSlice lighting) {
+        /** Names available for binding without opening or mutating a render pass. */
+        public Set<String> availableNames() {
+            HashSet<String> names = new HashSet<>();
+            if (projection != null) names.add("Projection");
+            if (fog != null) names.add("Fog");
+            if (globals != null) names.add("Globals");
+            if (lighting != null) names.add("Lighting");
+            return Set.copyOf(names);
+        }
+
         public Set<String> bindTo(RenderPass pass) {
             Objects.requireNonNull(pass, "pass");
             HashSet<String> names = new HashSet<>();
