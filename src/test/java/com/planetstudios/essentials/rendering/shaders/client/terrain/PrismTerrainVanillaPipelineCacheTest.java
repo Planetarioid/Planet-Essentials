@@ -57,8 +57,8 @@ class PrismTerrainVanillaPipelineCacheTest {
         assertEquals(vanilla.isWriteAlpha(), clone.isWriteAlpha());
         assertEquals(vanilla.isWriteDepth(), clone.isWriteDepth());
         assertEquals(vanilla.getColorLogic(), clone.getColorLogic());
-        assertEquals(vanilla.getDepthBiasScaleFactor(), clone.getDepthBiasScaleFactor());
-        assertEquals(vanilla.getDepthBiasConstant(), clone.getDepthBiasConstant());
+        assertEquals(vanilla.getDepthBiasScaleFactor(), clone.getDepthBiasScaleFactor(), 0.0f);
+        assertEquals(vanilla.getDepthBiasConstant(), clone.getDepthBiasConstant(), 0.0f);
     }
 
     @Test
