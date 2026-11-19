@@ -1,6 +1,6 @@
 # Planet Essentials Development Roadmap
 
-Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the stated level.
+Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] implemented and verified at the stated level.
 
 ## 0. Foundation
 - [x] Fabric 1.21.11 / Java 21 build, pinned Planet Lib dependency, CI build/test and JAR verification
@@ -49,25 +49,35 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Built-in END_MAIN world post-process graph and final composite
 - [x] GPU fullscreen multi-pass execution, sampler mapping, target-slot reuse, and final composite
 - [x] Shader-pack multi-pass graph authoring and strict graph validation
+
+### Terrain rendering
 - [x] Bounded CPU terrain mesh builder and immutable extraction-to-draw frame handoff
 - [x] Versioned full-attribute terrain payload and matching Minecraft vertex-format mapping
 - [x] Render-thread GPU terrain buffer upload and owned allocation lifecycle
 - [x] Bounded LRU GPU terrain buffer cache with section invalidation and teardown
 - [x] Terrain-specific shader compilation path and validated quad draw executor
-- [x] Fabric END_EXTRACTION frame publication and BEFORE_ENTITIES/BEFORE_TRANSLUCENT terrain scheduling bridge for cooperating providers
-- [~] Revision-token rebuild lifecycle, per-ClientLevel CPU caches, Fabric chunk load/unload hooks, stale-frame removal, render-thread GPU invalidation, and opt-in V1 GPU terrain adapter
-- [x] Vanilla SectionCompiler result capture: copy SOLID, CUTOUT, TRANSLUCENT, and TRIPWIRE BLOCK-format quad buffers into revision-validated Prism V1 CPU payloads, retaining vanilla translucent quad centroids for per-frame sorting
-- [~] Vanilla terrain GPU draw replacement, live camera-frustum wiring, occlusion culling, and renderer-specific compatibility adapters remain
-- [x] Double-precision camera-relative section-origin transform utility with unit coverage
-- [x] Canonical 16-byte std140 camera-relative section-origin uniform payload and declaration contract
-- [x] Renderer-owned immutable GPU section-uniform allocation, binding injection, and terrain draw overload
-- [x] Active LevelRenderer frame frustum snapshot and per-section AABB rejection before Prism terrain GPU upload/draw
-- [~] CPU section-AABB frustum culling utility and unit tests; occlusion culling and vanilla visibility-graph integration remain
-- [ ] Automatic vanilla entity/block-entity material pipeline replacement
-- [~] Opt-in full-attribute V1 terrain renderer adapter and per-world GPU cache integration, with active-frustum plus vanilla SectionOcclusionGraph filtering, graceful per-frame budget truncation, and vanilla-compatible translucent quad sorting; renderer-specific vanilla/Sodium/Canvas adapters and safe fallback negotiation remain
-- [x] Vanilla render-distance and simulation-distance option bounds extended to 2–64 chunks (server-imposed render-distance caps still apply)
+- [x] Fabric END_EXTRACTION frame publication and BEFORE_ENTITIES/BEFORE_TRANSLUCENT scheduling for cooperating providers
+- [~] Revision-token rebuild lifecycle, per-ClientLevel CPU caches, chunk load/unload hooks, stale-frame removal, GPU invalidation, and opt-in V1 adapter
+- [x] Vanilla SectionCompiler capture for SOLID, CUTOUT, TRANSLUCENT, and TRIPWIRE meshes converted to Prism V1 payloads
+- [x] Double-precision camera-relative section-origin transform and 16-byte std140 section uniform contract
+- [x] Renderer-owned GPU section-uniform allocation, binding injection, and terrain draw overload
+- [x] Active LevelRenderer frame-frustum snapshot and section AABB rejection before Prism upload/draw
+- [x] Vanilla SectionOcclusionGraph visible-section snapshot, world-scoped lifecycle, and fail-open filtering
+- [x] Vanilla terrain draw identity index mapping Draw records to exact section coordinates, layer, and layer-local order
+- [x] Fail-open replacement gate and complete per-layer replacement-plan builder with tests
+- [~] Connect replacement-plan readiness to current captured CPU revisions and live GPU cache entries
+- [ ] Reproduce vanilla render-pass state: target, sampler, light texture, default uniforms, layer pipelines, and ordering
+- [ ] Synchronous ChunkSectionsToRender.renderGroup replacement hook with whole-group fallback
+- [ ] Entity and block-entity material pipeline integration
+- [ ] Renderer-specific Sodium/Canvas/VulkanMod adapters and compatibility negotiation
 - [ ] Actual GPU/driver limit detection
-- [ ] In-game visual tests, GPU memory tests, benchmarks
+- [ ] In-game visual parity, GPU memory, leak, and performance tests
+
+### Terrain correctness and optimization
+- [x] Bounded extraction frame budgets and fail-safe truncation for the opt-in adapter
+- [x] Vanilla translucent quad-centroid capture and camera-relative far-to-near index sorting
+- [x] GPU-fenced temporary translucent index ring and tripwire-after-translucent grouping
+- [~] Runtime verification of translucent ordering and all terrain layer parity
 
 ## 9. UI
 - [~] Planet client-style settings hub and Prism shader panel; full vanilla settings-category migration, registry-driven pages, accessibility, and localization remain
