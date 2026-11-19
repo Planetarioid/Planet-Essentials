@@ -12,6 +12,7 @@ Planet Essentials is the central client-facing control and optimization mod in t
 - Other Planet mods must retain standalone defaults when Essentials is absent.
 
 ## Mod discovery
+
 - Discovery uses Planet Lib's immutable snapshot of mods loaded by Fabric Loader.
 - Planet Essentials filters Planet Studios mods using the library's explicit identity metadata.
 - Declared capabilities are read from the shared capability registry; unknown capabilities remain unknown.
@@ -19,6 +20,7 @@ Planet Essentials is the central client-facing control and optimization mod in t
 - No mods-directory scanning, archive inspection, or arbitrary third-party configuration access is permitted.
 
 ## Planet Lib integration
+
 - Planet Lib is pinned as a Git submodule and built as a sibling Gradle project.
 - Essentials compiles against Planet Lib's named-elements API but does not package it or require it at runtime; Planet Lib remains optional at runtime.
 - Essentials exposes the typed planet_essentials_api Fabric entrypoint at API version 1.
@@ -58,8 +60,12 @@ These are architectural boundaries, not a commitment to create empty packages be
 - Do not trade correctness, server validation, or compatibility for responsiveness.
 - Every optimization needs a correctness check and a before/after benchmark.
 - Baseline measurements must follow docs/performance/BASELINE_PROFILING.md; methodology completion does not imply any measured baseline or verified performance gain.
-- CPU candidates are only hypotheses until confirmed by a Java Flight Recording using docs/performance/CPU_BOTTLENECK_INVESTIGATION.md. Do not implement speculative hot-path changes.
-- GPU/render candidates are only hypotheses until confirmed by repeatable frame-presentation and GPU telemetry using docs/performance/GPU_BOTTLENECK_INVESTIGATION.md. Do not infer a GPU bottleneck from utilization alone or implement speculative render changes.
+- CPU candidates are only hypotheses until confirmed by a Java Flight Recording using docs/performance/CPU_BOTTLENECK_INVESTIGATION.md. The CPU investigation is deferred; do not implement speculative hot-path changes.
+- GPU/render candidates are only hypotheses until confirmed by repeatable frame-presentation and GPU telemetry using docs/performance/GPU_BOTTLENECK_INVESTIGATION.md. The GPU investigation is deferred pending client telemetry; do not infer a GPU bottleneck from utilization alone or implement speculative render changes.
+- Memory ownership, cache bounds, invalidation, and cleanup follow docs/performance/MEMORY_ALLOCATION_AND_CACHE_STRATEGY.md. The document defines engineering constraints, not measured allocation reductions or an implementation of a texture cache.
+- Avoid object pooling unless profiling demonstrates a material benefit and the pool has a strict capacity and lifecycle. Pools can retain memory and add synchronization or reset costs.
+- Hot-path code must not allocate temporary collections, streams, lambdas, formatted strings, or snapshots per tick/frame without evidence that the cost is acceptable.
+- Any cache of resource-backed objects must be invalidated on resource reload and released on client shutdown; stale resource handles must never be reused.
 
 ## Configuration rules
 
