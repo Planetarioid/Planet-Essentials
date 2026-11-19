@@ -183,8 +183,9 @@ public record PrismTerrainVanillaPassSnapshot(
 
         RenderSystem.AutoStorageIndexBuffer sequential =
                 RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
-        Optional<GpuBuffer> indexBuffer = input.maxIndicesRequired() == 0
-                ? Optional.empty() : Optional.of(sequential.getBuffer(input.maxIndicesRequired()));
+        // Capture the required range and format only. getBuffer() can allocate or
+        // grow GPU storage, so resolve the actual buffer later during replacement
+        // preflight, before opening the Prism render pass.
         Optional<VertexFormat.IndexType> indexType = input.maxIndicesRequired() == 0
                 ? Optional.empty() : Optional.of(sequential.type());
 
@@ -198,7 +199,7 @@ public record PrismTerrainVanillaPassSnapshot(
                 group, target, color, Optional.ofNullable(target.getDepthTextureView()),
                 target.width, target.height,
                 passOptions(target),
-                new IndexBufferInput(indexBuffer, indexType), List.of("ChunkSection"),
+                new IndexBufferInput(input.maxIndicesRequired(), indexType), List.of("ChunkSection"),
                 input.textureView(), blockAtlasSampler,
                 lightmap, lightmapSampler,
                 layers, uniforms, new Matrix4f(RenderSystem.getModelViewMatrix()),
@@ -317,14 +318,31 @@ public record PrismTerrainVanillaPassSnapshot(
         }
     }
 
-    /** Exact sequential QUADS index resources selected before vanilla opens the pass. */
-    public record IndexBufferInput(Optional<GpuBuffer> buffer, Optional<VertexFormat.IndexType> type) {
+    /**
+     * Sequential QUADS index requirements captured without allocating or growing
+     * GPU storage. Resolve the buffer during replacement preflight, before a
+     * render pass is opened.
+     */
+    public record IndexBufferInput(int maximumIndexCount, Optional<VertexFormat.IndexType> type) {
         public IndexBufferInput {
-            Objects.requireNonNull(buffer, "buffer");
-            Objects.requireNonNull(type, "type");
-            if (buffer.isPresent() != type.isPresent()) {
-                throw new IllegalArgumentException("Index buffer and index type must be present together");
+            if (maximumIndexCount < 0) {
+                throw new IllegalArgumentException("Maximum index count cannot be negative");
             }
+            Objects.requireNonNull(type, "type");
+            if ((maximumIndexCount > 0) != type.isPresent()) {
+                throw new IllegalArgumentException("A positive index range requires an index type");
+            }
+        }
+
+        public Optional<GpuBuffer> resolveBuffer() {
+            RenderSystem.assertOnRenderThread();
+            if (maximumIndexCount == 0) return Optional.empty();
+            RenderSystem.AutoStorageIndexBuffer sequential =
+                    RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+            if (sequential.type() != type.orElseThrow()) {
+                throw new IllegalStateException("Sequential QUADS index type changed after capture");
+            }
+            return Optional.of(sequential.getBuffer(maximumIndexCount));
         }
     }
 

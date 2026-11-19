@@ -21,7 +21,7 @@ or mutating vanilla state:
 - Projection, fog, globals, and lighting resources conditionally supplied by
   `RenderSystem.bindDefaultUniforms`
 - A defensive copy of the current model-view matrix
-- Maximum sequential index count, the exact QUADS sequential index-buffer object and index type, and the dynamic `ChunkSection` uniform slot
+- Maximum sequential index count and QUADS index type, plus the dynamic `ChunkSection` uniform slot. The actual sequential GPU index buffer is resolved during replacement preflight, not during observation, because `getBuffer()` may allocate or grow GPU storage
 - Exact render-pass creation options from the pinned 1.21.11 implementation: no color clear, no depth clear, and no stencil attachment
 - OpenGL-only viewport and scissor defaults: full attachment viewport at (0,0), scissor disabled. These are guarded against the active `GlDevice` and derived from the 1.21.11 backend implementation, not GPU-driver readback. Unknown backends leave both facets missing
 - Whether vanilla actually applies a layer pipeline (empty layer draw lists skip pipeline and atlas binding)

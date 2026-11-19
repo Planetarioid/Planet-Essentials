@@ -28,12 +28,21 @@ class PrismTerrainVanillaPassSnapshotTest {
     }
 
     @Test
-    void indexBufferAndTypeMustBeCapturedTogether() {
-        assertDoesNotThrow(() -> new PrismTerrainVanillaPassSnapshot.IndexBufferInput(
-                Optional.empty(), Optional.empty()));
+    void sequentialIndexRequirementsAreCapturedWithoutAnAllocatedBuffer() {
+        var empty = new PrismTerrainVanillaPassSnapshot.IndexBufferInput(0, Optional.empty());
+        assertEquals(0, empty.maximumIndexCount());
+        assertTrue(empty.type().isEmpty());
+
+        var required = new PrismTerrainVanillaPassSnapshot.IndexBufferInput(
+                384, Optional.of(com.mojang.blaze3d.vertex.VertexFormat.IndexType.INT));
+        assertEquals(384, required.maximumIndexCount());
+        assertEquals(com.mojang.blaze3d.vertex.VertexFormat.IndexType.INT, required.type().orElseThrow());
+
         assertThrows(IllegalArgumentException.class, () ->
-                new PrismTerrainVanillaPassSnapshot.IndexBufferInput(Optional.empty(),
+                new PrismTerrainVanillaPassSnapshot.IndexBufferInput(0,
                         Optional.of(com.mojang.blaze3d.vertex.VertexFormat.IndexType.SHORT)));
+        assertThrows(IllegalArgumentException.class, () ->
+                new PrismTerrainVanillaPassSnapshot.IndexBufferInput(12, Optional.empty()));
     }
 
     @Test
