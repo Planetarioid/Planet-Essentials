@@ -41,6 +41,20 @@ The executor is a cooperating-renderer API, not an automatic vanilla chunk rende
 - Section-local positions are constrained to [0, 16].
 - GPU allocation, draw submission, and disposal are render-thread-only.
 
+Prepared index buffers are range-checked in bytes before any RenderPass state
+is mutated. The draw range is expressed in index elements, while GPU buffer
+capacity is expressed in bytes; the index type determines the conversion.
+
+The pinned 1.21.11 OpenGL backend executes each draw from drawIndexed /
+drawMultipleIndexed immediately through its command encoder. Closing the pass
+finishes the pass; it does not provide a rollback for draws already issued.
+Therefore replacement integration must complete every predictable,
+fallible preflight step before the first Prism draw. It must not respond to a
+mid-submission failure by blindly running vanilla afterward, which could
+double-render the draws already submitted. Runtime/driver failure handling
+remains an explicit integration requirement, not something CI can prove.
+
+
 For render-group replacement, resolve the captured sequential QUADS index buffer
 before opening the replacement pass, then use the drawWithPipeline overload
 that accepts the prepared index buffer and index type. This keeps possible

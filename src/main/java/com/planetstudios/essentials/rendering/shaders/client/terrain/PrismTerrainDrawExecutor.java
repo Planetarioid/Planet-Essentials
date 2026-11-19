@@ -124,6 +124,20 @@ public final class PrismTerrainDrawExecutor {
                 indexBuffer, VertexFormat.IndexType.SHORT, firstIndex);
     }
 
+    /**
+     * Checks an indexed draw range against a prepared GPU index buffer without
+     * mutating RenderPass state. firstIndex and indexCount are measured in
+     * indices; GpuBuffer.size() is measured in bytes.
+     */
+    static boolean indexRangeFits(long bufferSizeBytes,
+            VertexFormat.IndexType indexType, int firstIndex, int indexCount) {
+        Objects.requireNonNull(indexType, "indexType");
+        if (bufferSizeBytes < 0 || firstIndex < 0 || indexCount < 0) return false;
+        long endIndex = (long) firstIndex + (long) indexCount;
+        if (endIndex > Long.MAX_VALUE / indexType.bytes) return false;
+        return endIndex * indexType.bytes <= bufferSizeBytes;
+    }
+
     private static boolean drawValidated(RenderPass pass,
             MinecraftShaderBackend.MinecraftCompiledProgram program,
             RenderPipeline drawPipeline,
@@ -150,6 +164,10 @@ public final class PrismTerrainDrawExecutor {
         pass.setPipeline(drawPipeline);
         pass.setVertexBuffer(0, mesh.vertexBuffer());
         int indexCount = (mesh.vertexCount() / 4) * 6;
+        if (explicitIndexBuffer != null
+                && !indexRangeFits(explicitIndexBuffer.size(), explicitIndexType, firstIndex, indexCount)) {
+            throw new IllegalArgumentException("Prepared terrain index buffer cannot address the requested draw range");
+        }
         if (explicitIndexBuffer == null) {
             var sequentialIndices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
             pass.setIndexBuffer(sequentialIndices.getBuffer(indexCount), sequentialIndices.type());
