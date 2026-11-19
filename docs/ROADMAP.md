@@ -33,18 +33,16 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [ ] Resource-pack coexistence, visual correctness, leak checks, performance benchmarks
 
 ## 8. Planet Prism Rendering Engine (PPRE): shader subsystem
-- [x] Immutable validated vertex/fragment source bundle and per-stage source limit
-- [x] Stable SHA-256 source identity
-- [x] Backend-neutral capability snapshot and compiler SPI
-- [x] Transactional reload and rollback on compilation failure
-- [x] Native handle disposal, invalidation, and close lifecycle
-- [x] Bounded schema-1 shader-pack manifest parser and immutable pack model
-- [x] Bounded shader source loader, resource-path validation, and aggregate pack budget
-- [ ] Minecraft ResourceManager discovery and resource-pack priority
-- [ ] Concrete Minecraft 1.21.11 GPU shader backend
+- [x] Immutable validated vertex/fragment source bundle and stable SHA-256 identity
+- [x] Backend-neutral capabilities, compiler SPI, transactional reload, rollback, and handle lifecycle
+- [x] Bounded schema-1 pack manifest parser and immutable pack model
+- [x] Bounded source loader, path validation, unique-source cache, and aggregate pack budget
+- [x] Minecraft ResourceManager resolver and pack discovery using active resource-pack priority
+- [x] Minecraft 1.21.11 GpuDevice pipeline-precompile adapter and source injection
+- [~] Defined render-stage contract and world-render drawing integration
 - [ ] Uniform, sampler, buffer, framebuffer, and render-target binding model
-- [ ] World render-stage integration and shader-pack features
-- [ ] Actual GPU/driver capability detection
+- [ ] Terrain/entity pipeline integration and shader-pack feature compatibility
+- [ ] Actual GPU/driver limit detection and complete capability negotiation
 - [ ] Vanilla fallback and coexistence with Sodium, Iris, and other renderers
 - [ ] In-game shader tests, visual regression, GPU memory tests, benchmarks
 
@@ -56,4 +54,4 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [ ] Client/server runtime tests, mod coexistence matrix, performance regression suite, license, changelog, version, release artifact
 
 ## Verification boundary
-CI and unit tests do not prove graphics-context integration, real GPU shader compilation, visual correctness, renderer compatibility, or performance superiority.
+CI and unit tests do not prove graphics-context integration, real GPU driver behavior, visual correctness, renderer compatibility, or performance superiority.
