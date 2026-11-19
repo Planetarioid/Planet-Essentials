@@ -41,7 +41,8 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Client resource-reload discovery and transactional GPU compilation lifecycle
 - [x] Typed GPU binding sets with exact declared-versus-supplied validation for uniform buffers, texel buffers, and samplers
 - [~] Frame-stage drawing integration
-- [ ] Framebuffer/render-target lifecycle and post-processing graph
+- [~] Owned GPU color/depth render targets, bounded dimensions, and render-pass creation
+- [ ] Resize/reload lifecycle and post-processing graph
 - [ ] Terrain/entity pipeline integration and full shader-pack feature compatibility
 - [ ] Actual GPU/driver limit detection and renderer negotiation
 - [ ] Vanilla fallback and coexistence with Sodium, Iris, and other renderers

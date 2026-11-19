@@ -1,5 +1,6 @@
 package com.planetstudios.essentials.rendering.shaders.client;
 
+import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.textures.GpuSampler;
@@ -26,7 +27,7 @@ public final class MinecraftShaderBindings {
     }
 
     private final Map<String, GpuBufferSlice> uniformBuffers;
-    private final Map<String, GpuTextureView> texelBuffers;
+    private final Map<String, GpuBuffer> texelBuffers;
     private final Map<String, SampledTexture> samplers;
 
     private MinecraftShaderBindings(Builder builder) {
@@ -47,15 +48,15 @@ public final class MinecraftShaderBindings {
                 uniformBuffers.keySet(), texelBuffers.keySet(), samplers.keySet());
 
         uniformBuffers.forEach(pass::setUniform);
-        // Minecraft represents a texel-buffer resource as a texture view without a sampler.
-        texelBuffers.forEach((name, view) -> pass.bindTexture(name, view, null));
+        // Minecraft's TEXEL_BUFFER uniform type is backed by a GpuBuffer, not a sampled texture.
+        texelBuffers.forEach(pass::setUniform);
         samplers.forEach((name, binding) ->
                 pass.bindTexture(name, binding.view(), binding.sampler()));
     }
 
     public static final class Builder {
         private final Map<String, GpuBufferSlice> uniformBuffers = new LinkedHashMap<>();
-        private final Map<String, GpuTextureView> texelBuffers = new LinkedHashMap<>();
+        private final Map<String, GpuBuffer> texelBuffers = new LinkedHashMap<>();
         private final Map<String, SampledTexture> samplers = new LinkedHashMap<>();
 
         private Builder() {}
@@ -65,8 +66,8 @@ public final class MinecraftShaderBindings {
             return this;
         }
 
-        public Builder texelBuffer(String name, GpuTextureView view) {
-            putUnique(texelBuffers, name, view, "texel buffer");
+        public Builder texelBuffer(String name, GpuBuffer buffer) {
+            putUnique(texelBuffers, name, buffer, "texel buffer");
             return this;
         }
 
