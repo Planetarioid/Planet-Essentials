@@ -3,89 +3,78 @@
 Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] implemented and verified at the stated level.
 
 ## 0. Foundation
-- [x] Fabric 1.21.11 / Java 21 build, pinned Planet Lib dependency, CI build/test and JAR verification
+- [x] Fabric 1.21.11 / Java 21 foundation, pinned Planet Lib dependency, CI build/test and JAR verification
 - [ ] Client and dedicated-server launch validation
 
-## 1. Planet Lib
+## 1. Planet Lib and core systems
 - [x] Typed Essentials API, contract validation, loaded-mod/capability discovery, standalone behavior, integration tests
+- [x] Typed configuration, validation, migrations, atomic persistence, profiles, import/export
+- [x] Mod discovery, capability selection, reversible integration lifecycle
+- [x] Bounded diagnostics event collection and explicit export
+- [~] FPS/runtime overhead, JFR/GPU profiling, and benchmark verification
 
-## 2. Configuration
-- [x] Typed settings, validation, migrations, atomic persistence, profiles, import/export, concurrency tests
+## 2. Planet Prism shader engine
+- [x] Immutable validated shader source bundles and SHA-256 identity
+- [x] Bounded schema-1 manifest, shader pack discovery, path validation, and source budgets
+- [x] Minecraft 1.21.11 GpuDevice pipeline compilation backend
+- [x] Transactional shader reload, rollback, and resource lifecycle
+- [x] Uniform-buffer, texel-buffer, and sampler declarations and typed binding validation
+- [x] World render-stage dispatch, fullscreen draw executor, and render targets
+- [x] Multi-pass post-processing graph, validation, target reuse, and final composite
+- [x] Shader enable/disable and pack selection UI
+- [ ] Actual GPU/driver capability detection
+- [ ] In-game shader correctness and performance validation
 
-## 3. Discovery and integration
-- [x] Loaded-mod discovery, Planet Studios capability discovery, reversible integration lifecycle
+## 3. Prism terrain rendering
 
-## 4. Feature priorities
-- [x] Per-capability provider selection, automatic reset, persistence, lifecycle rollback contract
+### Implemented architecture
+- [x] Bounded CPU terrain mesh builder and immutable extraction-to-draw handoff
+- [x] Versioned full-attribute terrain payload and Minecraft vertex-format mapping
+- [x] Render-thread GPU terrain upload, owned allocation lifecycle, and bounded LRU GPU cache
+- [x] Bounded CPU section cache and terrain-specific shader/draw executor
+- [x] Frame extraction and BEFORE_ENTITIES / BEFORE_TRANSLUCENT scheduling for cooperating providers
+- [x] Revision-token section rebuild lifecycle and per-world CPU caches
+- [x] Vanilla SOLID, CUTOUT, TRANSLUCENT, and TRIPWIRE SectionCompiler mesh capture
+- [x] Camera-relative section transforms and section-origin GPU uniforms
+- [x] Active frame-frustum snapshot and section AABB filtering
+- [x] Vanilla SectionOcclusionGraph visible-section snapshot
+- [x] Vanilla draw identity index mapping to section coordinates, layer, and layer-local order
+- [x] Fail-open replacement gate and all-or-nothing per-layer replacement plans
+- [x] Live CPU-payload to GPU-allocation readiness check, including source-hash and size parity
 
-## 5. Diagnostics
-- [x] Bounded local event collection and explicit diagnostics export
-- [~] FPS/runtime overhead verification
-
-## 6. Performance architecture
-- [x] Profiling methodology and subsystem boundaries documented
-- [~] JFR/GPU investigation, runtime compatibility, and benchmarks
-
-## 7. Prism texture subsystem
-- [x] Bounded resource discovery, PNG validation, async decode, immutable pixel cache, reload/shutdown lifecycle, CPU mip generation
-- [x] Opt-in GpuTexture adapter, mip uploads, pending NativeImage cleanup, vanilla identifier fallback API
-- [~] Client GPU validation and production consumer integration
-- [ ] Resource-pack coexistence, visual correctness, leak checks, performance benchmarks
-
-## 8. Planet Prism Rendering Engine (PPRE): shader subsystem
-- [x] Immutable validated source bundles and stable SHA-256 source identity
-- [x] Backend-neutral capabilities, compiler SPI, transactional reload, rollback, and handle lifecycle
-- [x] Bounded schema-1 manifest, pack discovery, active resource resolution, path validation, source budgets
-- [x] Minecraft 1.21.11 GpuDevice pipeline-precompile backend
-- [x] Uniform-buffer, texel-buffer, and sampler declarations
-- [x] Opt-in shader enable/disable setting and persisted shader-pack selection UI
-- [x] Typed draw executor, reusable fullscreen quad, and shader-program pipeline access
-- [x] Client resource-reload discovery and transactional GPU compilation lifecycle
-- [x] Typed GPU binding sets with exact declared-versus-supplied validation
-- [x] Fabric 1.21.11 world drawing-stage dispatch
-- [x] Cooperative Prism material registration and active-pack pipeline resolution API
-- [x] Renderer environment detection and explicit renderer-adapter SPI with immutable feature declarations
-- [x] Immutable diagnostics snapshot for discovery, compilation, active graph, and renderer state
-- [x] Built-in END_MAIN world post-process graph and final composite
-- [x] GPU fullscreen multi-pass execution, sampler mapping, target-slot reuse, and final composite
-- [x] Shader-pack multi-pass graph authoring and strict graph validation
-
-### Terrain rendering
-- [x] Bounded CPU terrain mesh builder and immutable extraction-to-draw frame handoff
-- [x] Versioned full-attribute terrain payload and matching Minecraft vertex-format mapping
-- [x] Render-thread GPU terrain buffer upload and owned allocation lifecycle
-- [x] Bounded LRU GPU terrain buffer cache with section invalidation and teardown
-- [x] Terrain-specific shader compilation path and validated quad draw executor
-- [x] Fabric END_EXTRACTION frame publication and BEFORE_ENTITIES/BEFORE_TRANSLUCENT scheduling for cooperating providers
-- [~] Revision-token rebuild lifecycle, per-ClientLevel CPU caches, chunk load/unload hooks, stale-frame removal, GPU invalidation, and opt-in V1 adapter
-- [x] Vanilla SectionCompiler capture for SOLID, CUTOUT, TRANSLUCENT, and TRIPWIRE meshes converted to Prism V1 payloads
-- [x] Double-precision camera-relative section-origin transform and 16-byte std140 section uniform contract
-- [x] Renderer-owned GPU section-uniform allocation, binding injection, and terrain draw overload
-- [x] Active LevelRenderer frame-frustum snapshot and section AABB rejection before Prism upload/draw
-- [x] Vanilla SectionOcclusionGraph visible-section snapshot, world-scoped lifecycle, and fail-open filtering
-- [x] Vanilla terrain draw identity index mapping Draw records to exact section coordinates, layer, and layer-local order
-- [x] Fail-open replacement gate and complete per-layer replacement-plan builder with tests
-- [~] Connect replacement-plan readiness to current captured CPU revisions and live GPU cache entries
-- [ ] Reproduce vanilla render-pass state: target, sampler, light texture, default uniforms, layer pipelines, and ordering
-- [ ] Synchronous ChunkSectionsToRender.renderGroup replacement hook with whole-group fallback
-- [ ] Entity and block-entity material pipeline integration
-- [ ] Renderer-specific Sodium/Canvas/VulkanMod adapters and compatibility negotiation
-- [ ] Actual GPU/driver limit detection
-- [ ] In-game visual parity, GPU memory, leak, and performance tests
+### Still required for vanilla terrain takeover
+- [ ] Per-world readiness orchestration that supplies current CPU/GPU caches and active shader generation to the planner
+- [ ] Reproduce vanilla render-pass state: render target, samplers, light texture, default uniforms, layer pipelines, and exact ordering
+- [ ] Validate draw index mapping against actual 1.21.11 runtime behavior
+- [ ] Synchronous replacement hook at the vanilla render-group boundary
+- [ ] Whole-group vanilla fallback on any missing payload, GPU allocation, shader, state, or frame
+- [ ] Runtime visual parity for opaque, cutout, translucent, and tripwire geometry
+- [ ] GPU memory, resource lifetime, and performance benchmarks
 
 ### Terrain correctness and optimization
-- [x] Bounded extraction frame budgets and fail-safe truncation for the opt-in adapter
+- [x] Bounded extraction frame budgets and fail-safe truncation
 - [x] Vanilla translucent quad-centroid capture and camera-relative far-to-near index sorting
 - [x] GPU-fenced temporary translucent index ring and tripwire-after-translucent grouping
-- [~] Runtime verification of translucent ordering and all terrain layer parity
+- [~] In-game verification of translucent sorting and terrain-layer parity
 
-## 9. UI
-- [~] Planet client-style settings hub and Prism shader panel; full vanilla settings-category migration, registry-driven pages, accessibility, and localization remain
-- [x] Shader enable/disable and discovered pack selection screen
-- [ ] Pack search/filter, per-mod panels, reset flows, accessibility/localization
+## 4. Prism texture subsystem
+- [x] Bounded resource discovery, PNG validation, async decode, immutable pixel cache, reload/shutdown lifecycle, CPU mip generation
+- [x] Opt-in GPU texture adapter, mip uploads, pending NativeImage cleanup, vanilla identifier fallback API
+- [~] Client GPU validation and production consumer integration
+- [ ] Resource-pack coexistence, visual correctness, leak checks, and performance benchmarks
 
-## 10. Compatibility and release
-- [ ] Client/server runtime tests, mod coexistence matrix, performance regression suite, license, changelog, version, release artifact
+## 5. Planet client-style UI
+- [~] Main settings hub and Prism shader panel
+- [ ] Migrate remaining vanilla settings categories without removing unvalidated settings
+- [ ] Registry-driven settings pages, search/filter, per-mod panels, reset flows
+- [ ] Accessibility and localization
+
+## 6. Compatibility and release
+- [x] Primary target: vanilla Minecraft 1.21.11 with Fabric
+- [x] No Sodium, Iris, VulkanMod, or Canvas compatibility targets or adapters planned
+- [ ] Ordinary Fabric mod coexistence testing
+- [ ] Client/server runtime validation and performance regression suite
+- [ ] License, changelog, versioning, and release artifact
 
 ## Verification boundary
-CI and unit tests do not prove graphics-context integration, real GPU driver behavior, visual correctness, renderer compatibility, or performance superiority.
+CI and unit tests do not prove graphics-context integration, real GPU driver behavior, visual correctness, or runtime performance.
