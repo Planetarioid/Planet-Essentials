@@ -1,9 +1,11 @@
 # Prism Shader System
 
 ## Current implementation
-Prism includes bounded schema-1 shader-pack discovery, source validation, content hashing, transactional Minecraft 1.21.11 GPU compilation, typed resource bindings, shader enable/disable controls, persisted pack selection, a fullscreen draw primitive, owned render targets, resize-safe target management, and a validated post-process dependency graph.
+Prism includes bounded schema-1 shader-pack discovery, source validation, content hashing, transactional Minecraft 1.21.11 GPU compilation, typed resource bindings, shader enable/disable controls, persisted pack selection, a fullscreen draw primitive, owned render targets, resize-safe target management, a validated post-process dependency graph, and a GPU multi-pass executor with deterministic target-slot reuse.
 
-The built-in world post-process hook is opt-in. A pack may declare a `worldPostProcessProgram` at the manifest root. That program must declare exactly one sampler named `SceneColor`, no custom uniform buffers or texel buffers, and use the position-only quad contract. Prism renders it into a private target while sampling Minecraft's main render target, then composites the result using Minecraft's render-target blit path. This keeps source and destination textures separate.
+The built-in world post-process hook is opt-in. A pack may declare a `worldPostProcessProgram` at the manifest root. That program must declare exactly one sampler named `SceneColor`, no custom uniform buffers or texel buffers, and use the position-only quad contract. Prism routes this legacy single-pass entry through the same multi-pass executor used by graph passes. The executor validates dependencies, maps sampler declarations to graph inputs, renders into private targets, reuses target slots only after a resource's last consumer, and composites the graph output using Minecraft's render-target blit path. Source and destination textures are kept separate.
+
+The graph execution API currently supports up to 32 ordered fullscreen passes per graph. Each pass declares a program, input resource IDs, and one output resource ID. Cycles, missing producers, duplicate outputs, read/write feedback, and graphs over the pass limit are rejected. The schema-1 pack manifest still exposes only the legacy single-pass `worldPostProcessProgram` field; authoring multi-pass graphs directly in shader-pack JSON and visual in-game validation remain follow-up work.
 
 Example manifest shape:
 
@@ -47,4 +49,4 @@ Open Planet Essentials -> Shader Settings. Prism is disabled by default. The scr
 ## Compatibility and verification boundary
 Fabric's world-render drawing events are used instead of broad LevelRenderer injections. The built-in post-process hook runs at END_MAIN, after the main terrain/entity/translucency pass and before particles, clouds, weather, hand, and GUI rendering. It does not replace terrain or entity material pipelines.
 
-This is not yet an Iris-equivalent renderer. Terrain/entity shader integration, multi-pass graph resource allocation and execution, full pack feature compatibility, renderer negotiation, in-game visual regression, GPU leak testing, and controlled performance benchmarks remain open. CI and unit tests do not prove driver behavior or visual correctness. Prism makes no performance-superiority claim over Iris.
+This is not yet an Iris-equivalent renderer. Terrain/entity shader integration, multi-pass graph execution is implemented as a renderer-side API, but multi-pass graph authoring in pack manifests, full pack feature compatibility, renderer negotiation, in-game visual regression, GPU leak testing, and controlled performance benchmarks remain open. CI and unit tests do not prove driver behavior or visual correctness. Prism makes no performance-superiority claim over Iris.

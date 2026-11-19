@@ -50,7 +50,8 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Transactional render-target resize/ownership manager
 - [x] Validated post-processing dependency graph with deterministic topological execution
 - [~] Single-pass scene-color post-processing and final composite
-- [ ] Multi-pass graph resource allocation/execution, terrain/entity feature mapping, and full shader-pack compatibility
+- [x] Multi-pass graph dependency validation, GPU fullscreen pass execution, sampler mapping, last-use target-slot reuse, and final composite
+- [ ] Multi-pass graph authoring in shader-pack manifests, terrain/entity feature mapping, and full shader-pack compatibility
 - [ ] Terrain/entity pipeline integration and full shader-pack feature compatibility
 - [ ] Actual GPU/driver limit detection and renderer negotiation
 - [ ] Vanilla fallback and coexistence with Sodium, Iris, and other renderers
