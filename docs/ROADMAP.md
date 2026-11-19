@@ -55,7 +55,7 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Bounded LRU GPU terrain buffer cache with section invalidation and teardown
 - [x] Terrain-specific shader compilation path and validated quad draw executor
 - [x] Fabric END_EXTRACTION frame publication and BEFORE_ENTITIES/BEFORE_TRANSLUCENT terrain scheduling bridge for cooperating providers
-- [ ] Vanilla chunk mesher integration and chunk rebuild lifecycle
+- [~] Revision-token section rebuild lifecycle, stale-result rejection, CPU cache invalidation, and chunk-unload range API; vanilla chunk mesher/event hooks remain
 - [x] Double-precision camera-relative section-origin transform utility with unit coverage
 - [x] Canonical 16-byte std140 camera-relative section-origin uniform payload and declaration contract
 - [x] Renderer-owned immutable GPU section-uniform allocation, binding injection, and terrain draw overload

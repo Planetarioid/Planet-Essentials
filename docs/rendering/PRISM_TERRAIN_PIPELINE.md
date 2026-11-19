@@ -141,3 +141,8 @@ vanilla chunk meshes, or prove visual correctness in-game.
 PrismTerrainFrustum stores six immutable world-space planes using an inside-positive half-space convention. PrismTerrainCulling.visibleMeshes tests section-sized 16×16×16 AABBs with the positive-vertex method and preserves deterministic frame order. The math is unit-tested for intersection, rejection, ordering, and invalid inputs.
 
 This is a reusable culling primitive, not automatic camera integration. A renderer adapter must supply the current camera frustum planes and invoke the filter before GPU work. Occlusion culling and direct integration with Minecraft's active frustum are still outstanding.
+
+
+## Section rebuild lifecycle
+
+`PrismTerrainSectionLifecycle` issues revision tokens for section rebuilds, invalidates cached CPU payloads at rebuild start, rejects stale asynchronous results, and invalidates a chunk's section range on unload. The API is synchronized and unit-tested. Callers must provide the actual dimension section range and keep lifecycle state scoped to the active world. Vanilla chunk-builder hooks and render-thread GPU-cache invalidation are not yet connected.
