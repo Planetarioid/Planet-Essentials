@@ -41,12 +41,12 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [x] Vanilla draw identity index mapping to section coordinates, layer, and layer-local order
 - [x] Fail-open replacement gate and all-or-nothing per-layer replacement plans
 - [x] Live CPU-payload to GPU-allocation readiness check, including source-hash and size parity
+- [x] Per-ClientLevel replacement coordinator, GPU cache preparation, shader-generation consistency check, and chunk/world invalidation
 
 ### Still required for vanilla terrain takeover
-- [ ] Per-world readiness orchestration that supplies current CPU/GPU caches and active shader generation to the planner
 - [ ] Reproduce vanilla render-pass state: render target, samplers, light texture, default uniforms, layer pipelines, and exact ordering
 - [ ] Validate draw index mapping against actual 1.21.11 runtime behavior
-- [ ] Synchronous replacement hook at the vanilla render-group boundary
+- [ ] Synchronous replacement hook at the vanilla render-group boundary calling the coordinator
 - [ ] Whole-group vanilla fallback on any missing payload, GPU allocation, shader, state, or frame
 - [ ] Runtime visual parity for opaque, cutout, translucent, and tripwire geometry
 - [ ] GPU memory, resource lifetime, and performance benchmarks
