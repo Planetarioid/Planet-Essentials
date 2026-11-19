@@ -27,7 +27,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 ## 2. Core configuration and settings
 - [x] Typed setting definitions with stable IDs, categories, defaults, and validation
 - [x] Central settings registry and category lookup
-- [x] Configuration schema migration path (0/1 to 2)
+- [x] Configuration schema migration path (0/1/2 to 3)
 - [x] Atomic persistence with malformed-file preservation
 - [x] Named profile create/save/load/delete storage
 - [x] Profile import/export validation and safe profile names
@@ -43,15 +43,15 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Avoid scanning or modifying arbitrary third-party files (uses Fabric Loader and Planet Lib registries only)
 
 ## 4. Feature priority management
-- [ ] Read feature/provider metadata from Planet Lib
-- [ ] Present competing implementations per capability
-- [ ] Display selected provider and selection reason
-- [ ] User override controls
-- [ ] Reset to automatic selection
-- [ ] Persist preferences safely
+- [x] Read feature/provider metadata from Planet Lib (shared FeaturePriorityManager snapshot and FeatureRegistry descriptors)
+- [x] Present competing implementations per capability
+- [x] Display selected provider and automatic/manual selection reason
+- [x] User override controls (cycle registered implementations per capability)
+- [x] Reset to automatic selection
+- [x] Persist preferences safely (schema 3, validated per-capability overrides; stale entries retained)
 - [ ] Apply changes only through provider lifecycle contracts
-- [ ] Ensure only duplicate features are affected, not entire mods
-- [ ] Test deterministic resolution and reversibility
+- [x] Ensure choices are scoped to one capability; no whole-mod enable/disable
+- [x] Deterministic resolution and reversible override behavior covered by Planet Lib tests
 
 ## 5. Diagnostics
 - [~] Bounded in-memory FPS history
@@ -106,7 +106,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Vanilla Minecraft settings remain accessible
 - [ ] Search/filter settings
 - [ ] Per-mod settings panels
-- [ ] Feature-priority controls
+- [~] Feature-priority controls (initial provider selector screen; runtime lifecycle application and usability review remain)
 - [ ] Dedicated diagnostics view
 - [ ] Reset and confirmation flows
 - [ ] Accessibility, scaling, and localization review

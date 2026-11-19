@@ -31,12 +31,16 @@ public final class EssentialsScreen extends Screen {
                 minecraft.setScreen(new ProfilesScreen(this)))
                 .bounds(center - 100, top + 56, 200, 20).build());
 
-        addRenderableWidget(Button.builder(Component.literal("Vanilla Minecraft Settings"), button ->
-                MinecraftMixin.openVanillaOptions(minecraft, this))
+        addRenderableWidget(Button.builder(Component.literal("Feature Priority Management"), button ->
+                minecraft.setScreen(new FeaturePriorityScreen(this)))
                 .bounds(center - 100, top + 82, 200, 20).build());
 
+        addRenderableWidget(Button.builder(Component.literal("Vanilla Minecraft Settings"), button ->
+                MinecraftMixin.openVanillaOptions(minecraft, this))
+                .bounds(center - 100, top + 108, 200, 20).build());
+
         addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose())
-                .bounds(center - 100, top + 112, 200, 20).build());
+                .bounds(center - 100, top + 138, 200, 20).build());
     }
 
     @Override
@@ -50,12 +54,12 @@ public final class EssentialsScreen extends Screen {
 
         if (EssentialsRuntime.config().showPerformanceScreen) {
             PerformanceMonitor monitor = EssentialsRuntime.performance();
-            graphics.drawCenteredString(font, "Latest FPS: " + monitor.latestFps(), center, top + 145, 0xD8E8FF);
+            graphics.drawCenteredString(font, "Latest FPS: " + monitor.latestFps(), center, top + 174, 0xD8E8FF);
             graphics.drawCenteredString(font,
                     String.format(java.util.Locale.ROOT, "Average FPS: %.1f", monitor.averageFps()),
-                    center, top + 157, 0xD8E8FF);
+                    center, top + 186, 0xD8E8FF);
             graphics.drawCenteredString(font, "Samples retained: " + monitor.sampleCount(),
-                    center, top + 169, 0xAAAAAA);
+                    center, top + 198, 0xAAAAAA);
         }
         graphics.drawCenteredString(font,
                 "Registered settings: " + SettingsRegistry.all().size(),
