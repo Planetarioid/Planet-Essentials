@@ -175,6 +175,53 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
                 snapshot.renderStateFor(layer), programId, frameReady, false);
     }
 
+    /**
+     * Completes the sequential-index portion of render-group preflight for a
+     * previously prepared all-or-nothing plan. The returned buffer/type pair
+     * must be retained and passed to every draw in that group. An empty result
+     * means the caller must leave vanilla rendering in control.
+     */
+    public java.util.Optional<PrismTerrainVanillaPassSnapshot.PreparedIndexBuffer>
+            prepareSequentialIndexBuffer(ClientLevel level,
+                    PrismTerrainRenderGroupBoundary.Snapshot snapshot,
+                    PrismTerrainReplacementPlan.Plan plan,
+                    ChunkSectionLayer layer) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        Objects.requireNonNull(plan, "plan");
+        Objects.requireNonNull(layer, "layer");
+        RenderSystem.assertOnRenderThread();
+        ensureOpen();
+        if (!plan.mayReplace() || level == null || Minecraft.getInstance().level != level) {
+            return java.util.Optional.empty();
+        }
+        PrismTerrainSectionCache cpuCache = PrismTerrainChunkLifecycleEvents.cache(level);
+        PrismTerrainGpuCache gpuCache = worldState(level).gpuCache;
+        int maximumIndexCount = 0;
+        for (PrismTerrainReplacementPlan.Entry entry : plan.entries()) {
+            var descriptor = entry.descriptor();
+            if (descriptor.layer() != layer
+                    || !PrismTerrainReplacementReadiness.isReady(descriptor, cpuCache, gpuCache)) {
+                return java.util.Optional.empty();
+            }
+            String material = PrismTerrainReplacementReadiness.materialFor(layer);
+            var stage = PrismTerrainReplacementReadiness.stageFor(layer);
+            PrismTerrainGpuMesh mesh = gpuCache.get(descriptor.sectionX(), descriptor.sectionY(),
+                    descriptor.sectionZ(), material, stage);
+            if (mesh == null) return java.util.Optional.empty();
+            int drawIndexCount = PrismTerrainVanillaPassSnapshot.IndexBufferInput
+                    .indexCountForQuadVertexCount(mesh.vertexCount());
+            maximumIndexCount = Math.max(maximumIndexCount, drawIndexCount);
+        }
+        try {
+            return snapshot.passInputs().indexBuffer().resolveBufferForIndexCount(maximumIndexCount);
+        } catch (RuntimeException failure) {
+            PlanetEssentials.LOGGER.warn(
+                    "Prism could not resolve sequential index capacity for terrain layer {}; vanilla remains in control",
+                    layer.label(), failure);
+            return java.util.Optional.empty();
+        }
+    }
+
     public synchronized int cachedWorldCount() {
         return worlds.size();
     }
