@@ -41,20 +41,21 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Opt-in shader enable/disable setting and persisted shader-pack selection UI
 - [x] Typed draw executor, reusable fullscreen quad, and shader-program pipeline access
 - [x] Client resource-reload discovery and transactional GPU compilation lifecycle
-- [x] Typed GPU binding sets with exact declared-versus-supplied validation for uniform buffers, texel buffers, and samplers
-- [x] Fabric 1.21.11 BEFORE_ENTITIES, AFTER_ENTITIES, BEFORE_TRANSLUCENT, and END_MAIN drawing-stage dispatch
-- [x] Cooperative Prism material registration and active-pack pipeline resolution API for renderer integrations
-- [x] Renderer environment detection for Vanilla, Sodium, Canvas, VulkanMod, Iris, legacy OptiFabric, and conflicted multi-renderer environments
-- [x] Explicit renderer-adapter SPI and registry with immutable feature declarations
+- [x] Typed GPU binding sets with exact declared-versus-supplied validation
+- [x] Fabric 1.21.11 world drawing-stage dispatch
+- [x] Cooperative Prism material registration and active-pack pipeline resolution API
+- [x] Renderer environment detection and explicit renderer-adapter SPI with immutable feature declarations
 - [x] Immutable diagnostics snapshot for discovery, compilation, active graph, and renderer state
 - [x] Built-in END_MAIN world post-process graph and final composite
-- [x] GPU fullscreen multi-pass execution, sampler mapping, last-use target-slot reuse, and final composite
-- [x] Shader-pack manifest authoring for multi-pass world post-processing graphs with strict reference and sampler validation
-- [ ] Automatic vanilla chunk terrain pipeline replacement
+- [x] GPU fullscreen multi-pass execution, sampler mapping, target-slot reuse, and final composite
+- [x] Shader-pack multi-pass graph authoring and strict graph validation
+- [x] Bounded CPU terrain mesh builder and immutable extraction-to-draw frame handoff for cooperating integrations
+- [ ] Vanilla chunk mesher integration and chunk rebuild lifecycle
+- [ ] Full terrain vertex formats (UV, color, packed light, overlay, normals) and material pipeline variants
+- [ ] GPU terrain mesh upload/cache, culling, and draw submission
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
-- [ ] Extraction-to-draw state transfer and renderer-specific integration adapters
-- [ ] Actual GPU/driver limit detection and renderer negotiation
-- [ ] Vanilla fallback and coexistence with Sodium, Iris, and other renderers
+- [ ] Renderer-specific integration adapters and safe fallback negotiation
+- [ ] Actual GPU/driver limit detection
 - [ ] In-game visual tests, GPU memory tests, benchmarks
 
 ## 9. UI
