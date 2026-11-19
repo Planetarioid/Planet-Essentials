@@ -32,7 +32,7 @@ Planned internal areas:
 - `config`: settings models, persistence, profiles, migrations
 - `integration`: Planet Lib bridge and per-mod integration lifecycle
 - `features`: feature/provider coordination and preference presentation
-- `diagnostics`: bounded FPS samples, local lifecycle/slow-tick events, and user-visible reporting
+- `diagnostics`: bounded FPS samples, local lifecycle/slow-tick events, explicit local JSON export, and user-visible reporting
 - `performance`: measured optimization systems and benchmark support
 - `texture`: dedicated texture optimization engine
 - `shader`: shader lifecycle, compilation, capability checks, fallback
@@ -46,6 +46,7 @@ These are architectural boundaries, not a commitment to create empty packages be
 - Client-only classes must be isolated behind Fabric client entrypoints or client-only lifecycle registration.
 - No expensive scanning, shader compilation, texture decoding, or profiling should occur on every tick.
 - Diagnostics events are bounded in-memory observations only. Do not collect player names, world identifiers, server addresses, account data, or transmit telemetry.
+- Diagnostics export is initiated only by an explicit user action and contains only the bounded FPS/event snapshots.
 - Resource reload and shutdown must release owned resources.
 - Optional integrations must fail softly and expose a diagnostic reason.
 

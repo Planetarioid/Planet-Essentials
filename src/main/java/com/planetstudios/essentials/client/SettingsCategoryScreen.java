@@ -3,18 +3,29 @@ import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.config.SettingDefinition;
 import com.planetstudios.essentials.config.SettingsRegistry;
 import com.planetstudios.essentials.diagnostics.DiagnosticEvent;
+import com.planetstudios.essentials.diagnostics.DiagnosticsExporter;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import java.nio.file.Path;
 import java.util.List;
 /** Native settings page generated from the typed settings registry. */
 public final class SettingsCategoryScreen extends Screen {
  private final Screen parent;private final String category;
+ private String exportStatus="Export creates a local file only when requested.";
  public SettingsCategoryScreen(Screen parent,String category){super(Component.literal("Performance & Diagnostics"));this.parent=parent;this.category=category;}
  @Override protected void init(){
   List<SettingDefinition<?>> settings=SettingsRegistry.inCategory(category);int center=width/2,y=height/4+24;
   for(SettingDefinition<?> setting:settings){addRenderableWidget(createButton(setting,center-155,y,310,20));y+=27;}
+  addRenderableWidget(Button.builder(Component.literal("Export diagnostics"),button->{
+   try{
+    Path file=DiagnosticsExporter.export(FabricLoader.getInstance().getConfigDir(),
+      EssentialsRuntime.performance().snapshot(),EssentialsRuntime.diagnosticEvents().snapshot());
+    exportStatus="Exported: "+file.getFileName();
+   }catch(RuntimeException exception){exportStatus="Export failed: "+exception.getMessage();}
+  }).bounds(center-100,height-96,200,20).build());
   addRenderableWidget(Button.builder(Component.literal("Clear diagnostic history"),button->{
    EssentialsRuntime.performance().clear();EssentialsRuntime.diagnosticEvents().clear();
   }).bounds(center-100,height-68,200,20).build());
@@ -40,6 +51,7 @@ public final class SettingsCategoryScreen extends Screen {
    String summary=latest==null?"No diagnostic events collected":"Events: "+collector.eventCount()+" | Latest: "+latest.type();
    g.drawCenteredString(font,summary,width/2,y+16,0xAAAAAA);
   }else g.drawCenteredString(font,"Diagnostics collection is disabled.",width/2,y+16,0xAAAAAA);
+  g.drawCenteredString(font,exportStatus,width/2,height-108,0xAAAAAA);
  }
  @Override public void onClose(){minecraft.setScreen(parent);}
 }
