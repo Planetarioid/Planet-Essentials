@@ -23,6 +23,7 @@ Planet Essentials is the client-facing control and optimization mod. It owns its
 - Entries are bounded, immutable to readers, atomically replaced on successful reload, and cleared on shutdown.
 - A failed discovery retains the last known-good snapshot.
 - Texture identities validate namespace syntax, exact namespace/path/resource-ID agreement, normalized resource paths, the textures/ root, and PNG extension/format.
+- The initial decode preflight reads only the fixed PNG signature and IHDR, validates its CRC and PNG encoding fields, and enforces configurable dimension/pixel/encoded-size policy values before a future decoder is allowed to run. It does not decode pixels or claim to enforce the encoded-size limit on a stream yet.
 - Coarse categories (GUI, block, entity, item, particle, environment, mob effect, other) are inferred from resource paths for diagnostics and later policy selection only; they do not imply rendering behavior.
 - This is discovery infrastructure, not a texture optimizer, decoder, cache, mipmap policy, or rendering engine.
 

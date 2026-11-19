@@ -65,7 +65,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 ## 7. Texture optimization engine
 - [~] Asset discovery and lifecycle design (bounded metadata catalog and client reload listener implemented; CI/runtime verification pending)
 - [~] Texture metadata and format validation (namespace, resource identity, path safety, PNG format, and path-based category validation implemented; CI/runtime verification pending)
-- [ ] Safe decode/processing pipeline
+- [~] Safe decode/processing pipeline (PNG signature, IHDR CRC, dimensions, pixel-count, bit-depth, and method preflight implemented; pixel decoding and runtime integration remain pending)
 - [ ] Memory-aware caching
 - [ ] Decoded-resource cache reload lifecycle
 - [ ] Mipmap and filtering policy
