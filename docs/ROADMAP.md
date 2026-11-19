@@ -50,8 +50,9 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] GPU fullscreen multi-pass execution, sampler mapping, target-slot reuse, and final composite
 - [x] Shader-pack multi-pass graph authoring and strict graph validation
 - [x] Bounded CPU terrain mesh builder and immutable extraction-to-draw frame handoff for cooperating integrations
+- [x] Versioned full-attribute CPU terrain vertex payload (XYZ, UV, RGBA8, packed light/overlay/normal)
 - [ ] Vanilla chunk mesher integration and chunk rebuild lifecycle
-- [ ] Full terrain vertex formats (UV, color, packed light, overlay, normals) and material pipeline variants
+- [ ] Backend vertex-format mapping and terrain material pipeline variants
 - [ ] GPU terrain mesh upload/cache, culling, and draw submission
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
 - [ ] Renderer-specific integration adapters and safe fallback negotiation
