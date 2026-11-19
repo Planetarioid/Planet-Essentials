@@ -36,6 +36,16 @@ single requirement to the resolver. Six indices are required per complete
 four-vertex quad; the pure conversion helper rejects malformed vertex counts
 and integer overflow. This closes the specific gap where Prism's captured
 section meshes could require more indices than vanilla's draw group.
+`PrismTerrainReplacementCoordinator.prepareSequentialIndexBuffer` now
+connects that resolver to the actual all-or-nothing replacement plan. It walks
+every planned section, revalidates its CPU/GPU payload identity, computes the
+largest quad index requirement from the uploaded mesh vertex counts, and
+resolves one shared sequential index buffer sized for the entire group. The
+caller must treat an empty result as a preflight failure and leave vanilla in
+control. The returned buffer and post-growth index type are shared by all
+section draws in that group; no per-draw index-buffer growth is needed after
+the replacement pass opens.
+
 
 The draw-order rule is isolated in a pure helper and covered by unit tests.
 Captured pipeline objects retain the exact vanilla blend, depth, cull, and
