@@ -64,6 +64,7 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
             List<?> vanillaDraws,
             PrismTerrainVanillaDrawIndex.Snapshot drawIndex,
             ChunkSectionLayer layer,
+            PrismTerrainRenderPassState renderState,
             String programId,
             boolean frameReady,
             boolean reverseOrder) {
