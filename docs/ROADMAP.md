@@ -76,13 +76,13 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [~] Compatibility test matrix documented in docs/COMPATIBILITY_TEST_MATRIX.md; runtime combinations remain untested
 
 ## 7. Texture optimization engine
-- [ ] Asset discovery and lifecycle design
-- [ ] Texture metadata and format validation
+- [~] Asset discovery and lifecycle design (metadata-only discovery, bounded immutable catalog, reload listener and shutdown cleanup implemented; client runtime verification pending)
+- [ ] Texture metadata and format validation beyond resource identity/PNG extension checks
 - [ ] Safe decode/processing pipeline
 - [ ] Memory-aware caching
-- [ ] Resource reload integration
+- [ ] Resource reload integration (catalog discovery is wired; decoded-resource/cache lifecycle remains)
 - [ ] Mipmap and filtering policy
-- [ ] Resource-pack compatibility
+- [ ] Resource-pack compatibility (effective-resource discovery follows ResourceManager priority; broader coexistence tests remain)
 - [ ] Failure fallback to vanilla resource behavior
 - [ ] Benchmark memory, load time, and frame-time impact
 - [ ] Verify no visual corruption or resource leaks

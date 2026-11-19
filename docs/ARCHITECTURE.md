@@ -31,6 +31,15 @@ Planet Essentials is the central client-facing control and optimization mod in t
 - Future optimization engines register real settings only when implemented and wired to actual activation/deactivation. No placeholder toggles.
 - A system toggle must not silently disable a whole mod or override a provider selected through Planet Lib. Feature-priority selection remains separate and per-capability.
 
+## Texture discovery foundation
+- Texture discovery runs only through Minecraft's active client ResourceManager during resource reload.
+- It indexes effective PNG resources beneath the textures/ resource path; Minecraft's resource-pack priority resolution remains authoritative.
+- Discovery stores identifiers and lightweight path/format metadata only. It does not open streams, decode pixels, inspect pack archives, or access arbitrary files.
+- The catalog is bounded, immutable to readers, atomically replaced per successful reload, and cleared at client shutdown.
+- A failed discovery retains the last known-good metadata snapshot. Vanilla texture loading and rendering are not intercepted or replaced at this stage.
+- The catalog currently has a fixed 32,768-entry cap; truncation is surfaced in the snapshot and logged.
+- This is discovery infrastructure, not a texture optimizer, decoder, cache, mipmap policy, or rendering engine.
+
 ## Lifecycle rules
 - Common initialization remains safe on a dedicated server.
 - Client-only classes are isolated behind Fabric client entrypoints or client-only lifecycle registration.
