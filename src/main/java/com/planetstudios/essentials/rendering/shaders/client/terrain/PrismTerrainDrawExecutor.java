@@ -2,6 +2,7 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBackend;
@@ -61,6 +62,27 @@ public final class PrismTerrainDrawExecutor {
         return drawValidated(pass, program, mesh, bindings, Set.of(), null, null, 0);
     }
 
+    /**
+     * Draws a section using a caller-supplied pipeline clone whose fixed-function
+     * state matches the captured vanilla layer while retaining the Prism shader.
+     */
+    public static boolean drawWithPipeline(RenderPass pass,
+            MinecraftShaderBackend.MinecraftCompiledProgram program,
+            RenderPipeline drawPipeline,
+            PrismTerrainGpuMesh mesh,
+            MinecraftShaderBindings bindings,
+            PrismTerrainSectionUniformAllocation sectionUniform,
+            Set<String> externallyBoundUniforms) {
+        Objects.requireNonNull(drawPipeline, "drawPipeline");
+        Objects.requireNonNull(sectionUniform, "sectionUniform");
+        Objects.requireNonNull(externallyBoundUniforms, "externallyBoundUniforms");
+        PrismTerrainSectionUniform.requireDeclared(program.bindings()::uniformBuffers);
+        MinecraftShaderBindings completeBindings = Objects.requireNonNull(bindings, "bindings")
+                .withUniformBuffer(PrismTerrainSectionUniform.BINDING_NAME, sectionUniform.slice());
+        return drawValidated(pass, program, drawPipeline, mesh, completeBindings,
+                externallyBoundUniforms, null, null, 0);
+    }
+
     /** Draws with a caller-owned SHORT index buffer, used for camera-sorted translucent quads. */
     public static boolean drawSorted(RenderPass pass,
             MinecraftShaderBackend.MinecraftCompiledProgram program,
@@ -78,6 +100,7 @@ public final class PrismTerrainDrawExecutor {
 
     private static boolean drawValidated(RenderPass pass,
             MinecraftShaderBackend.MinecraftCompiledProgram program,
+            RenderPipeline drawPipeline,
             PrismTerrainGpuMesh mesh,
             MinecraftShaderBindings bindings,
             Set<String> externallyBoundUniforms,
@@ -87,6 +110,7 @@ public final class PrismTerrainDrawExecutor {
         RenderSystem.assertOnRenderThread();
         Objects.requireNonNull(pass, "pass");
         Objects.requireNonNull(program, "program");
+        Objects.requireNonNull(drawPipeline, "drawPipeline");
         Objects.requireNonNull(mesh, "mesh");
         Objects.requireNonNull(bindings, "bindings");
         if (!program.supportsTerrainV1()) {
@@ -97,7 +121,7 @@ public final class PrismTerrainDrawExecutor {
         }
         // Validate the complete binding set before mutating RenderPass state.
         bindings.apply(pass, program.bindings(), externallyBoundUniforms);
-        pass.setPipeline(program.pipeline());
+        pass.setPipeline(drawPipeline);
         pass.setVertexBuffer(0, mesh.vertexBuffer());
         int indexCount = (mesh.vertexCount() / 4) * 6;
         if (explicitIndexBuffer == null) {
