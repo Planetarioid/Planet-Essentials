@@ -83,6 +83,32 @@ public final class PrismTerrainDrawExecutor {
                 externallyBoundUniforms, null, null, 0);
     }
 
+    /**
+     * Draws with the sequential QUADS index buffer resolved during preflight.
+     * This overload avoids allocating or growing the index buffer after the
+     * caller has opened its render pass.
+     */
+    public static boolean drawWithPipeline(RenderPass pass,
+            MinecraftShaderBackend.MinecraftCompiledProgram program,
+            RenderPipeline drawPipeline,
+            PrismTerrainGpuMesh mesh,
+            MinecraftShaderBindings bindings,
+            PrismTerrainSectionUniformAllocation sectionUniform,
+            Set<String> externallyBoundUniforms,
+            GpuBuffer preparedIndexBuffer,
+            VertexFormat.IndexType preparedIndexType) {
+        Objects.requireNonNull(drawPipeline, "drawPipeline");
+        Objects.requireNonNull(sectionUniform, "sectionUniform");
+        Objects.requireNonNull(externallyBoundUniforms, "externallyBoundUniforms");
+        Objects.requireNonNull(preparedIndexBuffer, "preparedIndexBuffer");
+        Objects.requireNonNull(preparedIndexType, "preparedIndexType");
+        PrismTerrainSectionUniform.requireDeclared(program.bindings()::uniformBuffers);
+        MinecraftShaderBindings completeBindings = Objects.requireNonNull(bindings, "bindings")
+                .withUniformBuffer(PrismTerrainSectionUniform.BINDING_NAME, sectionUniform.slice());
+        return drawValidated(pass, program, drawPipeline, mesh, completeBindings,
+                externallyBoundUniforms, preparedIndexBuffer, preparedIndexType, 0);
+    }
+
     /** Draws with a caller-owned SHORT index buffer, used for camera-sorted translucent quads. */
     public static boolean drawSorted(RenderPass pass,
             MinecraftShaderBackend.MinecraftCompiledProgram program,

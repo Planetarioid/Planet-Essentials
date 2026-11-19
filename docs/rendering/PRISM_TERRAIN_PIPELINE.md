@@ -41,6 +41,14 @@ The executor is a cooperating-renderer API, not an automatic vanilla chunk rende
 - Section-local positions are constrained to [0, 16].
 - GPU allocation, draw submission, and disposal are render-thread-only.
 
+For render-group replacement, resolve the captured sequential QUADS index buffer
+before opening the replacement pass, then use the drawWithPipeline overload
+that accepts the prepared index buffer and index type. This keeps possible
+index-buffer growth out of the active render pass. The convenience draw
+overloads remain available to cooperating renderers that do not require this
+preflight boundary.
+
+
 
 ## Fabric frame lifecycle bridge
 
