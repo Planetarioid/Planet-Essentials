@@ -34,8 +34,7 @@ class PrismTerrainVanillaPassSnapshotTest {
                 Optional.empty(), Optional.empty()));
         assertThrows(IllegalArgumentException.class, () ->
                 new PrismTerrainVanillaPassSnapshot.IndexBufferInput(Optional.empty(),
-                        Optional.of(net.minecraft.client.renderer.chunk.ChunkSectionLayer.values().length == -1
-                                ? null : com.mojang.blaze3d.vertex.VertexFormat.IndexType.SHORT))));
+                        Optional.of(com.mojang.blaze3d.vertex.VertexFormat.IndexType.SHORT))));
     }
 
     @Test
