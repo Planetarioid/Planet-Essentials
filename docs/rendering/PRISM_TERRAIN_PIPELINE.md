@@ -218,3 +218,16 @@ This completes automatic vanilla mesh *capture* and cache population. It does no
 `LevelRenderer.prepareCullFrustum` is now observed at RETURN. Prism stores a defensive copy of the exact frustum Minecraft prepared for the current frame, rather than relying on the debug-only captured-frustum API. The snapshot is cleared on disconnect. The opt-in terrain adapter tests each section's world-space 16×16×16 AABB against this active frustum before uploading a mesh to the GPU or issuing its draw. If no frame frustum has been published yet, the test fails open so terrain is not accidentally dropped during initialization.
 
 This removes off-screen sections from Prism's upload/draw work. It does not implement occlusion culling or use Minecraft's section visibility graph, so sections inside the camera frustum but hidden behind opaque geometry can still be submitted. Vanilla remains responsible for its own visibility and draw path.
+
+
+### Vanilla section-occlusion graph handoff
+
+The client `LevelRenderer` mixin snapshots the `visibleSections` list after
+`cullTerrain` returns. At that point Minecraft has updated its
+`SectionOcclusionGraph` and applied the current frustum. Prism terrain
+extraction and draw submission both consult this world-scoped snapshot in
+addition to the active frustum AABB test. The snapshot is immutable and is
+replaced atomically; it is cleared when the level changes. If a snapshot is
+not yet available for the active world, the check fails open and does not
+hide terrain. This reuses vanilla's visibility decisions without mutating
+vanilla's list or taking ownership of its graph.

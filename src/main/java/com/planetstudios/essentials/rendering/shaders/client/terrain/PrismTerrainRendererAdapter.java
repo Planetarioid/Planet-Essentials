@@ -112,7 +112,11 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
                 if (!extracting) throw new IllegalStateException("Terrain payload submitted outside extraction");
                 PrismTerrainVertexData payload = Objects.requireNonNull(data, "terrain payload");
                 if (payload.stage() != stage) return;
-                // Reject off-screen sections before consuming this adapter's bounded frame budget.
+                ClientLevel currentLevel = Minecraft.getInstance().level;
+                // Match vanilla's section-occlusion graph, then retain the frustum
+                // test as a conservative guard. Unknown snapshots fail open.
+                if (currentLevel != null && !PrismTerrainVisibleSections.isVisible(
+                        currentLevel, payload.sectionX(), payload.sectionY(), payload.sectionZ())) return;
                 if (!PrismTerrainActiveFrustum.isVisible(
                         payload.sectionX(), payload.sectionY(), payload.sectionZ())) return;
                 if (next.size() >= MAX_FRAME_PAYLOADS
@@ -216,6 +220,8 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
             passOpened = true;
             RenderSystem.bindDefaultUniforms(pass);
             for (PrismTerrainVertexData data : payloads) {
+                if (!PrismTerrainVisibleSections.isVisible(
+                        level, data.sectionX(), data.sectionY(), data.sectionZ())) continue;
                 if (!PrismTerrainActiveFrustum.isVisible(data.sectionX(), data.sectionY(), data.sectionZ())) continue;
                 PrismTerrainGpuMesh mesh = cache.getOrUpload(device, data);
                 if (mesh == null) continue;
