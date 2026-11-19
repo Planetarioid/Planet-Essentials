@@ -1,26 +1,40 @@
-# Terrain render-group input capture
+# Terrain render-group input and vanilla pass capture
 
-Minecraft 1.21.11 routes terrain batches through
-`ChunkSectionsToRender.renderGroup(ChunkSectionLayerGroup, GpuSampler)`.
-Planet observes that exact method at HEAD and RETURN.
+Minecraft 1.21.11's `ChunkSectionsToRender.renderGroup` creates its own
+`RenderPass` from `ChunkSectionLayerGroup.outputTarget()`. It then binds
+Minecraft's default uniforms, binds the lightmap as `Sampler2`, and for each
+group layer selects either the debug wireframe pipeline or that layer's vanilla
+pipeline, binds the block atlas as `Sampler0`, and submits the layer's draw list.
 
-At HEAD the thread-local snapshot now retains:
-- The exact opaque/translucent/tripwire group enum
-- The exact sampler object and block-atlas texture-view object by identity
-- An immutable copy of the draw lists for every layer belonging to that group
-- Per-layer and total draw counts
-- The maximum index count requested by vanilla
-- A defensive copy of the chunk-section uniform-buffer slices
-- A monotonically increasing invocation sequence
+Planet's HEAD observer now snapshots those inputs without opening another pass
+or mutating vanilla state:
 
-The snapshot is available only during the synchronous vanilla method call.
-Draw objects and GPU resources are referenced, not recreated or modified.
-The copied collection structure prevents later list mutation from changing the
-captured ordering, while retaining the exact draw object identities.
+- Exact output `RenderTarget`, color attachment, optional depth attachment,
+  and target dimensions
+- Block atlas view and the exact `Sampler0` sampler
+- Lightmap view and the clamp-to-edge linear `Sampler2` sampler
+- Exact per-layer vanilla `RenderPipeline` object, including the debug
+  wireframe override when active
+- Effective draw ordering: only TRANSLUCENT is reversed by vanilla
+- Projection, fog, globals, and lighting resources conditionally supplied by
+  `RenderSystem.bindDefaultUniforms`
+- A defensive copy of the current model-view matrix
+- Maximum sequential index count and the existing chunk-section uniform slices
 
-This remains observational. It does not open/close a RenderPass, change GPU
-state, replace a pipeline, or cancel vanilla rendering. It does not yet capture
-the active render target, viewport/scissor, depth/stencil, blend/cull/color
-mask, matrices, fog/lightmap/overlay uniforms, or every pipeline binding.
-The fail-closed `PrismTerrainRenderPassState` contract therefore remains
-mandatory and incomplete until those live values can be captured and reproduced.
+The draw-order rule is isolated in a pure helper and covered by unit tests.
+Captured pipeline objects retain the exact vanilla blend, depth, cull, and
+color-write configuration by identity; this is not yet a serialized/rebuilt
+pipeline description.
+
+Known remaining state boundary:
+- `renderGroup` does not set a custom viewport or scissor. The active pass
+  starts with the render target's default full-attachment viewport and no
+  explicit scissor command; this still needs confirmation on the runtime GPU
+  backend before replacement relies on it.
+- Stencil/scissor details and driver/backend behavior are not independently
+  introspected.
+- Capturing resource references does not prove that Prism can reproduce the
+  pass or its timing safely.
+
+This remains observational. Vanilla still owns every terrain draw, and the
+fail-closed `PrismTerrainRenderPassState` gate remains mandatory.

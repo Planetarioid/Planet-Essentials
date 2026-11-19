@@ -36,8 +36,9 @@ public final class PrismTerrainRenderGroupBoundary {
         }
 
         GpuBufferSlice[] sectionInfos = input.chunkSectionInfos();
+        PrismTerrainVanillaPassSnapshot pass = PrismTerrainVanillaPassSnapshot.capture(input, group, sampler);
         CURRENT.set(new Snapshot(group, sampler, input.textureView(), draws,
-                input.maxIndicesRequired(), sectionInfos, SEQUENCE.incrementAndGet()));
+                input.maxIndicesRequired(), sectionInfos, pass, SEQUENCE.incrementAndGet()));
     }
 
     public static void end() {
@@ -56,6 +57,7 @@ public final class PrismTerrainRenderGroupBoundary {
             Map<ChunkSectionLayer, List<?>> drawsByLayer,
             int maxIndicesRequired,
             GpuBufferSlice[] chunkSectionInfos,
+            PrismTerrainVanillaPassSnapshot passInputs,
             long sequence) {
         public Snapshot {
             Objects.requireNonNull(group, "group");
@@ -63,6 +65,7 @@ public final class PrismTerrainRenderGroupBoundary {
             Objects.requireNonNull(textureView, "textureView");
             Objects.requireNonNull(drawsByLayer, "drawsByLayer");
             Objects.requireNonNull(chunkSectionInfos, "chunkSectionInfos");
+            Objects.requireNonNull(passInputs, "passInputs");
             if (maxIndicesRequired < 0) throw new IllegalArgumentException("Negative maximum index count");
             if (sequence <= 0) throw new IllegalArgumentException("Invalid render-group sequence");
 
@@ -84,10 +87,9 @@ public final class PrismTerrainRenderGroupBoundary {
         }
 
         public int totalGroupDrawCount() {
-            return group.layers().length == 0 ? 0
-                    : group.layers().length == 1
-                    ? drawCount(group.layers()[0])
-                    : java.util.Arrays.stream(group.layers()).mapToInt(this::drawCount).sum();
+            int count = 0;
+            for (ChunkSectionLayer layer : group.layers()) count += drawCount(layer);
+            return count;
         }
     }
 }
