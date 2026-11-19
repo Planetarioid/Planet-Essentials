@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
 
 /**
  * Read-only snapshot of the inputs used by Minecraft 1.21.11's
@@ -45,6 +47,9 @@ public record PrismTerrainVanillaPassSnapshot(
         Optional<GpuTextureView> depthAttachment,
         int targetWidth,
         int targetHeight,
+        PassOptions passOptions,
+        IndexBufferInput indexBuffer,
+        List<String> dynamicUniformSlots,
         GpuTextureView blockAtlas,
         GpuSampler blockAtlasSampler,
         GpuTextureView lightmap,
@@ -60,6 +65,10 @@ public record PrismTerrainVanillaPassSnapshot(
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(colorAttachment, "colorAttachment");
         Objects.requireNonNull(depthAttachment, "depthAttachment");
+        Objects.requireNonNull(passOptions, "passOptions");
+        Objects.requireNonNull(indexBuffer, "indexBuffer");
+        Objects.requireNonNull(dynamicUniformSlots, "dynamicUniformSlots");
+        dynamicUniformSlots = List.copyOf(dynamicUniformSlots);
         Objects.requireNonNull(blockAtlas, "blockAtlas");
         Objects.requireNonNull(blockAtlasSampler, "blockAtlasSampler");
         Objects.requireNonNull(lightmap, "lightmap");
@@ -107,9 +116,18 @@ public record PrismTerrainVanillaPassSnapshot(
             List<?> source = input.drawsPerLayer().get(layer);
             List<?> ordered = effectiveDrawOrder(layer, source == null ? List.of() : source);
             RenderPipeline pipeline = wireframe ? RenderPipelines.WIREFRAME : layer.pipeline();
-            layers.put(layer, new LayerInput(pipeline, PipelineState.capture(pipeline), ordered,
-                    layer == ChunkSectionLayer.TRANSLUCENT));
+            boolean pipelineApplied = !ordered.isEmpty();
+            layers.put(layer, new LayerInput(pipeline,
+                    pipelineApplied ? PipelineState.capture(pipeline) : null,
+                    ordered, layer == ChunkSectionLayer.TRANSLUCENT, pipelineApplied));
         }
+
+        RenderSystem.AutoStorageIndexBuffer sequential =
+                RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+        Optional<GpuBuffer> indexBuffer = input.maxIndicesRequired() == 0
+                ? Optional.empty() : Optional.of(sequential.getBuffer(input.maxIndicesRequired()));
+        Optional<VertexFormat.IndexType> indexType = input.maxIndicesRequired() == 0
+                ? Optional.empty() : Optional.of(sequential.type());
 
         DefaultUniformInputs uniforms = new DefaultUniformInputs(
                 RenderSystem.getProjectionMatrixBuffer(),
@@ -120,6 +138,8 @@ public record PrismTerrainVanillaPassSnapshot(
         return new PrismTerrainVanillaPassSnapshot(
                 group, target, color, Optional.ofNullable(target.getDepthTextureView()),
                 target.width, target.height,
+                new PassOptions(OptionalInt.empty(), OptionalDouble.empty(), false, false, false),
+                new IndexBufferInput(indexBuffer, indexType), List.of("ChunkSection"),
                 input.textureView(), blockAtlasSampler,
                 lightmap, lightmapSampler,
                 layers, uniforms, new Matrix4f(RenderSystem.getModelViewMatrix()),
@@ -142,11 +162,13 @@ public record PrismTerrainVanillaPassSnapshot(
     }
 
     public record LayerInput(RenderPipeline pipeline, PipelineState state,
-            List<?> orderedDraws, boolean reversedByVanilla) {
+            List<?> orderedDraws, boolean reversedByVanilla, boolean pipelineApplied) {
         public LayerInput {
             Objects.requireNonNull(pipeline, "pipeline");
-            Objects.requireNonNull(state, "state");
             Objects.requireNonNull(orderedDraws, "orderedDraws");
+            if (pipelineApplied != (state != null)) {
+                throw new IllegalArgumentException("Pipeline state must exist exactly when vanilla applies the pipeline");
+            }
             orderedDraws = List.copyOf(orderedDraws);
         }
     }
@@ -192,6 +214,26 @@ public record PrismTerrainVanillaPassSnapshot(
                     pipeline.isWriteDepth(), pipeline.getColorLogic(),
                     pipeline.getDepthBiasScaleFactor(), pipeline.getDepthBiasConstant(),
                     pipeline.getVertexFormat(), pipeline.getVertexFormatMode());
+        }
+    }
+
+    /** Exact createRenderPass options used by vanilla for this group. */
+    public record PassOptions(OptionalInt colorClear, OptionalDouble depthClear,
+            boolean stencilAttachment, boolean explicitViewport, boolean explicitScissor) {
+        public PassOptions {
+            Objects.requireNonNull(colorClear, "colorClear");
+            Objects.requireNonNull(depthClear, "depthClear");
+        }
+    }
+
+    /** Exact sequential QUADS index resources selected before vanilla opens the pass. */
+    public record IndexBufferInput(Optional<GpuBuffer> buffer, Optional<VertexFormat.IndexType> type) {
+        public IndexBufferInput {
+            Objects.requireNonNull(buffer, "buffer");
+            Objects.requireNonNull(type, "type");
+            if (buffer.isPresent() != type.isPresent()) {
+                throw new IllegalArgumentException("Index buffer and index type must be present together");
+            }
         }
     }
 

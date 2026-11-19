@@ -3,7 +3,6 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 
 import java.util.EnumSet;
-import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -68,12 +67,8 @@ public record PrismTerrainRenderPassState(
         if (snapshot.target() != null && snapshot.colorAttachment() != null) {
             facets.add(Facet.RENDER_TARGET);
         }
-        if (snapshot.depthAttachment().isPresent()) {
-            // This is depth-attachment presence, not stencil-state introspection.
-            facets.add(Facet.DEPTH_TEST);
-        }
         PrismTerrainVanillaPassSnapshot.LayerInput layerInput = snapshot.layers().get(layer);
-        if (layerInput != null) {
+        if (layerInput != null && layerInput.pipelineApplied()) {
             PrismTerrainVanillaPassSnapshot.PipelineState pipeline = layerInput.state();
             if (pipeline.depthTest() != null) facets.add(Facet.DEPTH_TEST);
             if (pipeline.blend() != null) facets.add(Facet.BLEND);

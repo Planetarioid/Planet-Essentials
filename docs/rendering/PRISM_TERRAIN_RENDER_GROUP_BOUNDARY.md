@@ -21,7 +21,9 @@ or mutating vanilla state:
 - Projection, fog, globals, and lighting resources conditionally supplied by
   `RenderSystem.bindDefaultUniforms`
 - A defensive copy of the current model-view matrix
-- Maximum sequential index count and the existing chunk-section uniform slices
+- Maximum sequential index count, the exact QUADS sequential index-buffer object and index type, and the dynamic `ChunkSection` uniform slot
+- Exact render-pass creation options: no color clear, no depth clear, no stencil attachment, and no explicit viewport/scissor commands
+- Whether vanilla actually applies a layer pipeline (empty layer draw lists skip pipeline and atlas binding)
 
 The draw-order rule is isolated in a pure helper and covered by unit tests.
 Captured pipeline objects retain the exact vanilla blend, depth, cull, and
