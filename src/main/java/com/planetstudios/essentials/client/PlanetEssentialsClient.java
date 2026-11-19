@@ -3,6 +3,9 @@ package com.planetstudios.essentials.client;
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
 import com.planetstudios.essentials.textures.TextureAssetCatalog;
+import com.planetstudios.essentials.textures.TextureDecodeLimits;
+import com.planetstudios.essentials.textures.TextureDecodeService;
+import com.planetstudios.essentials.textures.TexturePixelCache;
 import com.planetstudios.essentials.textures.TextureResourceReloadListener;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -10,10 +13,15 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
 
+import java.util.concurrent.CompletableFuture;
+
 /** Client-only registrations. No client classes are loaded by dedicated servers. */
 public final class PlanetEssentialsClient implements ClientModInitializer {
     private static final long SLOW_TICK_THRESHOLD_NANOS = 50_000_000L;
     private static final TextureAssetCatalog TEXTURE_ASSETS = new TextureAssetCatalog();
+    private static final TexturePixelCache TEXTURE_CACHE = new TexturePixelCache();
+    private static final TextureDecodeService TEXTURE_DECODER =
+            new TextureDecodeService(TextureDecodeLimits.DEFAULT, TEXTURE_CACHE);
 
     private static long tickStartedAtNanos;
     private static boolean performanceSamplingEnabledForCurrentTick;
@@ -22,12 +30,13 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EssentialsRuntime.initialize();
-        TextureResourceReloadListener.register(TEXTURE_ASSETS);
+        TextureResourceReloadListener.register(TEXTURE_ASSETS, TEXTURE_DECODER);
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> record(DiagnosticEventType.CLIENT_STARTED));
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             record(DiagnosticEventType.CLIENT_STOPPING);
             TEXTURE_ASSETS.clear();
+            TEXTURE_DECODER.close();
         });
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> record(DiagnosticEventType.WORLD_JOINED));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> record(DiagnosticEventType.WORLD_LEFT));
@@ -58,9 +67,19 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         });
     }
 
-    /** Read-only metadata snapshot for diagnostics and future texture stages. */
+    /** Metadata-only view used by diagnostics and integration code. */
     public static TextureAssetCatalog.Snapshot textureAssetsSnapshot() {
         return TEXTURE_ASSETS.snapshot();
+    }
+
+    /**
+     * Asynchronously decodes a caller-selected effective PNG resource stream.
+     * The caller remains responsible for obtaining that stream from Minecraft's
+     * active ResourceManager. Completion returns CPU pixels, not a GPU texture.
+     */
+    public static CompletableFuture<com.planetstudios.essentials.textures.DecodedTexture> decodeTexture(
+            String resourceId, TextureDecodeService.InputStreamSource source) {
+        return TEXTURE_DECODER.decode(resourceId, source);
     }
 
     private static void record(DiagnosticEventType type) {

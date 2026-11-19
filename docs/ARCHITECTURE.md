@@ -16,23 +16,22 @@ Planet Essentials is the client-facing control and optimization mod. It owns its
 - Future engine controls are added only when wired to real activation/deactivation.
 - Feature priority is per capability, reversible, and applied only through provider-owned lifecycle callbacks.
 
-## Texture discovery foundation
-- Discovery uses Minecraft's active client ResourceManager during client resource reload.
-- ResourceManager remains authoritative for pack priority; no filesystem or archive scanning.
-- The catalog stores validated identifiers and lightweight metadata only. It does not decode image pixels or intercept rendering.
-- Entries are bounded, immutable to readers, atomically replaced on successful reload, and cleared on shutdown.
-- A failed discovery retains the last known-good snapshot.
-- Texture identities validate namespace syntax, exact namespace/path/resource-ID agreement, normalized resource paths, the textures/ root, and PNG extension/format.
-- The initial decode preflight reads only the fixed PNG signature and IHDR, validates its CRC and PNG encoding fields, and enforces configurable dimension/pixel/encoded-size policy values before a future decoder is allowed to run. It does not decode pixels or claim to enforce the encoded-size limit on a stream yet.
-- Coarse categories (GUI, block, entity, item, particle, environment, mob effect, other) are inferred from resource paths for diagnostics and later policy selection only; they do not imply rendering behavior.
-- This is discovery infrastructure, not a texture optimizer, decoder, cache, mipmap policy, or rendering engine.
+## Texture pipeline
+- Discovery uses Minecraft's active client ResourceManager; Minecraft retains resource-pack priority and lookup authority.
+- The metadata catalog is bounded, deterministic, immutable to readers, atomically replaced, and cleared at client shutdown.
+- Texture identifiers validate namespace, resource ID, normalized path, textures/ root, and PNG format.
+- PNG signature, IHDR CRC, legal bit-depth/color-type combinations, encoding methods, dimensions, and pixel count are checked before ImageIO decode.
+- Encoded bytes are hard-capped before decode. The decoder uses a bounded worker pool (2 workers and a 64-job queue) and produces immutable CPU-side ARGB pixels only.
+- The decoded-pixel LRU is bounded by retained bytes (128 MiB default). Reload increments a generation and invalidates stale work/cache entries; client shutdown stops workers and clears pixels.
+- The decode service is lazy and does not pre-decode the entire resource pack.
+- GPU texture creation, registration, upload, disposal, and render interception are not yet wired. Vanilla rendering remains authoritative; this is not yet a completed rendering optimizer.
 
 ## Lifecycle and safety
 - Common initialization remains dedicated-server safe; client-only work stays behind client entrypoints.
 - No texture decode, shader compile, or profiling on each tick.
 - Diagnostics are bounded local observations only; no telemetry or player/server/account identifiers.
-- Resource-backed caches must be invalidated on reload and released on shutdown.
-- Minecraft retains texture upload, rendering, and resource fallback ownership until an explicit, separately tested integration stage exists.
+- Resource-backed caches are invalidated on reload and released on shutdown.
+- Minecraft retains rendering and fallback ownership until an explicit, separately tested integration stage exists.
 
 ## Performance and correctness
 - Profile before optimizing. Every optimization requires correctness checks and controlled before/after benchmarks.

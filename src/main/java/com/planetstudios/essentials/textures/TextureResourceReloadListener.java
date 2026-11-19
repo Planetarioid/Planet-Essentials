@@ -11,8 +11,8 @@ import org.slf4j.Logger;
 import java.util.Objects;
 
 /**
- * Client resource reload bridge for the metadata-only texture catalog.
- * Texture upload and rendering remain entirely vanilla at this stage.
+ * Client resource reload bridge for texture discovery and decoded-pixel
+ * invalidation. Texture upload and rendering remain vanilla at this stage.
  */
 public final class TextureResourceReloadListener implements SimpleSynchronousResourceReloadListener {
     public static final Identifier LISTENER_ID = Identifier.fromNamespaceAndPath(
@@ -21,14 +21,16 @@ public final class TextureResourceReloadListener implements SimpleSynchronousRes
 
     private static final Logger LOGGER = PlanetEssentials.LOGGER;
     private final TextureAssetCatalog catalog;
+    private final TextureDecodeService decodeService;
 
-    public TextureResourceReloadListener(TextureAssetCatalog catalog) {
+    public TextureResourceReloadListener(TextureAssetCatalog catalog, TextureDecodeService decodeService) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
+        this.decodeService = Objects.requireNonNull(decodeService, "decodeService");
     }
 
-    public static void register(TextureAssetCatalog catalog) {
+    public static void register(TextureAssetCatalog catalog, TextureDecodeService decodeService) {
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES)
-                .registerReloadListener(new TextureResourceReloadListener(catalog));
+                .registerReloadListener(new TextureResourceReloadListener(catalog, decodeService));
     }
 
     @Override
@@ -38,6 +40,7 @@ public final class TextureResourceReloadListener implements SimpleSynchronousRes
 
     @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
+        decodeService.onResourceReload();
         try {
             TextureResourceDiscovery.DiscoveryResult result =
                     TextureResourceDiscovery.discover(resourceManager, TextureAssetCatalog.DEFAULT_MAX_ASSETS);

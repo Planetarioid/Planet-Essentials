@@ -63,11 +63,14 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [~] Compatibility matrix documented; runtime combinations untested
 
 ## 7. Texture optimization engine
-- [~] Asset discovery and lifecycle design (bounded metadata catalog and client reload listener implemented; CI/runtime verification pending)
-- [~] Texture metadata and format validation (namespace, resource identity, path safety, PNG format, and path-based category validation implemented; CI/runtime verification pending)
-- [~] Safe decode/processing pipeline (PNG signature, IHDR CRC, dimensions, pixel-count, bit-depth, and method preflight implemented; pixel decoding and runtime integration remain pending)
-- [ ] Memory-aware caching
-- [ ] Decoded-resource cache reload lifecycle
+- [x] Effective resource discovery through Minecraft ResourceManager, bounded metadata catalog, deterministic immutable snapshots
+- [x] Texture metadata and format validation (namespace, resource identity, path safety, PNG format, and path-based category validation)
+- [x] PNG signature, IHDR CRC, dimensions, pixel-count, bit-depth, and method preflight
+- [x] Encoded PNG stream hard limit enforced before ImageIO decode
+- [x] Bounded asynchronous CPU decode (2 workers, 64 queued jobs, immutable decoded pixels)
+- [x] Memory-aware decoded-pixel LRU cache (128 MiB default hard budget)
+- [x] Resource reload generation invalidation and client-shutdown cleanup
+- [~] Lazy decoder-to-Minecraft texture registration/render integration (CPU pipeline exists; GPU upload path not connected)
 - [ ] Mipmap and filtering policy
 - [ ] Resource-pack coexistence tests
 - [ ] Failure fallback to vanilla resource behavior
