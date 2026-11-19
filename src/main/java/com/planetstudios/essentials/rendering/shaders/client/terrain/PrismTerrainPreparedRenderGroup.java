@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBackend;
 import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBindings;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 
@@ -66,8 +67,8 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
     /** Rejects stale world/snapshot/shader resources before a pass is opened. */
     public boolean isValidFor(ClientLevel currentLevel,
             PrismTerrainRenderGroupBoundary.Snapshot snapshot) {
-        return !closed && currentLevel == level && snapshot != null
-                && snapshot.sequence() == snapshotSequence
+        return !closed && currentLevel == level && Minecraft.getInstance().level == level
+                && snapshot != null && snapshot.sequence() == snapshotSequence
                 && ShaderPackRuntime.isEnabled()
                 && ShaderPackRuntime.pipelineSnapshot().generation() == shaderGeneration;
     }
