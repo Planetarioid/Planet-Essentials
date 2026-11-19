@@ -78,9 +78,9 @@ public final class PrismTerrainChunkLifecycleEvents {
         WorldState world = state(level);
         int chunkX = chunk.getPos().x;
         int chunkZ = chunk.getPos().z;
-        // getMaxSection() is the exclusive upper bound in LevelHeightAccessor.
-        int minSectionY = level.getMinSection();
-        int maxSectionY = level.getMaxSection() - 1;
+        // Both section-coordinate accessors return inclusive build-height section bounds.
+        int minSectionY = level.getMinSectionY();
+        int maxSectionY = level.getMaxSectionY();
         try {
             world.lifecycle.unloadChunk(chunkX, minSectionY, maxSectionY, chunkZ);
             PrismTerrainFrameCoordinator.invalidateChunk(chunkX, chunkZ);
@@ -107,7 +107,7 @@ public final class PrismTerrainChunkLifecycleEvents {
     }
 
     private static void queueGpu(Runnable callback) {
-        RenderSystem.recordRenderCall(callback::run);
+        RenderSystem.queueFencedTask(callback::run);
     }
 
     private static void safeInvalidate(GpuInvalidator invalidator, ClientLevel level,

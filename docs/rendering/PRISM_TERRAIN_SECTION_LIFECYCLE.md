@@ -5,7 +5,7 @@
 - `PrismTerrainSectionLifecycle` issues monotonically increasing revision tokens per section, rejects stale asynchronous results, and invalidates CPU payloads on rebuild or unload.
 - `PrismTerrainChunkLifecycleEvents` registers Fabric 1.21.11 client chunk load/unload and disconnect callbacks.
 - Lifecycle state and the 32 MiB CPU section cache are isolated by `ClientLevel` object identity. Coordinates from separate dimensions or world sessions therefore cannot share a cache.
-- On chunk unload, the bridge invalidates every vertical section from `getMinSection()` through `getMaxSection() - 1`, removes matching meshes from the currently published frame, and schedules registered GPU invalidators on the render thread.
+- On chunk unload, the bridge invalidates every vertical section from `getMinSectionY()` through `getMaxSectionY()`, removes matching meshes from the currently published frame, and schedules registered GPU invalidators on the render thread.
 - On disconnect, per-world CPU caches are cleared and GPU invalidators receive a world-clear callback.
 - Renderer adapters can register a `GpuInvalidator` without transferring cache ownership to this module. Callback failures are isolated and logged.
 

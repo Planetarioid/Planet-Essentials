@@ -238,7 +238,7 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
             }
         };
         if (RenderSystem.isOnRenderThread()) release.run();
-        else RenderSystem.recordRenderCall(release::run);
+        else RenderSystem.queueFencedTask(release::run);
     }
 
     @FunctionalInterface
