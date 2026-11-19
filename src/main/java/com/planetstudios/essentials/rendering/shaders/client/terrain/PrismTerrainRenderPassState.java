@@ -45,9 +45,6 @@ public record PrismTerrainRenderPassState(
         Objects.requireNonNull(capturedSamplers, "capturedSamplers");
         capturedFacets = Set.copyOf(capturedFacets);
         capturedSamplers = Set.copyOf(capturedSamplers);
-        if (capturedFacets.contains(null) || capturedSamplers.contains(null)) {
-            throw new IllegalArgumentException("Render-pass capture cannot contain null entries");
-        }
     }
 
     /** True only when every required vanilla state category and declared sampler was captured. */
