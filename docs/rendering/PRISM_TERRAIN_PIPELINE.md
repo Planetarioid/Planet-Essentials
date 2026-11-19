@@ -189,3 +189,14 @@ Each observed compile begins a new `PrismTerrainSectionLifecycle.BuildToken` and
 
 This is the first real vanilla rebuild integration point, not yet a vanilla mesh replacement. Prism does not currently copy Minecraft's compiled vertex buffers or change which geometry vanilla draws. No listener is registered by default, and the existing opt-in GPU adapter still requires a provider to submit payloads at extraction time. A future adapter can bridge revision-validated rebuild payloads into the frame queue without blocking Minecraft's compiler.
 
+
+
+## Automatic vanilla mesh capture (1.21.11)
+
+Prism now captures the actual output of Minecraft's `SectionCompiler.compile` method, not just the region passed into the compiler. A HEAD hook begins a revision token and preserves a callback-scoped context on the compile worker. A RETURN hook copies each completed `MeshData` layer before Minecraft's upload path owns and closes it.
+
+The capture supports the vanilla `DefaultVertexFormat.BLOCK` layout (32-byte stride): position, RGBA8 color, UV0, packed UV2 light, three-byte normal plus padding. It converts those attributes into Prism V1's 36-byte layout, inserting a neutral zero overlay because vanilla's BLOCK terrain format does not contain UV1. Quad order is preserved. SOLID, CUTOUT, TRANSLUCENT, and TRIPWIRE are assigned stable `planet_essentials:terrain/vanilla/<layer>` material IDs; translucent and tripwire payloads are routed to the translucent stage.
+
+Each layer is copied into an immutable `PrismTerrainVertexData` and published to the existing per-world CPU section cache only if its build token is still current. Unsupported vertex formats, malformed counts, and invalid section-local coordinates are rejected per layer and logged without interrupting vanilla compilation. The source `MeshData` remains owned by Minecraft and is never retained or closed by Prism.
+
+This completes automatic vanilla mesh *capture* and cache population. It does not yet suppress vanilla's own upload/draw, bind these cached vanilla payloads to selected shader programs automatically, or replace vanilla terrain on screen. The next stage is a renderer-owned draw path with a safe vanilla fallback, then active frustum extraction and visibility integration.

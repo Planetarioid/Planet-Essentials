@@ -10,8 +10,9 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Observes the actual vanilla section compile input without replacing vanilla meshing. */
+/** Captures immutable CPU copies of vanilla section geometry without altering vanilla output. */
 @Mixin(SectionCompiler.class)
 public abstract class SectionCompilerMixin {
     @Inject(method = "compile", at = @At("HEAD"))
@@ -19,5 +20,13 @@ public abstract class SectionCompilerMixin {
             RenderSectionRegion region, VertexSorting vertexSorting,
             SectionBufferBuilderPack buffers, CallbackInfo callback) {
         PrismVanillaSectionRebuildEvents.onVanillaCompile(sectionPos, region);
+    }
+
+    @Inject(method = "compile", at = @At("RETURN"))
+    private void planetEssentials$captureVanillaSectionMesh(SectionPos sectionPos,
+            RenderSectionRegion region, VertexSorting vertexSorting,
+            SectionBufferBuilderPack buffers,
+            CallbackInfoReturnable<SectionCompiler.Results> callback) {
+        PrismVanillaSectionRebuildEvents.onVanillaCompileComplete(callback.getReturnValue());
     }
 }

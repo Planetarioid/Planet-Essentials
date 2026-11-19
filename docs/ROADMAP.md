@@ -55,7 +55,9 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Bounded LRU GPU terrain buffer cache with section invalidation and teardown
 - [x] Terrain-specific shader compilation path and validated quad draw executor
 - [x] Fabric END_EXTRACTION frame publication and BEFORE_ENTITIES/BEFORE_TRANSLUCENT terrain scheduling bridge for cooperating providers
-- [~] Revision-token rebuild lifecycle, per-ClientLevel CPU caches, Fabric chunk load/unload hooks, stale-frame removal, render-thread GPU invalidation, opt-in V1 GPU terrain adapter, and actual vanilla SectionCompiler entry hook; compiled vanilla mesh capture/replacement and active camera culling remain
+- [~] Revision-token rebuild lifecycle, per-ClientLevel CPU caches, Fabric chunk load/unload hooks, stale-frame removal, render-thread GPU invalidation, and opt-in V1 GPU terrain adapter
+- [x] Vanilla SectionCompiler result capture: copy SOLID, CUTOUT, TRANSLUCENT, and TRIPWIRE BLOCK-format quad buffers into revision-validated Prism V1 CPU payloads
+- [~] Vanilla terrain GPU draw replacement, live camera-frustum wiring, occlusion culling, and renderer-specific compatibility adapters remain
 - [x] Double-precision camera-relative section-origin transform utility with unit coverage
 - [x] Canonical 16-byte std140 camera-relative section-origin uniform payload and declaration contract
 - [x] Renderer-owned immutable GPU section-uniform allocation, binding injection, and terrain draw overload
