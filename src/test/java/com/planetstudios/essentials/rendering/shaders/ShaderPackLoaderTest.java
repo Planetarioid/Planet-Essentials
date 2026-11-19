@@ -74,7 +74,7 @@ class ShaderPackLoaderTest {
     void adaptsLegacySinglePassManifestToGraph() {
         String legacy = MANIFEST.replace("\"programs\":",
                 "\"worldPostProcessProgram\":\"planet:world\",\"programs\":")
-                .replace("\"fragment\":\"planet:shaders/world.fsh\"",
+                .replace("\"fragment\": \"planet:shaders/world.fsh\"",
                         "\"fragment\":\"planet:shaders/world.fsh\",\"samplers\":[\"SceneColor\"]");
         var parsed = ShaderPackManifest.parse(legacy);
         assertEquals("planet:world", parsed.worldPostProcessProgram());
@@ -109,7 +109,7 @@ class ShaderPackLoaderTest {
     void validatesOptionalWorldPostProcessProgramReference() {
         String valid = MANIFEST.replace("\"programs\":",
                 "\"worldPostProcessProgram\": \"planet:world\", \"programs\":")
-                .replace("\"fragment\":\"planet:shaders/world.fsh\"",
+                .replace("\"fragment\": \"planet:shaders/world.fsh\"",
                         "\"fragment\":\"planet:shaders/world.fsh\",\"samplers\":[\"SceneColor\"]");
         assertEquals("planet:world", ShaderPackManifest.parse(valid).worldPostProcessProgram());
         String invalid = valid.replace("\"worldPostProcessProgram\": \"planet:world\"",
