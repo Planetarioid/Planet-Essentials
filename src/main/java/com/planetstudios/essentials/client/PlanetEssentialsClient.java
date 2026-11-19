@@ -38,7 +38,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> record(DiagnosticEventType.CLIENT_STARTED));
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             record(DiagnosticEventType.CLIENT_STOPPING);
-            TextureGpuRegistrar.releaseAll(client);
+            TextureGpuRegistrar.shutdown(client);
             TEXTURE_ASSETS.clear();
             TEXTURE_DECODER.close();
         });

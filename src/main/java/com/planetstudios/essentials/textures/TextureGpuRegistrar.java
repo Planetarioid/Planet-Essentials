@@ -16,14 +16,16 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Explicit, opt-in bridge from immutable CPU pixels to Minecraft-managed GPU textures.
  *
- * Native pixel allocation/fill happens on the caller (normally decode worker) thread.
- * DynamicTexture construction, TextureManager registration, and release are dispatched
- * to the Minecraft client thread. The manager owns registered DynamicTexture instances.
+ * <p>Native pixel allocation/fill happens on the caller (normally decode worker)
+ * thread. DynamicTexture construction, registration, and release happen on the
+ * Minecraft client thread. The manager owns registered DynamicTexture instances.</p>
  */
 public final class TextureGpuRegistrar {
     private static final String TEXTURE_NAMESPACE = "planet_essentials";
     private static final String TEXTURE_PATH_PREFIX = "decoded/";
     private static final Set<Identifier> OWNED_TEXTURES = ConcurrentHashMap.newKeySet();
+    private static final TextureRegistrationLifecycle LIFECYCLE =
+            new TextureRegistrationLifecycle();
 
     private TextureGpuRegistrar() {}
 
@@ -32,6 +34,13 @@ public final class TextureGpuRegistrar {
         if (client == null || sourceId == null || decoded == null) {
             return CompletableFuture.failedFuture(
                     new NullPointerException("client, sourceId, and decoded are required"));
+        }
+
+        final long requestedGeneration;
+        try {
+            requestedGeneration = LIFECYCLE.beginRegistration();
+        } catch (IllegalStateException closed) {
+            return CompletableFuture.failedFuture(closed);
         }
 
         final NativeImage image;
@@ -53,14 +62,26 @@ public final class TextureGpuRegistrar {
         CompletableFuture<Identifier> result = new CompletableFuture<>();
         try {
             client.execute(() -> {
+                if (!LIFECYCLE.isCurrent(requestedGeneration)) {
+                    image.close();
+                    result.completeExceptionally(new IllegalStateException(
+                            "Texture registration invalidated by reload or shutdown"));
+                    return;
+                }
+
+                DynamicTexture texture = null;
                 try {
-                    DynamicTexture texture = new DynamicTexture(
+                    texture = new DynamicTexture(
                             () -> "Planet Essentials decoded " + sourceId, image);
                     client.getTextureManager().register(textureId, texture);
                     OWNED_TEXTURES.add(textureId);
                     result.complete(textureId);
                 } catch (RuntimeException failure) {
-                    image.close();
+                    if (texture != null) {
+                        texture.close();
+                    } else {
+                        image.close();
+                    }
                     result.completeExceptionally(failure);
                 }
             });
@@ -71,11 +92,19 @@ public final class TextureGpuRegistrar {
         return result;
     }
 
-    /**
-     * Releases only identifiers registered by this adapter. It never releases or
-     * replaces a vanilla/resource-pack identifier.
-     */
+    /** Invalidates queued registrations and releases only textures owned by this adapter. */
     public static void releaseAll(Minecraft client) {
+        LIFECYCLE.invalidatePending();
+        releaseOwned(client);
+    }
+
+    /** Permanently closes this adapter during client shutdown. */
+    public static void shutdown(Minecraft client) {
+        LIFECYCLE.close();
+        releaseOwned(client);
+    }
+
+    private static void releaseOwned(Minecraft client) {
         if (client == null || OWNED_TEXTURES.isEmpty()) {
             return;
         }

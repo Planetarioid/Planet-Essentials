@@ -23,13 +23,13 @@ The client texture pipeline now has five distinct stages:
 - Decoded pixel data is immutable to callers. Cache operations are synchronized and bounded.
 - No per-frame work, filesystem scans, archive scans, packet behavior, or telemetry is added.
 - The CPU decoder never uploads textures or creates GPU objects. The separate adapter creates Minecraft-managed DynamicTexture objects only when explicitly requested; it does not intercept vanilla texture loads or atlas creation.
-- DynamicTexture construction/registration and release are dispatched to the Minecraft client thread. The TextureManager owns registered texture objects; the adapter releases only its own generated identifiers.
+- DynamicTexture construction/registration and release are dispatched to the Minecraft client thread. The TextureManager owns registered texture objects; the adapter releases only its own generated identifiers. A monotonic lifecycle generation invalidates queued registrations on reload, and permanent shutdown rejects any later registration. Failed registration closes the allocated texture/image.
 - GPU allocation, visual correctness, and reload behavior still require a launched-client test.
 
 ## Explicit remaining work
 
 - Integrate the explicit DynamicTexture adapter into an actual consumer only after in-game validation. Atlas interception remains intentionally out of scope for this first adapter.
-- Launch Minecraft 1.21.11 and verify NativeImage pixel colors, texture binding, reload disposal, and GPU resource cleanup.
+- Launch Minecraft 1.21.11 and verify NativeImage pixel colors, texture binding, reload disposal, and GPU resource cleanup. The lifecycle race guard is covered by pure unit tests, but Minecraft-thread scheduling and actual GPU cleanup still require a launched-client test.
 - Wire the generated CPU mip chain into a verified GPU texture allocation/upload path and sampler policy; current DynamicTexture registration still uploads only level zero.
 - Test resource packs, animated textures, atlases, shaders, reload races, mip transitions, and GPU memory cleanup in a launched client.
 - Benchmark decode time, allocation, retained heap, resource reload time, and frame pacing against vanilla.
