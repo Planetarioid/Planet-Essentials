@@ -1,10 +1,12 @@
 package com.planetstudios.essentials.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
+import com.planetstudios.essentials.PlanetEssentials;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackResourceReloadListener;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStageRegistry;
 import com.planetstudios.essentials.rendering.shaders.client.PrismWorldPostProcessor;
+import com.planetstudios.essentials.rendering.shaders.client.PrismRendererCompatibility;
 import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
 import com.planetstudios.essentials.textures.TextureAssetCatalog;
 import com.planetstudios.essentials.textures.TextureDecodeLimits;
@@ -38,6 +40,13 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EssentialsRuntime.initialize();
+        var renderer = PrismRendererCompatibility.detectInstalled();
+        PlanetEssentials.LOGGER.info(
+                "Prism renderer environment: {} (Iris: {}, adapter: {}). {}",
+                renderer.renderer(), renderer.irisPresent(),
+                renderer.adapter().map(PrismRendererAdapter -> PrismRendererAdapter.testedVersion()).orElse("none"),
+                renderer.compatibilityNote());
+
         TextureResourceReloadListener.register(TEXTURE_ASSETS, TEXTURE_DECODER);
         ShaderPackResourceReloadListener.register();
         PrismFrameStageRegistry.registerFabricEvents();

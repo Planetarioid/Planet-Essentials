@@ -44,6 +44,8 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Typed GPU binding sets with exact declared-versus-supplied validation for uniform buffers, texel buffers, and samplers
 - [x] Fabric 1.21.11 BEFORE_ENTITIES, AFTER_ENTITIES, BEFORE_TRANSLUCENT, and END_MAIN drawing-stage dispatch
 - [x] Cooperative Prism material registration and active-pack pipeline resolution API for renderer integrations
+- [x] Renderer environment detection for Vanilla, Sodium, Canvas, VulkanMod, Iris, and legacy OptiFabric signals
+- [x] Explicit renderer-adapter SPI and registry with opt-in feature declarations
 - [~] Built-in END_MAIN world post-process graph and final composite
 - [x] GPU fullscreen multi-pass execution, sampler mapping, last-use target-slot reuse, and final composite
 - [x] Shader-pack manifest authoring for multi-pass world post-processing graphs with strict reference and sampler validation
