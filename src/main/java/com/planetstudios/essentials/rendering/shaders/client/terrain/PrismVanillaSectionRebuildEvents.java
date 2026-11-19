@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.planetstudios.essentials.PlanetEssentials;
+import com.planetstudios.essentials.client.mixin.RenderSectionRegionAccessor;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.chunk.RenderSectionRegion;
 import net.minecraft.core.SectionPos;
@@ -29,10 +30,10 @@ public final class PrismVanillaSectionRebuildEvents {
         return () -> LISTENERS.remove(value);
     }
 
-    static void onVanillaCompile(SectionPos sectionPos, RenderSectionRegion region) {
+    public static void onVanillaCompile(SectionPos sectionPos, RenderSectionRegion region) {
         Objects.requireNonNull(sectionPos, "sectionPos");
         Objects.requireNonNull(region, "region");
-        if (!( ((RenderSectionRegionAccessor) (Object) region).planetEssentials$getLevel() instanceof ClientLevel level)) {
+        if (!(((RenderSectionRegionAccessor) (Object) region).planetEssentials$getLevel() instanceof ClientLevel level)) {
             return;
         }
         PrismTerrainSectionLifecycle.BuildToken token = PrismTerrainChunkLifecycleEvents.beginRebuild(

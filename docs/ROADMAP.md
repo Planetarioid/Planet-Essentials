@@ -62,6 +62,7 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [~] CPU section-AABB frustum culling utility and unit tests; active camera/frustum wiring and occlusion culling remain
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
 - [~] Opt-in full-attribute V1 terrain renderer adapter and per-world GPU cache integration; renderer-specific vanilla/Sodium/Canvas adapters and safe fallback negotiation remain
+- [x] Vanilla render-distance and simulation-distance option bounds extended to 2–64 chunks (server-imposed render-distance caps still apply)
 - [ ] Actual GPU/driver limit detection
 - [ ] In-game visual tests, GPU memory tests, benchmarks
 
