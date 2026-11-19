@@ -31,6 +31,10 @@ class PrismTerrainCullingTest {
         assertEquals(0, visible.get(0).sectionX());
         assertEquals(1, visible.get(1).sectionX());
         assertEquals(3, frame.meshes().size());
+        PrismTerrainFrame culled = PrismTerrainCulling.visibleFrame(frame, boxFrustum(0, 32));
+        assertEquals(2, culled.meshes().size());
+        assertEquals(8, culled.vertexCount());
+        assertEquals(frame.generation(), culled.generation());
     }
     @Test void rejectsInvalidPlanesAndBounds() {
         assertThrows(IllegalArgumentException.class, () -> new PrismTerrainFrustum(List.of(new PrismTerrainFrustum.Plane(0,0,0,0))));

@@ -89,6 +89,14 @@ public final class PrismTerrainFrameCoordinator {
         QUEUE.submit(Objects.requireNonNull(mesh, "mesh"));
     }
 
+    /**
+     * Returns the current immutable frame filtered against a caller-supplied
+     * world-space frustum. Adapters should call this before cache lookup/upload.
+     */
+    public static PrismTerrainFrame visibleFrame(PrismTerrainFrustum frustum) {
+        return PrismTerrainCulling.visibleFrame(publishedFrame, Objects.requireNonNull(frustum, "frustum"));
+    }
+
     /** Last fully published immutable frame, safe to inspect from drawing callbacks. */
     public static PrismTerrainFrame currentFrame() {
         return publishedFrame;

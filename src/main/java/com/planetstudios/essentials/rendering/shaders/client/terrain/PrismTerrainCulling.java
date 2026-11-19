@@ -8,6 +8,12 @@ public final class PrismTerrainCulling {
     private PrismTerrainCulling() {}
 
     /** Filters a frame using section-sized world-space bounds, preserving frame order. */
+    public static PrismTerrainFrame visibleFrame(PrismTerrainFrame frame, PrismTerrainFrustum frustum) {
+        List<PrismTerrainMesh> visible = visibleMeshes(frame, frustum);
+        int vertices = visible.stream().mapToInt(PrismTerrainMesh::vertexCount).sum();
+        return new PrismTerrainFrame(frame.generation(), visible, vertices);
+    }
+
     public static List<PrismTerrainMesh> visibleMeshes(PrismTerrainFrame frame, PrismTerrainFrustum frustum) {
         Objects.requireNonNull(frame, "frame");
         Objects.requireNonNull(frustum, "frustum");
