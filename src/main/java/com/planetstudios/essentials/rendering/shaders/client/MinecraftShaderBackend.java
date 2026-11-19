@@ -22,10 +22,7 @@ import java.util.Set;
 
 /** Minecraft 1.21.11 GPU pipeline compiler. */
 public final class MinecraftShaderBackend implements ShaderBackend {
-    @Override
-    public String name() {
-        return RenderSystem.getBackendDescription();
-    }
+    @Override public String name() { return RenderSystem.getBackendDescription(); }
 
     @Override
     public ShaderCapabilities capabilities() {
@@ -47,18 +44,16 @@ public final class MinecraftShaderBackend implements ShaderBackend {
 
     @Override
     public CompiledProgram compile(ShaderProgramSpec spec) throws ShaderCompileException {
-        return compileWithFormat(spec, DefaultVertexFormat.POSITION);
+        return compileWithFormat(spec, DefaultVertexFormat.POSITION, false);
     }
 
-    /**
-     * Compiles a terrain V1 program using Prism's complete Minecraft vertex format.
-     * This explicit path avoids accidentally binding a terrain buffer to a POSITION-only pipeline.
-     */
-    public CompiledProgram compileTerrain(ShaderProgramSpec spec) throws ShaderCompileException {
-        return compileWithFormat(spec, PrismTerrainVertexLayout.minecraftVertexFormat());
+    /** Compiles a terrain V1 program whose shader inputs match Prism's full vertex contract. */
+    public MinecraftCompiledProgram compileTerrain(ShaderProgramSpec spec) throws ShaderCompileException {
+        return compileWithFormat(spec, PrismTerrainVertexLayout.minecraftVertexFormat(), true);
     }
 
-    private CompiledProgram compileWithFormat(ShaderProgramSpec spec, VertexFormat vertexFormat)
+    private MinecraftCompiledProgram compileWithFormat(
+            ShaderProgramSpec spec, VertexFormat vertexFormat, boolean terrainV1)
             throws ShaderCompileException {
         RenderSystem.assertOnRenderThread();
         GpuDevice device = RenderSystem.tryGetDevice();
@@ -91,38 +86,35 @@ public final class MinecraftShaderBackend implements ShaderBackend {
             });
             if (compiled == null) throw new IllegalStateException("Minecraft returned no compiled render pipeline");
             return new MinecraftCompiledProgram(
-                    spec.id(), spec.contentHash(), spec.bindings(), pipeline, compiled);
+                    spec.id(), spec.contentHash(), spec.bindings(), pipeline, compiled, terrainV1);
         } catch (RuntimeException failure) {
             throw new ShaderCompileException(spec.id(), "Minecraft shader pipeline compilation failed",
                     failure.getClass().getSimpleName() + ": " + String.valueOf(failure.getMessage()));
         }
     }
 
-    /** Public read-only handle used by Prism's draw executor and terrain adapters. */
+    /** Public read-only handle used by Prism draw executors and renderer adapters. */
     public static final class MinecraftCompiledProgram implements CompiledProgram {
         private final String programId;
         private final String sourceHash;
         private final ShaderBindingLayout bindings;
         private final RenderPipeline pipeline;
+        private final boolean terrainV1;
         @SuppressWarnings("unused")
         private final CompiledRenderPipeline compiled;
 
         private MinecraftCompiledProgram(String programId, String sourceHash,
-                ShaderBindingLayout bindings, RenderPipeline pipeline, CompiledRenderPipeline compiled) {
-            this.programId = programId;
-            this.sourceHash = sourceHash;
-            this.bindings = bindings;
-            this.pipeline = pipeline;
-            this.compiled = compiled;
+                ShaderBindingLayout bindings, RenderPipeline pipeline,
+                CompiledRenderPipeline compiled, boolean terrainV1) {
+            this.programId=programId; this.sourceHash=sourceHash; this.bindings=bindings;
+            this.pipeline=pipeline; this.compiled=compiled; this.terrainV1=terrainV1;
         }
-
-        public RenderPipeline pipeline() { return pipeline; }
-        public ShaderBindingLayout bindings() { return bindings; }
-        @Override public String programId() { return programId; }
-        @Override public String sourceHash() { return sourceHash; }
-
-        @Override
-        public void close() {
+        public RenderPipeline pipeline(){return pipeline;}
+        public ShaderBindingLayout bindings(){return bindings;}
+        public boolean supportsTerrainV1(){return terrainV1;}
+        @Override public String programId(){return programId;}
+        @Override public String sourceHash(){return sourceHash;}
+        @Override public void close(){
             // CompiledRenderPipeline is cached and owned by Minecraft's GpuDevice.
         }
     }

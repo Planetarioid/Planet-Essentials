@@ -7,11 +7,13 @@ Prism terrain currently has:
 - A bounded CPU quad mesh builder and immutable extraction-to-draw frame handoff.
 - A versioned 36-byte full-attribute V1 payload: XYZ position, UV0, RGBA8 color, packed light, packed overlay, packed normal, and one byte of vertex padding.
 - A Minecraft 1.21.11 VertexFormat whose attribute offsets and stride are checked against the serializer.
+- A dedicated shader compilation path for terrain V1 programs, separate from Prism's general POSITION-only shader path.
 - Render-thread GPU upload into owned vertex buffers.
 - A render-thread-confined, 128 MiB default LRU GPU cache with replacement, eviction, section invalidation, and deterministic close.
 - A separate 32 MiB default LRU CPU cache for rebuild payloads.
+- A terrain draw executor that refuses POSITION-only programs and submits complete quad meshes through the matching terrain pipeline.
 
-The V1 serialized order is position, UV0, color, light (UV2), overlay (UV1), normal, one padding byte. Minecraft's normal element occupies three bytes; the final byte is explicit stride padding. This is now an explicit backend mapping rather than an assumption.
+The V1 serialized order is position, UV0, color, light (UV2), overlay (UV1), normal, one padding byte. Minecraft's normal element occupies three bytes; the final byte is explicit stride padding. This is an explicit backend mapping rather than an assumption.
 
 ## Resource lifecycle
 
@@ -26,9 +28,9 @@ Borrowed mesh/buffer handles must not outlive their cache entry. Callers must ne
 
 ## Drawing boundary
 
-The uploaded buffer uses the full V1 Minecraft vertex format. It must only be bound to a RenderPipeline created with PrismTerrainVertexLayout.minecraftVertexFormat() and a compatible shader interface. Prism's existing general shader backend still compiles POSITION-only pipelines by default. This change deliberately does not bind the full terrain buffer to those pipelines.
+Terrain programs are compiled through MinecraftShaderBackend.compileTerrain(), which declares the V1 Minecraft vertex format and QUADS mode. PrismTerrainDrawExecutor accepts only a program compiled through this terrain path, validates all shader bindings before changing pass state, binds the uploaded vertex buffer, and submits the complete quad vertex range.
 
-No terrain renderer bridge is registered by default. Vanilla chunk compilation, chunk rebuild hooks, culling, actual terrain draw submission, and renderer-specific adapters remain unfinished. Vanilla terrain remains responsible for the world.
+The executor is a cooperating-renderer API, not an automatic vanilla chunk renderer replacement. No terrain renderer bridge is registered by default. Vanilla chunk compilation, chunk rebuild hooks, culling, world-stage scheduling, camera-relative transforms, and renderer-specific adapters remain unfinished. Vanilla terrain remains responsible for the world.
 
 ## Limits
 
@@ -37,4 +39,4 @@ No terrain renderer bridge is registered by default. Vanilla chunk compilation, 
 - CPU cache: 32 MiB default.
 - GPU cache: 128 MiB default.
 - Section-local positions are constrained to [0, 16].
-- GPU allocation and disposal are render-thread-only.
+- GPU allocation, draw submission, and disposal are render-thread-only.

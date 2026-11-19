@@ -53,8 +53,9 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Versioned full-attribute terrain payload and matching Minecraft vertex-format mapping
 - [x] Render-thread GPU terrain buffer upload and owned allocation lifecycle
 - [x] Bounded LRU GPU terrain buffer cache with section invalidation and teardown
+- [x] Terrain-specific shader compilation path and validated quad draw executor
 - [ ] Vanilla chunk mesher integration and chunk rebuild lifecycle
-- [ ] Terrain-specific shader-pack pipeline compilation and draw submission
+- [ ] World-stage scheduling and camera-relative terrain transforms
 - [ ] Frustum and occlusion culling
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
 - [ ] Renderer-specific integration adapters and safe fallback negotiation
