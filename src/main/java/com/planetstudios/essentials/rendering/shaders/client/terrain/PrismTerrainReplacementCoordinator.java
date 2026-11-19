@@ -222,6 +222,122 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
         }
     }
 
+    /**
+     * Resolves every draw-time resource for one replacement layer before a
+     * Prism RenderPass is opened: state-matched pipeline variant, captured
+     * samplers/default-uniform coverage, current GPU meshes, and immutable
+     * camera-relative section uniform allocations. Any failure rolls back the
+     * allocations made here and returns empty so vanilla remains in control.
+     */
+    public java.util.Optional<PrismTerrainPreparedRenderGroup> prepareDrawResources(
+            ClientLevel level,
+            PrismTerrainRenderGroupBoundary.Snapshot snapshot,
+            PrismTerrainReplacementPlan.Plan plan,
+            ChunkSectionLayer layer,
+            String programId) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        Objects.requireNonNull(plan, "plan");
+        Objects.requireNonNull(layer, "layer");
+        Objects.requireNonNull(programId, "programId");
+        RenderSystem.assertOnRenderThread();
+        ensureOpen();
+        if (!plan.mayReplace() || level == null || Minecraft.getInstance().level != level) {
+            return java.util.Optional.empty();
+        }
+
+        java.util.ArrayList<PrismTerrainSectionUniformAllocation> allocated = new java.util.ArrayList<>();
+        try {
+            var program = ShaderPackRuntime.terrainProgram(programId);
+            if (program == null || !program.supportsTerrainV1()) return java.util.Optional.empty();
+            PrismTerrainSectionUniform.requireDeclared(program.bindings()::uniformBuffers);
+
+            long shaderGeneration = ShaderPackRuntime.pipelineSnapshot().generation();
+            if (shaderGeneration <= 0 || !ShaderPackRuntime.isEnabled()) return java.util.Optional.empty();
+
+            PrismTerrainVanillaPassSnapshot.LayerInput layerInput =
+                    snapshot.passInputs().layers().get(layer);
+            if (layerInput == null || !layerInput.pipelineApplied()) return java.util.Optional.empty();
+
+            Set<String> requiredUniforms = new HashSet<>(program.bindings().uniformBuffers());
+            requiredUniforms.remove(PrismTerrainSectionUniform.BINDING_NAME);
+            Set<String> capturedUniforms = snapshot.passInputs().defaultUniforms().availableNames();
+            if (!capturedUniforms.containsAll(requiredUniforms)) {
+                PlanetEssentials.LOGGER.warn(
+                        "Prism terrain program {} requires uniforms not captured from vanilla: {}",
+                        programId, difference(requiredUniforms, capturedUniforms));
+                return java.util.Optional.empty();
+            }
+
+            Set<String> requiredSamplers = Set.copyOf(program.bindings().samplers());
+            var samplerBindings = snapshot.passInputs().samplerBindingsFor(layer, requiredSamplers);
+            var state = snapshot.renderStateFor(layer);
+            if (!state.isCompleteFor(layer, requiredSamplers)) return java.util.Optional.empty();
+
+            // Pipeline compilation is deliberately completed before any pass opens.
+            var pipeline = PrismTerrainVanillaPipelineCache.resolve(program, layerInput);
+            var camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+            if (camera == null || camera.position() == null) return java.util.Optional.empty();
+            var cameraPosition = camera.position();
+
+            PrismTerrainSectionCache cpuCache = PrismTerrainChunkLifecycleEvents.cache(level);
+            PrismTerrainGpuCache gpuCache = worldState(level).gpuCache;
+            java.util.ArrayList<PrismTerrainPreparedRenderGroup.Draw> draws =
+                    new java.util.ArrayList<>(plan.entries().size());
+
+            for (PrismTerrainReplacementPlan.Entry entry : plan.entries()) {
+                var descriptor = entry.descriptor();
+                if (descriptor.layer() != layer
+                        || !PrismTerrainReplacementReadiness.isReady(descriptor, cpuCache, gpuCache)) {
+                    throw new IllegalStateException("Terrain section became unavailable during draw-resource preflight");
+                }
+                String material = PrismTerrainReplacementReadiness.materialFor(layer);
+                var stage = PrismTerrainReplacementReadiness.stageFor(layer);
+                PrismTerrainGpuMesh mesh = gpuCache.get(descriptor.sectionX(), descriptor.sectionY(),
+                        descriptor.sectionZ(), material, stage);
+                if (mesh == null || mesh.vertexCount() <= 0 || mesh.vertexCount() % 4 != 0) {
+                    throw new IllegalStateException("Terrain GPU mesh is missing or has an invalid quad layout");
+                }
+                var transform = PrismTerrainCameraTransform.forSection(
+                        descriptor.sectionX(), descriptor.sectionY(), descriptor.sectionZ(),
+                        cameraPosition.x, cameraPosition.y, cameraPosition.z);
+                var uniform = PrismTerrainSectionUniformAllocation.upload(RenderSystem.getDevice(), transform);
+                allocated.add(uniform);
+                draws.add(new PrismTerrainPreparedRenderGroup.Draw(
+                        entry.vanillaDraw(), descriptor, mesh, uniform));
+            }
+
+            if (draws.size() != plan.requiredDraws()
+                    || snapshot.sequence() <= 0
+                    || shaderGeneration != ShaderPackRuntime.pipelineSnapshot().generation()
+                    || !ShaderPackRuntime.isEnabled()
+                    || Minecraft.getInstance().level != level) {
+                throw new IllegalStateException("Terrain draw-resource preflight became stale before publication");
+            }
+
+            PrismTerrainPreparedRenderGroup prepared = new PrismTerrainPreparedRenderGroup(
+                    level, snapshot.sequence(), shaderGeneration, layer, program, pipeline,
+                    samplerBindings, capturedUniforms, draws);
+            allocated.clear(); // Ownership transferred to the prepared group.
+            return java.util.Optional.of(prepared);
+        } catch (Exception failure) {
+            for (PrismTerrainSectionUniformAllocation uniform : allocated) {
+                try { uniform.close(); } catch (RuntimeException closeFailure) {
+                    failure.addSuppressed(closeFailure);
+                }
+            }
+            PlanetEssentials.LOGGER.warn(
+                    "Prism could not finish draw-resource preflight for terrain layer {}; vanilla remains in control",
+                    layer.label(), failure);
+            return java.util.Optional.empty();
+        }
+    }
+
+    private static Set<String> difference(Set<String> required, Set<String> available) {
+        Set<String> missing = new HashSet<>(required);
+        missing.removeAll(available);
+        return Set.copyOf(missing);
+    }
+
     public synchronized int cachedWorldCount() {
         return worlds.size();
     }
