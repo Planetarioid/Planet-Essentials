@@ -48,7 +48,9 @@ preparation overload that consumes the exact captured ordered draw list, the
 identity draw index, and the evidence record together. Translucent order is not
 reversed twice. The snapshot can open a Prism-owned pass against the captured
 attachments and replay the four optional default uniforms by their exact
-Minecraft names. The draw executor has a matching overload for section draws
+Minecraft names, and build only the declared Sampler0/Sampler2 bindings from
+the captured block atlas and lightmap resources. Unknown sampler names fail
+closed. The draw executor has a matching overload for section draws
 when those defaults were already installed on the pass. The adapter marks only facts represented by the snapshot and
 reports missing facets explicitly. It recognizes the captured atlas/lightmap
 samplers as `Sampler0` and `Sampler2`, accounts for absent optional default

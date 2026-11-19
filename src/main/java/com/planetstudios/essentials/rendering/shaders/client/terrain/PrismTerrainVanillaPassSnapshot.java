@@ -23,6 +23,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
 import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
+import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBindings;
 
 import org.joml.Matrix4f;
 
@@ -112,6 +113,33 @@ public record PrismTerrainVanillaPassSnapshot(
         return device.createCommandEncoder().createRenderPass(
                 () -> debugLabel, colorAttachment, passOptions.colorClear(),
                 depthAttachment.orElse(null), passOptions.depthClear());
+    }
+
+    /**
+     * Builds only the sampler bindings declared by a Prism terrain program,
+     * using the exact vanilla atlas/lightmap resources. Unknown sampler names
+     * fail closed instead of silently binding the wrong texture.
+     */
+    public MinecraftShaderBindings samplerBindingsFor(
+            ChunkSectionLayer layer, Set<String> requiredSamplers) {
+        Objects.requireNonNull(layer, "layer");
+        Objects.requireNonNull(requiredSamplers, "requiredSamplers");
+        LayerInput layerInput = layers.get(layer);
+        MinecraftShaderBindings.Builder builder = MinecraftShaderBindings.builder();
+        for (String name : requiredSamplers) {
+            switch (name) {
+                case "Sampler0" -> {
+                    if (layerInput == null || !layerInput.pipelineApplied()) {
+                        throw new IllegalStateException("Vanilla did not bind the block atlas for empty layer " + layer);
+                    }
+                    builder.sampler("Sampler0", blockAtlas, blockAtlasSampler);
+                }
+                case "Sampler2" -> builder.sampler("Sampler2", lightmap, lightmapSampler);
+                default -> throw new IllegalArgumentException(
+                        "Unsupported vanilla terrain sampler in captured pass: " + name);
+            }
+        }
+        return builder.build();
     }
 
     /**
