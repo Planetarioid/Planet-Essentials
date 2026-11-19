@@ -34,6 +34,16 @@ class PrismTerrainVertexDataTest {
         assertEquals(first.contentHash(), same.contentHash());
         assertNotEquals(first.contentHash(), changed.contentHash());
     }
+    @Test void growsItsBackingStorageOnlyAsRequiredForLargerVanillaSections() {
+        var builder=PrismTerrainVertexData.builder(0,0,0,"example:stone",PrismFrameStage.BEFORE_ENTITIES);
+        for(int i=0;i<20;i++) {
+            float x=(i%4);
+            builder.addQuad(v(x,0,0,0,0),v(x+1,0,0,1,0),v(x+1,1,0,1,1),v(x,1,0,0,1));
+        }
+        var data=builder.build();
+        assertEquals(80,data.vertexCount());
+        assertEquals(80*36,data.byteSize());
+    }
     @Test void rejectsNonFiniteUvAndOutOfSectionPosition() {
         assertThrows(IllegalArgumentException.class,()->v(Float.NaN,0,0,0,0));
         assertThrows(IllegalArgumentException.class,()->v(0,0,17,0,0));
