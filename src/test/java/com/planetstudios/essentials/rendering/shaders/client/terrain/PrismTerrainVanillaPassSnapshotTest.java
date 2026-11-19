@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalDouble;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,6 +26,27 @@ class PrismTerrainVanillaPassSnapshotTest {
         assertEquals(source, PrismTerrainVanillaPassSnapshot.effectiveDrawOrder(ChunkSectionLayer.SOLID, source));
         assertEquals(source, PrismTerrainVanillaPassSnapshot.effectiveDrawOrder(ChunkSectionLayer.CUTOUT, source));
         assertEquals(source, PrismTerrainVanillaPassSnapshot.effectiveDrawOrder(ChunkSectionLayer.TRIPWIRE, source));
+    }
+
+    @Test
+    void indexBufferAndTypeMustBeCapturedTogether() {
+        assertDoesNotThrow(() -> new PrismTerrainVanillaPassSnapshot.IndexBufferInput(
+                Optional.empty(), Optional.empty()));
+        assertThrows(IllegalArgumentException.class, () ->
+                new PrismTerrainVanillaPassSnapshot.IndexBufferInput(Optional.empty(),
+                        Optional.of(net.minecraft.client.renderer.chunk.ChunkSectionLayer.values().length == -1
+                                ? null : com.mojang.blaze3d.vertex.VertexFormat.IndexType.SHORT))));
+    }
+
+    @Test
+    void vanillaPassOptionsRepresentNoClearOrExplicitScissor() {
+        var options = new PrismTerrainVanillaPassSnapshot.PassOptions(
+                OptionalInt.empty(), OptionalDouble.empty(), false, false, false);
+        assertTrue(options.colorClear().isEmpty());
+        assertTrue(options.depthClear().isEmpty());
+        assertFalse(options.stencilAttachment());
+        assertFalse(options.explicitViewport());
+        assertFalse(options.explicitScissor());
     }
 
     @Test

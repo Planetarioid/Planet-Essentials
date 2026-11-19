@@ -86,7 +86,9 @@ public record PrismTerrainRenderPassState(
             facets.add(Facet.LIGHTMAP);
             samplers.add("Sampler2");
         }
-        if (snapshot.blockAtlas() != null && snapshot.blockAtlasSampler() != null) {
+        boolean atlasBound = snapshot.layers().values().stream()
+                .anyMatch(PrismTerrainVanillaPassSnapshot.LayerInput::pipelineApplied);
+        if (atlasBound && snapshot.blockAtlas() != null && snapshot.blockAtlasSampler() != null) {
             samplers.add("Sampler0");
         }
         if (snapshot.defaultUniforms().fog() != null) facets.add(Facet.FOG);
