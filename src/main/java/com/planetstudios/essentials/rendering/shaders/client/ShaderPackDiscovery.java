@@ -29,7 +29,7 @@ public final class ShaderPackDiscovery {
     public static DiscoveryResult discover(ResourceManager resourceManager) {
         Objects.requireNonNull(resourceManager, "resourceManager");
         MinecraftShaderResourceResolver resolver = new MinecraftShaderResourceResolver(resourceManager);
-        Map<Identifier, Resource> manifests = resourceManager.findResources(
+        Map<Identifier, Resource> manifests = resourceManager.listResources(
                 ROOT, id -> id.getPath().startsWith(ROOT + "/")
                         && id.getPath().endsWith("/prism.json"));
 
@@ -56,7 +56,7 @@ public final class ShaderPackDiscovery {
     }
 
     private static String readManifest(Resource resource, String location) {
-        try (resource; InputStream input = resource.open()) {
+        try (InputStream input = resource.open()) {
             byte[] bytes = input.readNBytes(ShaderPackManifest.MAX_MANIFEST_BYTES + 1);
             if (bytes.length > ShaderPackManifest.MAX_MANIFEST_BYTES) {
                 throw new IllegalArgumentException("Manifest exceeds 64 KiB: " + location);

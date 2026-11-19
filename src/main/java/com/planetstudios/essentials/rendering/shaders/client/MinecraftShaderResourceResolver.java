@@ -29,7 +29,7 @@ public final class MinecraftShaderResourceResolver implements ShaderPackLoader.S
         }
         Resource resource = resourceManager.getResource(id)
                 .orElseThrow(() -> new IllegalArgumentException("Shader resource not found: " + resourceId));
-        try (resource; InputStream input = resource.open()) {
+        try (InputStream input = resource.open()) {
             byte[] bytes = input.readNBytes(maxBytes + 1);
             if (bytes.length > maxBytes) {
                 throw new IllegalArgumentException("Shader resource exceeds byte limit: " + resourceId);

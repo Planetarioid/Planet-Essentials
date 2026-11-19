@@ -12,7 +12,7 @@ import com.planetstudios.essentials.rendering.shaders.ShaderCapabilities;
 import com.planetstudios.essentials.rendering.shaders.ShaderCompileException;
 import com.planetstudios.essentials.rendering.shaders.ShaderProgramSpec;
 import com.planetstudios.essentials.rendering.shaders.ShaderStage;
-import net.minecraft.client.gl.UniformType;
+import com.mojang.blaze3d.shaders.UniformType;
 import net.minecraft.resources.Identifier;
 
 import java.util.HashSet;
