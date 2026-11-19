@@ -32,10 +32,7 @@ public final class PrismTerrainDrawExecutor {
             MinecraftShaderBackend.MinecraftCompiledProgram program,
             PrismTerrainGpuMesh mesh,
             MinecraftShaderBindings bindings,
-            Set<String> externallyBoundUniforms,
-            GpuBuffer explicitIndexBuffer,
-            VertexFormat.IndexType explicitIndexType,
-            int firstIndex) {
+            Set<String> externallyBoundUniforms) {
         return drawValidated(pass, program, mesh, bindings,
                 Objects.requireNonNull(externallyBoundUniforms, "externallyBoundUniforms"), null, null, 0);
     }
@@ -67,7 +64,10 @@ public final class PrismTerrainDrawExecutor {
             MinecraftShaderBackend.MinecraftCompiledProgram program,
             PrismTerrainGpuMesh mesh,
             MinecraftShaderBindings bindings,
-            Set<String> externallyBoundUniforms) {
+            Set<String> externallyBoundUniforms,
+            GpuBuffer explicitIndexBuffer,
+            VertexFormat.IndexType explicitIndexType,
+            int firstIndex) {
         RenderSystem.assertOnRenderThread();
         Objects.requireNonNull(pass, "pass");
         Objects.requireNonNull(program, "program");
