@@ -10,6 +10,8 @@ The client texture pipeline now has five distinct stages:
 4. **Decoded pixel cache:** An access-order LRU cache is bounded by retained pixel bytes (128 MiB by default). A resource reload advances a generation, clears cached pixels, and makes stale queued/in-flight work unable to publish into the new generation.
 5. **Minecraft resource resolution:** The public client decode entry point accepts a Minecraft Identifier, validates it as a catalog-compatible PNG texture identity, and opens the effective resource through the active ResourceManager. The resource stream is owned and closed by the worker. Minecraft's resource-pack priority remains authoritative.
 
+6. **Opt-in GPU registration adapter:** Decoded ARGB pixels can be explicitly registered as a Minecraft-managed DynamicTexture. Native pixel allocation/fill is performed before dispatching DynamicTexture creation and TextureManager registration to the client thread. Generated identifiers live in the Planet Essentials namespace and are derived from a stable SHA-256 of the source identifier, so this path never overwrites vanilla/resource-pack identifiers. The adapter tracks only textures it owns and releases them on resource reload and client shutdown. This is an integration API, not a replacement for vanilla texture lookup or atlas loading.
+
 ## Ownership and safety
 
 - Minecraft remains the source of truth for resource-pack priority and resource identifiers.
@@ -18,12 +20,14 @@ The client texture pipeline now has five distinct stages:
 - Worker count, queue length, encoded byte size, dimensions, pixels, and cache bytes all have hard limits.
 - Decoded pixel data is immutable to callers. Cache operations are synchronized and bounded.
 - No per-frame work, filesystem scans, archive scans, packet behavior, or telemetry is added.
-- The decoder never uploads textures or creates GPU objects. Vanilla rendering remains authoritative until a version-verified client texture registration/reload integration is implemented and tested.
+- The CPU decoder never uploads textures or creates GPU objects. The separate adapter creates Minecraft-managed DynamicTexture objects only when explicitly requested; it does not intercept vanilla texture loads or atlas creation.
+- DynamicTexture construction/registration and release are dispatched to the Minecraft client thread. The TextureManager owns registered texture objects; the adapter releases only its own generated identifiers.
+- GPU allocation, visual correctness, and reload behavior still require a launched-client test.
 
 ## Explicit remaining work
 
-- Connect decoded pixels to Minecraft's texture registration/atlas path without changing vanilla resource-pack priority or fallback.
-- Verify the exact 1.21.11 NativeImage/DynamicTexture/render-thread APIs and add GPU upload/disposal ownership.
+- Integrate the explicit DynamicTexture adapter into an actual consumer only after in-game validation. Atlas interception remains intentionally out of scope for this first adapter.
+- Launch Minecraft 1.21.11 and verify NativeImage pixel colors, texture binding, reload disposal, and GPU resource cleanup.
 - Add mipmap/filtering policy only after upload integration and visual tests.
 - Test resource packs, animated textures, atlases, shaders, reload races, and GPU memory cleanup in a launched client.
 - Benchmark decode time, allocation, retained heap, resource reload time, and frame pacing against vanilla.

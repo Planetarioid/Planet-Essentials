@@ -7,6 +7,7 @@ import com.planetstudios.essentials.textures.TextureDecodeLimits;
 import com.planetstudios.essentials.textures.TextureDecodeService;
 import com.planetstudios.essentials.textures.TexturePixelCache;
 import com.planetstudios.essentials.textures.TextureResourceDecoder;
+import com.planetstudios.essentials.textures.TextureGpuRegistrar;
 import com.planetstudios.essentials.textures.TextureResourceReloadListener;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -37,6 +38,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> record(DiagnosticEventType.CLIENT_STARTED));
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             record(DiagnosticEventType.CLIENT_STOPPING);
+            TextureGpuRegistrar.releaseAll(client);
             TEXTURE_ASSETS.clear();
             TEXTURE_DECODER.close();
         });
@@ -82,6 +84,15 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
             Identifier resourceId) {
         return TextureResourceDecoder.decode(
                 Minecraft.getInstance().getResourceManager(), resourceId, TEXTURE_DECODER);
+    }
+
+    /**
+     * Explicit opt-in GPU path. Decoding remains asynchronous; only the final
+     * DynamicTexture creation/registration is dispatched to Minecraft's thread.
+     */
+    public static CompletableFuture<Identifier> decodeAndRegisterTexture(Identifier resourceId) {
+        return decodeTexture(resourceId).thenCompose(decoded ->
+                TextureGpuRegistrar.register(Minecraft.getInstance(), resourceId, decoded));
     }
 
     private static void record(DiagnosticEventType type) {

@@ -4,6 +4,7 @@ import com.planetstudios.essentials.PlanetEssentials;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.resources.Identifier;
+import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.slf4j.Logger;
@@ -40,6 +41,7 @@ public final class TextureResourceReloadListener implements SimpleSynchronousRes
 
     @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
+        TextureGpuRegistrar.releaseAll(Minecraft.getInstance());
         decodeService.onResourceReload();
         try {
             TextureResourceDiscovery.DiscoveryResult result =
