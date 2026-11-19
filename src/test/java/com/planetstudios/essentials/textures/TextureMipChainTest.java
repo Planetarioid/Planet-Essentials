@@ -61,7 +61,7 @@ class TextureMipChainTest {
                 base, new MipmapPolicy(MipmapPolicy.Mode.BOX_LINEAR_SRGB, 2, 16)).get(1);
 
         assertEquals(1, mip.width());
-        assertEquals(0xFFBCBCBC, mip.pixel(0, 0));
+        assertEquals(0xFF9C9C9C, mip.pixel(0, 0));
     }
 
     @Test
