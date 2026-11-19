@@ -9,11 +9,11 @@ class PrismTerrainVertexDataTest {
     private static PrismTerrainVertex v(float x,float y,float z,float u,float t) {
         return new PrismTerrainVertex(x,y,z,u,t,0xAABBCCDD,0x00F000F0,0,0x007F0000);
     }
-    @Test void encodesVersionedThirtyTwoByteLayout() {
+    @Test void encodesVersionedThirtySixByteLayout() {
         var data=PrismTerrainVertexData.builder(0,0,0,"example:stone",PrismFrameStage.BEFORE_ENTITIES)
                 .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1)).build();
-        assertEquals(1,data.layoutVersion()); assertEquals(32,data.strideBytes());
-        assertEquals(128,data.byteSize()); assertEquals(4,data.vertexCount());
+        assertEquals(1,data.layoutVersion()); assertEquals(36,data.strideBytes());
+        assertEquals(144,data.byteSize()); assertEquals(4,data.vertexCount());
         assertEquals(ByteOrder.LITTLE_ENDIAN,data.readOnlyBuffer().order());
         assertTrue(data.readOnlyBuffer().isReadOnly());
     }

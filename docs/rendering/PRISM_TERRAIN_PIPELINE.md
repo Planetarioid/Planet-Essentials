@@ -6,7 +6,7 @@ Prism has two bounded CPU-side terrain geometry contracts for cooperating render
 
 - A compact POSITION-only procedural quad mesh for shader-generated geometry.
 - A versioned full-attribute V1 vertex payload: XYZ position, UV, RGBA8 color, packed light, packed overlay, and packed normal.
-- A fixed 32-byte vertex stride with explicit offsets and a stable layout fingerprint.
+- A fixed 36-byte vertex stride with explicit offsets and a stable layout fingerprint.
 - Immutable payloads with defensive copies and a read-only little-endian byte view.
 - Section-local coordinates, finite UV validation, namespaced material IDs, and solid/cutout or translucent draw-stage classification.
 - A synchronized extraction queue with deterministic ordering, duplicate rejection, and per-frame mesh/vertex limits.
@@ -32,5 +32,5 @@ No terrain renderer bridge is registered by default. Until one is implemented an
 - Maximum 65,536 vertices per individual mesh or full-attribute payload.
 - Maximum 512 meshes and 1,048,576 vertices per published frame queue.
 - Position coordinates are section-local and constrained to [0, 16].
-- Full-attribute V1 stride is 32 bytes, encoded little-endian.
+- Full-attribute V1 stride is 36 bytes, encoded little-endian.
 - CPU payloads are immutable. GPU upload/cache, frustum/occlusion culling, chunk rebuild invalidation, draw submission, and GPU resource lifetime remain future work.
