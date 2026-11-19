@@ -64,7 +64,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 
 ## 6. Performance architecture
 - [x] Establish baseline profiling methodology (repeatable scenarios, environment controls, frame-time/CPU/GPU/JVM metrics, diagnostics A/B procedure, acceptance criteria documented in docs/performance/BASELINE_PROFILING.md)
-- [ ] Identify measurable CPU bottlenecks
+- [~] Identify measurable CPU bottlenecks (source-level measurement targets documented in docs/performance/CPU_BOTTLENECK_INVESTIGATION.md; awaiting a real Java Flight Recording before identifying or changing any bottleneck)
 - [ ] Identify measurable GPU/render bottlenecks
 - [ ] Memory allocation and cache strategy
 - [ ] Audio processing review

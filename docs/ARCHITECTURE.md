@@ -21,7 +21,7 @@ Planet Essentials is the central client-facing control and optimization mod in t
 ## Planet Lib integration
 - Planet Lib is pinned as a Git submodule and built as a sibling Gradle project.
 - Essentials compiles against Planet Lib's named-elements API but does not package it or require it at runtime; Planet Lib remains optional at runtime.
-- Essentials exposes the typed `planet_essentials_api` Fabric entrypoint at API version 1.
+- Essentials exposes the typed planet_essentials_api Fabric entrypoint at API version 1.
 - Integration descriptors are immutable, validated, deduplicated by mod ID, and exposed as read-only snapshots.
 - Missing Planet Lib leaves Essentials in standalone mode. Planet Lib owns API discovery and version negotiation, and must treat unavailable or incompatible Essentials APIs as soft failures.
 
@@ -29,14 +29,14 @@ Planet Essentials is the central client-facing control and optimization mod in t
 
 Planned internal areas:
 
-- `config`: settings models, persistence, profiles, migrations
-- `integration`: Planet Lib bridge and per-mod integration lifecycle
-- `features`: feature/provider coordination and preference presentation
-- `diagnostics`: bounded FPS samples, local lifecycle/slow-tick events, explicit local JSON export, and user-visible reporting
-- `performance`: measured optimization systems and benchmark support
-- `texture`: dedicated texture optimization engine
-- `shader`: shader lifecycle, compilation, capability checks, fallback
-- `client`: client-only screens and lifecycle integration
+- config: settings models, persistence, profiles, migrations
+- integration: Planet Lib bridge and per-mod integration lifecycle
+- features: feature/provider coordination and preference presentation
+- diagnostics: bounded FPS samples, local lifecycle/slow-tick events, explicit local JSON export, and user-visible reporting
+- performance: measured optimization systems and benchmark support
+- texture: dedicated texture optimization engine
+- shader: shader lifecycle, compilation, capability checks, fallback
+- client: client-only screens and lifecycle integration
 
 These are architectural boundaries, not a commitment to create empty packages before they are needed.
 
@@ -57,7 +57,8 @@ These are architectural boundaries, not a commitment to create empty packages be
 - Cache only when invalidation and resource ownership are explicit.
 - Do not trade correctness, server validation, or compatibility for responsiveness.
 - Every optimization needs a correctness check and a before/after benchmark.
-- Baseline measurements must follow `docs/performance/BASELINE_PROFILING.md`; methodology completion does not imply any measured baseline or verified performance gain.
+- Baseline measurements must follow docs/performance/BASELINE_PROFILING.md; methodology completion does not imply any measured baseline or verified performance gain.
+- CPU candidates are only hypotheses until confirmed by a Java Flight Recording using docs/performance/CPU_BOTTLENECK_INVESTIGATION.md. Do not implement speculative hot-path changes.
 
 ## Configuration rules
 
