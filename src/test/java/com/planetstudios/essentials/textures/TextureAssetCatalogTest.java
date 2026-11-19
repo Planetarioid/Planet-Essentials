@@ -8,9 +8,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TextureAssetCatalogTest {
     private static TextureAssetDescriptor asset(String id) {
-        String path = id.substring(id.indexOf(':') + 1);
-        String namespace = id.substring(0, id.indexOf(':'));
-        return new TextureAssetDescriptor(id, namespace, "textures/" + path + ".png",
+        int separator = id.indexOf(':');
+        String namespace = id.substring(0, separator);
+        String relativePath = id.substring(separator + 1);
+        String path = "textures/" + relativePath + ".png";
+        return new TextureAssetDescriptor(namespace + ":" + path, namespace, path,
                 TextureAssetDescriptor.TextureFormat.PNG);
     }
 
@@ -29,7 +31,7 @@ class TextureAssetCatalogTest {
         TextureAssetCatalog.Snapshot snapshot = catalog.replace(
                 List.of(asset("zeta:second"), asset("alpha:first"), asset("zeta:second")), false);
         assertEquals(1, snapshot.generation());
-        assertEquals(List.of("alpha:first", "zeta:second"),
+        assertEquals(List.of("alpha:textures/first.png", "zeta:textures/second.png"),
                 snapshot.assets().stream().map(TextureAssetDescriptor::resourceId).toList());
         assertFalse(snapshot.truncated());
     }
@@ -41,7 +43,7 @@ class TextureAssetCatalogTest {
                 List.of(asset("a:first"), asset("b:second"), asset("c:third")), false);
         assertEquals(2, snapshot.size());
         assertTrue(snapshot.truncated());
-        assertEquals(List.of("a:first", "b:second"),
+        assertEquals(List.of("a:textures/first.png", "b:textures/second.png"),
                 snapshot.assets().stream().map(TextureAssetDescriptor::resourceId).toList());
     }
 
@@ -66,23 +68,23 @@ class TextureAssetCatalogTest {
     @Test
     void validatesNamespaceAndResourceIdentity() {
         assertThrows(IllegalArgumentException.class, () -> new TextureAssetDescriptor(
-                "Minecraft:stone", "Minecraft", "textures/stone.png",
+                "Minecraft:textures/stone.png", "Minecraft", "textures/stone.png",
                 TextureAssetDescriptor.TextureFormat.PNG));
         assertThrows(IllegalArgumentException.class, () -> new TextureAssetDescriptor(
-                "minecraft:other", "minecraft", "textures/stone.png",
+                "minecraft:textures/other.png", "minecraft", "textures/stone.png",
                 TextureAssetDescriptor.TextureFormat.PNG));
     }
 
     @Test
     void rejectsTraversalMalformedPathsAndUnsupportedFormats() {
         assertThrows(IllegalArgumentException.class, () -> new TextureAssetDescriptor(
-                "minecraft:../outside", "minecraft", "textures/../outside.png",
+                "minecraft:textures/../outside.png", "minecraft", "textures/../outside.png",
                 TextureAssetDescriptor.TextureFormat.PNG));
         assertThrows(IllegalArgumentException.class, () -> new TextureAssetDescriptor(
-                "minecraft:bad//path", "minecraft", "textures/bad//path.png",
+                "minecraft:textures/bad//path.png", "minecraft", "textures/bad//path.png",
                 TextureAssetDescriptor.TextureFormat.PNG));
         assertThrows(IllegalArgumentException.class, () -> new TextureAssetDescriptor(
-                "minecraft:stone.jpg", "minecraft", "textures/stone.jpg",
+                "minecraft:textures/stone.jpg", "minecraft", "textures/stone.jpg",
                 TextureAssetDescriptor.TextureFormat.PNG));
     }
 
