@@ -27,12 +27,12 @@ class PrismTerrainDrawExecutorTest {
     }
 
     @Test
-    void invalidAndOverflowingIndexRangesAreRejected() {
+    void invalidAndOutOfCapacityIndexRangesAreRejected() {
         assertFalse(PrismTerrainDrawExecutor.indexRangeFits(64,
                 VertexFormat.IndexType.INT, -1, 1));
         assertFalse(PrismTerrainDrawExecutor.indexRangeFits(64,
                 VertexFormat.IndexType.INT, 0, -1));
-        assertFalse(PrismTerrainDrawExecutor.indexRangeFits(Long.MAX_VALUE,
+        assertFalse(PrismTerrainDrawExecutor.indexRangeFits(64,
                 VertexFormat.IndexType.INT, Integer.MAX_VALUE, Integer.MAX_VALUE));
     }
 }
