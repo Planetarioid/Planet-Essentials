@@ -36,7 +36,7 @@ class PrismTerrainVanillaPipelineCacheTest {
         RenderPipeline shader = pipeline("test/prism", PrismTerrainVertexLayout.minecraftVertexFormat(),
                 DepthTestFunction.LEQUAL_DEPTH_TEST, PolygonMode.FILL, true, true, true, true);
         RenderPipeline vanilla = pipeline("test/vanilla", DefaultVertexFormat.BLOCK,
-                DepthTestFunction.NO_DEPTH_TEST, PolygonMode.LINE, false, false, true, false);
+                DepthTestFunction.NO_DEPTH_TEST, PolygonMode.WIREFRAME, false, false, true, false);
 
         RenderPipeline clone = PrismTerrainVanillaPipelineCache.buildForVanillaState(
                 shader, PrismTerrainVanillaPassSnapshot.PipelineState.capture(vanilla));
