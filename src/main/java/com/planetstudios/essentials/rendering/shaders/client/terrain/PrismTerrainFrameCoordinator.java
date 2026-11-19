@@ -93,6 +93,12 @@ public final class PrismTerrainFrameCoordinator {
         publishedFrame = new PrismTerrainFrame(frame.generation(), retained, vertices);
     }
 
+    /** Drops every published mesh when the active client world is disconnected. */
+    public static void clearPublishedFrame() {
+        PrismTerrainFrame previous = publishedFrame;
+        publishedFrame = new PrismTerrainFrame(previous.generation() + 1, List.of(), 0);
+    }
+
     public static PrismTerrainFrame currentFrame() {
         return publishedFrame;
     }

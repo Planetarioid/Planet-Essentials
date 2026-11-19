@@ -93,6 +93,7 @@ public final class PrismTerrainChunkLifecycleEvents {
     }
 
     private static void clearAllWorlds() {
+        PrismTerrainFrameCoordinator.clearPublishedFrame();
         Map<ClientLevel, WorldState> removed;
         synchronized (WORLDS) {
             removed = new IdentityHashMap<>(WORLDS);
