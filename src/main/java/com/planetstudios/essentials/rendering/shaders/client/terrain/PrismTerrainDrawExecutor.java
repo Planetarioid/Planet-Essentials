@@ -30,9 +30,9 @@ public final class PrismTerrainDrawExecutor {
         if(mesh.vertexCount()<=0 || mesh.vertexCount()%4!=0) {
             throw new IllegalArgumentException("Prism terrain mesh must contain complete quads");
         }
-        bindings.validate(program.bindings());
+        // Validate the complete binding set before mutating RenderPass state.
+        bindings.apply(pass, program.bindings());
         pass.setPipeline(program.pipeline());
-        bindings.applyValidated(pass);
         pass.setVertexBuffer(0,mesh.vertexBuffer());
         pass.draw(0,mesh.vertexCount());
         return true;
