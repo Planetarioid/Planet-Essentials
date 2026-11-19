@@ -44,7 +44,8 @@ Planet Essentials is the central client-facing control and optimization mod in t
 - Profile before optimizing; every optimization needs correctness checks and before/after benchmarks.
 - Baseline environment control and capture steps are in docs/performance/BASELINE_PROFILING.md.
 - Benchmark and correctness acceptance gates are in docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md. They require repeated controlled A/B runs, a predeclared primary metric, guardrail metrics, automated/runtime/visual/compatibility checks, and an explicit Accepted/Rejected/Inconclusive outcome.
-- A protocol document is not a benchmark result. No performance gain may be claimed until a real report has passed the acceptance gates.
+- Compatibility combinations and result vocabulary are in docs/COMPATIBILITY_TEST_MATRIX.md. A matrix row remains unknown until exact versions and runtime scenarios have been tested.
+- A protocol document is not a benchmark result or compatibility pass.
 - CPU and GPU investigations remain deferred until real recordings/telemetry are available.
 - Memory/cache constraints are in docs/performance/MEMORY_ALLOCATION_AND_CACHE_STRATEGY.md.
 - Audio, particle, animation, and network boundaries are documented in their respective review files; those reviews do not claim optimizations.

@@ -73,7 +73,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Network processing review documented; no packet behavior changes or network optimization implemented
 - [x] Per-system enable/disable controls (Diagnostics master switch plus independent FPS-monitoring and event-collection switches; persisted in schema 4; future optimization engines will register their own controls when implemented)
 - [~] Benchmark correctness and performance impact protocol documented in docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md; no optimization has been benchmarked or accepted yet
-- [ ] Compatibility test matrix
+- [~] Compatibility test matrix documented in docs/COMPATIBILITY_TEST_MATRIX.md; runtime combinations remain untested
 
 ## 7. Texture optimization engine
 - [ ] Asset discovery and lifecycle design

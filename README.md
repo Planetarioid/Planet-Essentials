@@ -21,7 +21,7 @@ The repository is in active development. Implemented foundations include typed c
 - [ ] Full settings navigation and per-mod panels
 - [ ] Client and dedicated-server validation
 
-See [the development roadmap](docs/ROADMAP.md) and [baseline profiling protocol](docs/performance/BASELINE_PROFILING.md) for the tracked work.
+See [the development roadmap](docs/ROADMAP.md), [baseline profiling protocol](docs/performance/BASELINE_PROFILING.md), [benchmark and correctness protocol](docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md), and [compatibility test matrix](docs/COMPATIBILITY_TEST_MATRIX.md) for tracked work and verification requirements.
 
 ## Planned responsibilities
 
