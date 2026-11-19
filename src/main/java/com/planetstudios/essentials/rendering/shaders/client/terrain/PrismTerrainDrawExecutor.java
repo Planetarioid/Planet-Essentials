@@ -25,7 +25,7 @@ public final class PrismTerrainDrawExecutor {
         PrismTerrainSectionUniform.requireDeclared(program.bindings()::uniformBuffers);
         MinecraftShaderBindings completeBindings = Objects.requireNonNull(bindings, "bindings")
                 .withUniformBuffer(PrismTerrainSectionUniform.BINDING_NAME, sectionUniform.slice());
-        return drawValidated(pass, program, mesh, completeBindings, Set.of(), null, null, 0);
+        return drawValidated(pass, program, program.pipeline(), mesh, completeBindings, Set.of(), null, null, 0);
     }
 
     /** Draws one section while accounting for captured vanilla default uniforms already bound to the pass. */
@@ -40,7 +40,7 @@ public final class PrismTerrainDrawExecutor {
         PrismTerrainSectionUniform.requireDeclared(program.bindings()::uniformBuffers);
         MinecraftShaderBindings completeBindings = Objects.requireNonNull(bindings, "bindings")
                 .withUniformBuffer(PrismTerrainSectionUniform.BINDING_NAME, sectionUniform.slice());
-        return drawValidated(pass, program, mesh, completeBindings,
+        return drawValidated(pass, program, program.pipeline(), mesh, completeBindings,
                 externallyBoundUniforms, null, null, 0);
     }
 
@@ -50,7 +50,7 @@ public final class PrismTerrainDrawExecutor {
             PrismTerrainGpuMesh mesh,
             MinecraftShaderBindings bindings,
             Set<String> externallyBoundUniforms) {
-        return drawValidated(pass, program, mesh, bindings,
+        return drawValidated(pass, program, program.pipeline(), mesh, bindings,
                 Objects.requireNonNull(externallyBoundUniforms, "externallyBoundUniforms"), null, null, 0);
     }
 
@@ -59,7 +59,7 @@ public final class PrismTerrainDrawExecutor {
             MinecraftShaderBackend.MinecraftCompiledProgram program,
             PrismTerrainGpuMesh mesh,
             MinecraftShaderBindings bindings) {
-        return drawValidated(pass, program, mesh, bindings, Set.of(), null, null, 0);
+        return drawValidated(pass, program, program.pipeline(), mesh, bindings, Set.of(), null, null, 0);
     }
 
     /**
@@ -93,7 +93,7 @@ public final class PrismTerrainDrawExecutor {
             int firstIndex) {
         Objects.requireNonNull(indexBuffer, "indexBuffer");
         if (firstIndex < 0) throw new IllegalArgumentException("First terrain index cannot be negative");
-        return drawValidated(pass, program, mesh, bindings,
+        return drawValidated(pass, program, program.pipeline(), mesh, bindings,
                 Objects.requireNonNull(externallyBoundUniforms, "externallyBoundUniforms"),
                 indexBuffer, VertexFormat.IndexType.SHORT, firstIndex);
     }
