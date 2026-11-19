@@ -57,7 +57,8 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Fabric END_EXTRACTION frame publication and BEFORE_ENTITIES/BEFORE_TRANSLUCENT terrain scheduling bridge for cooperating providers
 - [ ] Vanilla chunk mesher integration and chunk rebuild lifecycle
 - [x] Double-precision camera-relative section-origin transform utility with unit coverage
-- [ ] Section-origin shader uniform wiring and renderer-specific GPU submission
+- [x] Canonical 16-byte std140 camera-relative section-origin uniform payload and declaration contract
+- [ ] Renderer-owned GPU uniform upload, binding, and terrain submission
 - [ ] Frustum and occlusion culling
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
 - [ ] Renderer-specific integration adapters and safe fallback negotiation

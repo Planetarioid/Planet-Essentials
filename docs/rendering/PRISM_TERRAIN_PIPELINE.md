@@ -83,3 +83,27 @@ This utility is unit-tested for negative sections, fractional camera positions,
 large world coordinates, local-coordinate bounds, and payload immutability.
 It does not yet wire a concrete section-origin uniform into a production
 renderer or replace vanilla chunk rendering.
+
+
+## Section-origin uniform contract
+
+Terrain V1 now has a canonical per-section origin uniform payload:
+`PrismTerrainSectionUniform` encodes the camera-relative XYZ origin as a
+16-byte std140-compatible vec4 named `PrismSection`. The fourth component is
+reserved and set to 1.0. The helper returns a fresh direct, native-order
+ByteBuffer suitable for upload.
+
+A renderer adapter must:
+1. Compute `PrismTerrainCameraTransform` from the section coordinates and
+   current camera world position.
+2. Encode it with `PrismTerrainSectionUniform.encode`.
+3. Upload all 16 bytes to a uniform buffer using the active Minecraft GPU
+   device/command encoder.
+4. Bind the resulting buffer slice as `PrismSection` in
+   `MinecraftShaderBindings`.
+5. Declare `PrismSection` in the terrain program's uniform-buffer bindings.
+
+The helper validates the declaration contract. It does not allocate or own GPU
+buffers; adapters retain ownership and must update/recycle the per-draw uniform
+allocation according to their GPU synchronization strategy. No built-in
+renderer adapter is registered yet.
