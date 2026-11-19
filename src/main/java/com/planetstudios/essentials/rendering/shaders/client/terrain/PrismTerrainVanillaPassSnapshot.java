@@ -329,10 +329,4 @@ public record PrismTerrainVanillaPassSnapshot(
         }
     }
 
-    public record DefaultUniformInputs(
-            GpuBufferSlice projection,
-            GpuBufferSlice fog,
-            GpuBuffer globals,
-            GpuBufferSlice lighting) {
-    }
 }
