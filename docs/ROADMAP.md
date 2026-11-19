@@ -45,7 +45,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 
 ### Still required for vanilla terrain takeover
 - [x] Define and test a fail-closed vanilla render-pass state completeness contract
-- [x] Instrument the exact ChunkSectionsToRender.renderGroup boundary and capture group/sampler identity
+- [x] Instrument the exact ChunkSectionsToRender.renderGroup boundary and capture group, sampler/atlas identity, ordered draw-list snapshots, index budget, and chunk-section uniform slices
 - [ ] Capture full live render-pass state at the 1.21.11 render-group boundary
 - [ ] Reproduce captured render target, samplers, light texture, default uniforms, layer pipeline state, and exact ordering
 - [ ] Validate draw index mapping against actual 1.21.11 runtime behavior
