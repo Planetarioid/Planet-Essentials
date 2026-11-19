@@ -38,10 +38,11 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Backend-neutral capability snapshot and compiler SPI
 - [x] Transactional reload and rollback on compilation failure
 - [x] Native handle disposal, invalidation, and close lifecycle
-- [x] Unit tests for source validation, hashing, rollback, duplicate IDs, and lifecycle
+- [x] Bounded schema-1 shader-pack manifest parser and immutable pack model
+- [x] Bounded shader source loader, resource-path validation, and aggregate pack budget
+- [ ] Minecraft ResourceManager discovery and resource-pack priority
 - [ ] Concrete Minecraft 1.21.11 GPU shader backend
-- [ ] Shader-pack discovery, manifest/schema, versioning, pack priority
-- [ ] Uniform, sampler, buffer, framebuffer, render-target binding model
+- [ ] Uniform, sampler, buffer, framebuffer, and render-target binding model
 - [ ] World render-stage integration and shader-pack features
 - [ ] Actual GPU/driver capability detection
 - [ ] Vanilla fallback and coexistence with Sodium, Iris, and other renderers
