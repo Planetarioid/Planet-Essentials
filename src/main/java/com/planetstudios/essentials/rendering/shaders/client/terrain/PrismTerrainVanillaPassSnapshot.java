@@ -11,6 +11,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.resources.Identifier;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.opengl.GlDevice;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
@@ -138,7 +139,7 @@ public record PrismTerrainVanillaPassSnapshot(
         return new PrismTerrainVanillaPassSnapshot(
                 group, target, color, Optional.ofNullable(target.getDepthTextureView()),
                 target.width, target.height,
-                new PassOptions(OptionalInt.empty(), OptionalDouble.empty(), false, false, false),
+                passOptions(target),
                 new IndexBufferInput(indexBuffer, indexType), List.of("ChunkSection"),
                 input.textureView(), blockAtlasSampler,
                 lightmap, lightmapSampler,
@@ -217,12 +218,44 @@ public record PrismTerrainVanillaPassSnapshot(
         }
     }
 
+    /**
+     * Captures backend defaults only when the active vanilla device is the
+     * known 1.21.11 OpenGL backend. Unknown backends remain explicitly unknown.
+     */
+    private static PassOptions passOptions(RenderTarget target) {
+        boolean openGl = RenderSystem.getDevice() instanceof GlDevice;
+        Optional<ViewportState> viewport = openGl
+                ? Optional.of(new ViewportState(0, 0, target.width, target.height))
+                : Optional.empty();
+        Optional<ScissorState> scissor = openGl
+                ? Optional.of(new ScissorState(false, 0, 0, 0, 0))
+                : Optional.empty();
+        return new PassOptions(OptionalInt.empty(), OptionalDouble.empty(),
+                false, viewport, scissor);
+    }
+
+    public record ViewportState(int x, int y, int width, int height) {
+        public ViewportState {
+            if (width <= 0 || height <= 0) throw new IllegalArgumentException("Invalid viewport dimensions");
+        }
+    }
+
+    public record ScissorState(boolean enabled, int x, int y, int width, int height) {
+        public ScissorState {
+            if (enabled && (width <= 0 || height <= 0)) {
+                throw new IllegalArgumentException("Enabled scissor must have positive dimensions");
+            }
+        }
+    }
+
     /** Exact createRenderPass options used by vanilla for this group. */
     public record PassOptions(OptionalInt colorClear, OptionalDouble depthClear,
-            boolean stencilAttachment, boolean explicitViewport, boolean explicitScissor) {
+            boolean stencilAttachment, Optional<ViewportState> viewport, Optional<ScissorState> scissor) {
         public PassOptions {
             Objects.requireNonNull(colorClear, "colorClear");
             Objects.requireNonNull(depthClear, "depthClear");
+            Objects.requireNonNull(viewport, "viewport");
+            Objects.requireNonNull(scissor, "scissor");
         }
     }
 

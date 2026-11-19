@@ -39,12 +39,12 @@ class PrismTerrainVanillaPassSnapshotTest {
     @Test
     void vanillaPassOptionsRepresentNoClearOrExplicitScissor() {
         var options = new PrismTerrainVanillaPassSnapshot.PassOptions(
-                OptionalInt.empty(), OptionalDouble.empty(), false, false, false);
+                OptionalInt.empty(), OptionalDouble.empty(), false, Optional.empty(), Optional.empty());
         assertTrue(options.colorClear().isEmpty());
         assertTrue(options.depthClear().isEmpty());
         assertFalse(options.stencilAttachment());
-        assertFalse(options.explicitViewport());
-        assertFalse(options.explicitScissor());
+        assertTrue(options.viewport().isEmpty());
+        assertTrue(options.scissor().isEmpty());
     }
 
     @Test

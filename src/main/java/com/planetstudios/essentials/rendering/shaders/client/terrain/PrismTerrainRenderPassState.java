@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -67,6 +68,9 @@ public record PrismTerrainRenderPassState(
         if (snapshot.target() != null && snapshot.colorAttachment() != null) {
             facets.add(Facet.RENDER_TARGET);
         }
+        if (snapshot.passOptions().viewport().isPresent()) facets.add(Facet.VIEWPORT);
+        if (snapshot.passOptions().scissor().isPresent()) facets.add(Facet.SCISSOR);
+        if (!snapshot.passOptions().stencilAttachment()) facets.add(Facet.STENCIL_STATE);
         PrismTerrainVanillaPassSnapshot.LayerInput layerInput = snapshot.layers().get(layer);
         if (layerInput != null && layerInput.pipelineApplied()) {
             PrismTerrainVanillaPassSnapshot.PipelineState pipeline = layerInput.state();
@@ -75,6 +79,7 @@ public record PrismTerrainRenderPassState(
             facets.add(Facet.CULL);
             facets.add(Facet.COLOR_MASK);
             facets.add(Facet.LAYER_PIPELINE);
+            if (pipeline.vertexFormat() == DefaultVertexFormat.BLOCK) facets.add(Facet.OVERLAY);
             if (layerInput.orderedDraws() != null) facets.add(Facet.DRAW_ORDER);
         }
         if (snapshot.lightmap() != null && snapshot.lightmapSampler() != null) {
@@ -85,17 +90,11 @@ public record PrismTerrainRenderPassState(
                 && snapshot.blockAtlas() != null && snapshot.blockAtlasSampler() != null) {
             samplers.add("Sampler0");
         }
-        if (snapshot.defaultUniforms().fog() != null) facets.add(Facet.FOG);
+        // The snapshot retains both present and absent optional default bindings.
+        facets.add(Facet.FOG);
         if (snapshot.modelView() != null) facets.add(Facet.MODEL_VIEW_MATRIX);
-        if (snapshot.defaultUniforms().projection() != null) facets.add(Facet.PROJECTION_MATRIX);
-        if (snapshot.defaultUniforms().projection() != null
-                && snapshot.defaultUniforms().fog() != null
-                && snapshot.defaultUniforms().globals() != null
-                && snapshot.defaultUniforms().lighting() != null) {
-            facets.add(Facet.DEFAULT_UNIFORMS);
-        }
-        // VIEWPORT, SCISSOR, STENCIL_STATE, and OVERLAY intentionally remain
-        // absent until they are observed or proven irrelevant by runtime parity tests.
+        facets.add(Facet.PROJECTION_MATRIX);
+        facets.add(Facet.DEFAULT_UNIFORMS);
         return new PrismTerrainRenderPassState(layer, facets, samplers);
     }
 

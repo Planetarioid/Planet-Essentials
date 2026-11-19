@@ -22,7 +22,8 @@ or mutating vanilla state:
   `RenderSystem.bindDefaultUniforms`
 - A defensive copy of the current model-view matrix
 - Maximum sequential index count, the exact QUADS sequential index-buffer object and index type, and the dynamic `ChunkSection` uniform slot
-- Exact render-pass creation options from the pinned 1.21.11 implementation: no color clear, no depth clear, no stencil attachment, and no explicit viewport/scissor commands. These are source-derived call arguments, not GPU-driver readback
+- Exact render-pass creation options from the pinned 1.21.11 implementation: no color clear, no depth clear, and no stencil attachment
+- OpenGL-only viewport and scissor defaults: full attachment viewport at (0,0), scissor disabled. These are guarded against the active `GlDevice` and derived from the 1.21.11 backend implementation, not GPU-driver readback. Unknown backends leave both facets missing
 - Whether vanilla actually applies a layer pipeline (empty layer draw lists skip pipeline and atlas binding)
 
 The draw-order rule is isolated in a pure helper and covered by unit tests.
@@ -44,9 +45,11 @@ Known remaining state boundary:
 The snapshot can now be converted into a `PrismTerrainRenderPassState`
 evidence record. The adapter marks only facts represented by the snapshot and
 reports missing facets explicitly. It recognizes the captured atlas/lightmap
-samplers as `Sampler0` and `Sampler2`. It deliberately does not mark viewport,
-scissor, stencil, or overlay as captured. Consequently, the replacement gate
-remains closed until those categories are resolved and runtime parity is proven.
+samplers as `Sampler0` and `Sampler2`, accounts for absent optional default
+uniforms, and marks overlay as not used when the captured pipeline uses the
+vanilla BLOCK vertex format. Viewport/scissor defaults are marked only for the
+known OpenGL backend. Runtime parity and actual Prism pass reproduction are
+still unverified, so vanilla rendering remains untouched.
 
 This remains observational. Vanilla still owns every terrain draw, and the
 fail-closed `PrismTerrainRenderPassState` gate remains mandatory.
