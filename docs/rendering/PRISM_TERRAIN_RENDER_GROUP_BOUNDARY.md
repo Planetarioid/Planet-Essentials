@@ -39,5 +39,12 @@ Known remaining state boundary:
 - Capturing resource references does not prove that Prism can reproduce the
   pass or its timing safely.
 
+The snapshot can now be converted into a `PrismTerrainRenderPassState`
+evidence record. The adapter marks only facts represented by the snapshot and
+reports missing facets explicitly. It recognizes the captured atlas/lightmap
+samplers as `Sampler0` and `Sampler2`. It deliberately does not mark viewport,
+scissor, stencil, or overlay as captured. Consequently, the replacement gate
+remains closed until those categories are resolved and runtime parity is proven.
+
 This remains observational. Vanilla still owns every terrain draw, and the
 fail-closed `PrismTerrainRenderPassState` gate remains mandatory.

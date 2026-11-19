@@ -3,6 +3,8 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 
 import java.util.EnumSet;
+import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -23,7 +25,8 @@ public record PrismTerrainRenderPassState(
         RENDER_TARGET,
         VIEWPORT,
         SCISSOR,
-        DEPTH_STENCIL,
+        DEPTH_TEST,
+        STENCIL_STATE,
         BLEND,
         CULL,
         COLOR_MASK,
@@ -45,6 +48,66 @@ public record PrismTerrainRenderPassState(
         Objects.requireNonNull(capturedSamplers, "capturedSamplers");
         capturedFacets = Set.copyOf(capturedFacets);
         capturedSamplers = Set.copyOf(capturedSamplers);
+    }
+
+    /**
+     * Converts only facts present in a live vanilla snapshot. Unobserved state
+     * remains absent, so this adapter cannot accidentally open the replacement gate.
+     */
+    public static PrismTerrainRenderPassState fromVanillaSnapshot(
+            ChunkSectionLayer layer, PrismTerrainVanillaPassSnapshot snapshot) {
+        Objects.requireNonNull(layer, "layer");
+        Objects.requireNonNull(snapshot, "snapshot");
+        if (snapshot.group().layers().length == 0
+                || java.util.Arrays.stream(snapshot.group().layers()).noneMatch(candidate -> candidate == layer)) {
+            throw new IllegalArgumentException("Layer is not part of the captured vanilla group: " + layer);
+        }
+
+        EnumSet<Facet> facets = EnumSet.noneOf(Facet.class);
+        HashSet<String> samplers = new HashSet<>();
+        if (snapshot.target() != null && snapshot.colorAttachment() != null) {
+            facets.add(Facet.RENDER_TARGET);
+        }
+        if (snapshot.depthAttachment().isPresent()) {
+            // This is depth-attachment presence, not stencil-state introspection.
+            facets.add(Facet.DEPTH_TEST);
+        }
+        PrismTerrainVanillaPassSnapshot.LayerInput layerInput = snapshot.layers().get(layer);
+        if (layerInput != null) {
+            PrismTerrainVanillaPassSnapshot.PipelineState pipeline = layerInput.state();
+            if (pipeline.depthTest() != null) facets.add(Facet.DEPTH_TEST);
+            if (pipeline.blend() != null) facets.add(Facet.BLEND);
+            facets.add(Facet.CULL);
+            facets.add(Facet.COLOR_MASK);
+            facets.add(Facet.LAYER_PIPELINE);
+            if (layerInput.orderedDraws() != null) facets.add(Facet.DRAW_ORDER);
+        }
+        if (snapshot.lightmap() != null && snapshot.lightmapSampler() != null) {
+            facets.add(Facet.LIGHTMAP);
+            samplers.add("Sampler2");
+        }
+        if (snapshot.blockAtlas() != null && snapshot.blockAtlasSampler() != null) {
+            samplers.add("Sampler0");
+        }
+        if (snapshot.defaultUniforms().fog() != null) facets.add(Facet.FOG);
+        if (snapshot.modelView() != null) facets.add(Facet.MODEL_VIEW_MATRIX);
+        if (snapshot.defaultUniforms().projection() != null) facets.add(Facet.PROJECTION_MATRIX);
+        if (snapshot.defaultUniforms().projection() != null
+                && snapshot.defaultUniforms().fog() != null
+                && snapshot.defaultUniforms().globals() != null
+                && snapshot.defaultUniforms().lighting() != null) {
+            facets.add(Facet.DEFAULT_UNIFORMS);
+        }
+        // VIEWPORT, SCISSOR, STENCIL_STATE, and OVERLAY intentionally remain
+        // absent until they are observed or proven irrelevant by runtime parity tests.
+        return new PrismTerrainRenderPassState(layer, facets, samplers);
+    }
+
+    /** Returns the exact missing state categories for diagnostics and fail-closed decisions. */
+    public Set<Facet> missingFacets() {
+        EnumSet<Facet> missing = EnumSet.copyOf(REQUIRED);
+        missing.removeAll(capturedFacets);
+        return Set.copyOf(missing);
     }
 
     /** True only when every required vanilla state category and declared sampler was captured. */

@@ -47,6 +47,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [x] Define and test a fail-closed vanilla render-pass state completeness contract
 - [x] Instrument the exact ChunkSectionsToRender.renderGroup boundary and capture group, sampler/atlas identity, ordered draw-list snapshots, index budget, and chunk-section uniform slices
 - [x] Snapshot vanilla output target/attachments, block atlas and lightmap bindings, default uniform resources, model-view matrix, per-layer pipeline identities/state, and exact vanilla draw order
+- [x] Convert observed vanilla snapshot facts into fail-closed render-state evidence and report missing facets
 - [ ] Validate viewport/scissor defaults and attachment behavior against the active GPU backend
 - [ ] Serialize/reproduce captured target, samplers, default uniforms, pipeline state, and exact ordering in a Prism-owned pass
 - [ ] Validate draw index mapping against actual 1.21.11 runtime behavior

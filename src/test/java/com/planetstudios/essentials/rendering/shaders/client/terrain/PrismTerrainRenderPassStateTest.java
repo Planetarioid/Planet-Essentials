@@ -36,6 +36,14 @@ class PrismTerrainRenderPassStateTest {
         assertFalse(state.isCompleteFor(ChunkSectionLayer.CUTOUT, Set.of()));
     }
 
+    @Test void missingFacetsAreReportedExactly() {
+        var state = new PrismTerrainRenderPassState(ChunkSectionLayer.SOLID,
+                Set.of(PrismTerrainRenderPassState.Facet.RENDER_TARGET), Set.of());
+        assertTrue(state.missingFacets().contains(PrismTerrainRenderPassState.Facet.VIEWPORT));
+        assertTrue(state.missingFacets().contains(PrismTerrainRenderPassState.Facet.STENCIL_STATE));
+        assertFalse(state.missingFacets().contains(PrismTerrainRenderPassState.Facet.RENDER_TARGET));
+    }
+
     @Test void capturedCollectionsAreImmutableCopies() {
         var facets = EnumSet.allOf(PrismTerrainRenderPassState.Facet.class);
         var samplers = new java.util.HashSet<>(Set.of("LightSampler"));
