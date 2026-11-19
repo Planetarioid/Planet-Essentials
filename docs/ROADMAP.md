@@ -43,15 +43,14 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Client resource-reload discovery and transactional GPU compilation lifecycle
 - [x] Typed GPU binding sets with exact declared-versus-supplied validation for uniform buffers, texel buffers, and samplers
 - [~] Fabric 1.21.11 AFTER_ENTITIES, BEFORE_TRANSLUCENT, and END_MAIN callback dispatch
-- [~] Generic draw execution into caller-owned render passes; built-in world-stage orchestration remains
-- [~] Built-in END_MAIN full-screen world post-process pass with isolated source/destination targets
+- [~] Generic draw execution into caller-owned render passes; terrain/entity stage orchestration remains
+- [~] Built-in END_MAIN world post-process graph and final composite
 - [ ] Terrain/entity shader pipeline integration and extraction-to-draw state flow
 - [x] Owned GPU color/depth render targets, bounded dimensions, and render-pass creation
 - [x] Transactional render-target resize/ownership manager
 - [x] Validated post-processing dependency graph with deterministic topological execution
-- [~] Single-pass scene-color post-processing and final composite
-- [x] Multi-pass graph dependency validation, GPU fullscreen pass execution, sampler mapping, last-use target-slot reuse, and final composite
-- [ ] Multi-pass graph authoring in shader-pack manifests, terrain/entity feature mapping, and full shader-pack compatibility
+- [x] GPU fullscreen multi-pass execution, sampler mapping, last-use target-slot reuse, and final composite
+- [x] Shader-pack manifest authoring for multi-pass world post-processing graphs with strict reference and sampler validation
 - [ ] Terrain/entity pipeline integration and full shader-pack feature compatibility
 - [ ] Actual GPU/driver limit detection and renderer negotiation
 - [ ] Vanilla fallback and coexistence with Sodium, Iris, and other renderers

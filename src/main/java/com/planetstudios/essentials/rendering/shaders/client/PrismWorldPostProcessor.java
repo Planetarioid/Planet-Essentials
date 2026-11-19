@@ -8,12 +8,10 @@ import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
 import net.minecraft.client.renderer.rendertype.OutputTarget;
 
-import java.util.List;
 import java.util.OptionalDouble;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.planetstudios.essentials.PlanetEssentials;
-import com.planetstudios.essentials.rendering.shaders.PrismPostProcessGraph;
 
 /** Optional world post-process graph integration at the END_MAIN drawing stage. */
 public final class PrismWorldPostProcessor {
@@ -33,8 +31,8 @@ public final class PrismWorldPostProcessor {
 
     private static void render() {
         if (!ShaderPackRuntime.isEnabled()) return;
-        String programId = ShaderPackRuntime.worldPostProcessProgramId();
-        if (programId.isBlank()) return;
+        var graph = ShaderPackRuntime.worldPostProcessGraph();
+        if (graph == null) return;
         long generation = ShaderPackRuntime.pipelineSnapshot().generation();
         if (failedGeneration == generation) return;
 
@@ -44,15 +42,6 @@ public final class PrismWorldPostProcessor {
             RenderTarget main = OutputTarget.MAIN_TARGET.getRenderTarget();
             if (device == null || main == null || main.getColorTextureView() == null) return;
             ensureDeviceResources(device);
-
-            PrismPostProcessGraph graph = PrismPostProcessGraph.builder()
-                    .externalInput(PrismPostProcessExecutor.SCENE_COLOR)
-                    .pass(new PrismPostProcessGraph.Pass(
-                            "planet:world_post", programId,
-                            List.of(PrismPostProcessExecutor.SCENE_COLOR),
-                            "planet:world_post_output"))
-                    .output("planet:world_post_output")
-                    .build();
 
             if (!PrismPostProcessExecutor.execute(
                     graph, main, device, sceneSampler, fullscreenQuad, TARGETS)) {

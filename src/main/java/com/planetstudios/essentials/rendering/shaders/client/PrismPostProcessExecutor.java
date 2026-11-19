@@ -16,14 +16,9 @@ import java.util.Objects;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 
-/**
- * Executes a validated multi-pass graph using reusable, non-aliasing GPU targets.
- * All passes are fullscreen draws. Sampler declarations map positionally to the
- * pass input list, making binding order deterministic and keeping graph metadata
- * independent from Minecraft GPU objects.
- */
+/** Executes validated fullscreen passes with last-use-aware GPU target-slot reuse. */
 public final class PrismPostProcessExecutor {
-    public static final String SCENE_COLOR = "minecraft:scene_color";
+    public static final String SCENE_COLOR = PrismPostProcessGraph.SCENE_COLOR;
 
     private PrismPostProcessExecutor() {}
 
@@ -41,8 +36,8 @@ public final class PrismPostProcessExecutor {
         Objects.requireNonNull(quad, "quad");
         Objects.requireNonNull(targets, "targets");
 
-        if (!graph.externalInputs().contains(SCENE_COLOR)) {
-            throw new IllegalArgumentException("A world post-process graph must declare minecraft:scene_color");
+        if (!graph.externalInputs().equals(java.util.Set.of(SCENE_COLOR))) {
+            throw new IllegalArgumentException("World post-processing requires exactly minecraft:scene_color as its external input");
         }
         if (mainTarget.getColorTextureView() == null) return false;
 
@@ -52,8 +47,7 @@ public final class PrismPostProcessExecutor {
         int width = mainTarget.width;
         int height = mainTarget.height;
 
-        for (int index = 0; index < graph.passes().size(); index++) {
-            PrismPostProcessGraph.Pass passSpec = graph.passes().get(index);
+        for (PrismPostProcessGraph.Pass passSpec : graph.passes()) {
             ShaderBindingLayout layout = ShaderPackRuntime.programBindings(passSpec.programId());
             if (layout == null) return false;
             if (!layout.uniformBuffers().isEmpty() || !layout.texelBuffers().isEmpty()) {
@@ -97,10 +91,7 @@ public final class PrismPostProcessExecutor {
         return true;
     }
 
-    /**
-     * Linear-scan allocation: resources whose last consumer has completed may share
-     * a physical target slot. The graph output remains live through final composite.
-     */
+    /** Resources can share a physical target only after their final consumer has run. */
     static Map<String, Integer> allocateSlots(PrismPostProcessGraph graph) {
         List<PrismPostProcessGraph.Pass> passes = graph.passes();
         Map<String, Integer> producer = new HashMap<>();
@@ -115,7 +106,7 @@ public final class PrismPostProcessExecutor {
         }
         lastUse.put(graph.output(), passes.size());
 
-        record Slot(int id, int availableAfter) {}
+        record Slot(int availableAfter) {}
         List<Slot> slots = new ArrayList<>();
         Map<String, Integer> assignment = new HashMap<>();
         for (int i = 0; i < passes.size(); i++) {
@@ -129,9 +120,9 @@ public final class PrismPostProcessExecutor {
             }
             if (chosen < 0) {
                 chosen = slots.size();
-                slots.add(new Slot(chosen, lastUse.getOrDefault(resource, i)));
+                slots.add(new Slot(lastUse.getOrDefault(resource, i)));
             } else {
-                slots.set(chosen, new Slot(chosen, lastUse.getOrDefault(resource, i)));
+                slots.set(chosen, new Slot(lastUse.getOrDefault(resource, i)));
             }
             assignment.put(resource, chosen);
         }

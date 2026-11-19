@@ -2,6 +2,7 @@ package com.planetstudios.essentials.rendering.shaders.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.PlanetEssentials;
+import com.planetstudios.essentials.rendering.shaders.PrismPostProcessGraph;
 import com.planetstudios.essentials.rendering.shaders.ShaderBindingLayout;
 import com.planetstudios.essentials.rendering.shaders.ShaderPackCatalog;
 import com.planetstudios.essentials.rendering.shaders.ShaderPackLoader;
@@ -22,7 +23,7 @@ public final class ShaderPackRuntime {
     private static final MinecraftShaderBackend BACKEND = new MinecraftShaderBackend();
     private static volatile ResourceManager lastResourceManager;
     private static volatile String compiledPackId = "";
-    private static volatile String compiledPostProcessProgramId = "";
+    private static volatile PrismPostProcessGraph compiledPostProcessGraph;
 
     private ShaderPackRuntime() {}
 
@@ -38,7 +39,8 @@ public final class ShaderPackRuntime {
                 .filter(pack -> pack.manifest().id().equals(selectedId))
                 .findFirst().orElse(null);
         List<ShaderProgramSpec> programs = selectedPack == null ? List.of() : selectedPack.programs();
-        String postProcessId = selectedPack == null ? "" : selectedPack.manifest().worldPostProcessProgram();
+        PrismPostProcessGraph postProcessGraph = selectedPack == null
+                ? null : selectedPack.manifest().resolvedWorldPostProcessGraph();
 
         if (!selectedId.isBlank() && selectedPack == null) {
             LOGGER.warn("Selected Prism shader pack '{}' was not found in active resources.", selectedId);
@@ -50,7 +52,7 @@ public final class ShaderPackRuntime {
             boolean published = PIPELINE.reload(programs, BACKEND);
             if (published) {
                 compiledPackId = selectedId;
-                compiledPostProcessProgramId = postProcessId;
+                compiledPostProcessGraph = postProcessGraph;
                 LOGGER.info("Prism compiled and published {} shader programs for pack '{}' (generation {}).",
                         PIPELINE.snapshot().programCount(), compiledPackId, PIPELINE.snapshot().generation());
             } else {
@@ -84,8 +86,8 @@ public final class ShaderPackRuntime {
         return compiledPackId;
     }
 
-    public static String worldPostProcessProgramId() {
-        return isEnabled() ? compiledPostProcessProgramId : "";
+    public static PrismPostProcessGraph worldPostProcessGraph() {
+        return isEnabled() ? compiledPostProcessGraph : null;
     }
 
     public static ShaderBindingLayout programBindings(String programId) {
@@ -118,7 +120,7 @@ public final class ShaderPackRuntime {
         CATALOG.clear();
         lastResourceManager = null;
         compiledPackId = "";
-        compiledPostProcessProgramId = "";
+        compiledPostProcessGraph = null;
         if (RenderSystem.isOnRenderThread()) {
             PIPELINE.close();
         } else {

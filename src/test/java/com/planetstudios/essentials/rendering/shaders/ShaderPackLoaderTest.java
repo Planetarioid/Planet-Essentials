@@ -2,6 +2,7 @@ package com.planetstudios.essentials.rendering.shaders;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,11 +40,80 @@ class ShaderPackLoaderTest {
     }
 
     @Test
+    void parsesAndValidatesMultiPassGraph() {
+        String manifest = """
+                {
+                  "schema": 1,
+                  "id": "planet:cinematic",
+                  "name": "Cinematic",
+                  "version": "1.0",
+                  "worldPostProcessGraph": {
+                    "externalInputs": ["minecraft:scene_color"],
+                    "passes": [
+                      {"id":"planet:combine","program":"planet:combine","inputs":["planet:blurred","minecraft:scene_color"],"output":"planet:final"},
+                      {"id":"planet:blur","program":"planet:blur","inputs":["minecraft:scene_color"],"output":"planet:blurred"}
+                    ],
+                    "output":"planet:final"
+                  },
+                  "programs": [
+                    {"id":"planet:blur","vertex":"planet:shaders/blur.vsh","fragment":"planet:shaders/blur.fsh","samplers":["SceneColor"]},
+                    {"id":"planet:combine","vertex":"planet:shaders/combine.vsh","fragment":"planet:shaders/combine.fsh","samplers":["Blurred","Original"]}
+                  ]
+                }
+                """;
+        var loaded = ShaderPackLoader.load(manifest, (id, limit) -> "#version 150\nvoid main() {}");
+        var graph = loaded.manifest().resolvedWorldPostProcessGraph();
+        assertNotNull(graph);
+        assertEquals(List.of("planet:blur", "planet:combine"),
+                graph.passes().stream().map(PrismPostProcessGraph.Pass::programId).toList());
+        assertEquals("planet:final", graph.output());
+        assertEquals(4, loaded.programs().size());
+    }
+
+    @Test
+    void adaptsLegacySinglePassManifestToGraph() {
+        String legacy = MANIFEST.replace("\"programs\":",
+                "\"worldPostProcessProgram\":\"planet:world\",\"programs\":")
+                .replace("\"fragment\":\"planet:shaders/world.fsh\"",
+                        "\"fragment\":\"planet:shaders/world.fsh\",\"samplers\":[\"SceneColor\"]");
+        var parsed = ShaderPackManifest.parse(legacy);
+        assertEquals("planet:world", parsed.worldPostProcessProgram());
+        assertEquals(1, parsed.resolvedWorldPostProcessGraph().passes().size());
+    }
+
+    @Test
+    void rejectsInvalidMultiPassReferencesAndSamplerContracts() {
+        String base = """
+                {
+                  "schema": 1,
+                  "id": "planet:cinematic",
+                  "name": "Cinematic",
+                  "version": "1.0",
+                  "worldPostProcessGraph": {
+                    "externalInputs": ["minecraft:scene_color"],
+                    "passes": [{"id":"planet:blur","program":"planet:missing","inputs":["minecraft:scene_color"],"output":"planet:blurred"}],
+                    "output":"planet:blurred"
+                  },
+                  "programs": [
+                    {"id":"planet:blur","vertex":"planet:shaders/blur.vsh","fragment":"planet:shaders/blur.fsh","samplers":["SceneColor"]}
+                  ]
+                }
+                """;
+        assertThrows(IllegalArgumentException.class, () -> ShaderPackManifest.parse(base));
+        String wrongSamplerCount = base.replace("\"program\":\"planet:missing\"", "\"program\":\"planet:blur\"")
+                .replace("\"samplers\":[\"SceneColor\"]", "\"samplers\":[]");
+        assertThrows(IllegalArgumentException.class, () -> ShaderPackManifest.parse(wrongSamplerCount));
+    }
+
+    @Test
     void validatesOptionalWorldPostProcessProgramReference() {
         String valid = MANIFEST.replace("\"programs\":",
-                "\"worldPostProcessProgram\": \"planet:world\", \"programs\":");
+                "\"worldPostProcessProgram\": \"planet:world\", \"programs\":")
+                .replace("\"fragment\":\"planet:shaders/world.fsh\"",
+                        "\"fragment\":\"planet:shaders/world.fsh\",\"samplers\":[\"SceneColor\"]");
         assertEquals("planet:world", ShaderPackManifest.parse(valid).worldPostProcessProgram());
-        String invalid = valid.replace("\"worldPostProcessProgram\": \"planet:world\"", "\"worldPostProcessProgram\": \"planet:missing\"");
+        String invalid = valid.replace("\"worldPostProcessProgram\": \"planet:world\"",
+                "\"worldPostProcessProgram\": \"planet:missing\"");
         assertThrows(IllegalArgumentException.class, () -> ShaderPackManifest.parse(invalid));
     }
 

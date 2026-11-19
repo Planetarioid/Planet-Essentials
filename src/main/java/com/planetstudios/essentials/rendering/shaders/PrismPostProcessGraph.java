@@ -1,7 +1,6 @@
 package com.planetstudios.essentials.rendering.shaders;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -11,15 +10,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
-/**
- * Immutable, validated post-processing dependency graph.
- *
- * Inputs declared as external are supplied by the renderer (for example, the scene
- * color texture). Every other input must be produced by an earlier dependency in
- * the graph. Pass order is topologically sorted and deterministic.
- */
+/** Immutable, validated post-processing dependency graph. */
 public final class PrismPostProcessGraph {
     public static final int MAX_PASSES = 32;
+    public static final String SCENE_COLOR = "minecraft:scene_color";
+
     public record Pass(String id, String programId, List<String> inputs, String output) {
         public Pass {
             requireId(id, "pass");
@@ -104,8 +99,8 @@ public final class PrismPostProcessGraph {
                 }
             }
 
-            if (!externalInputs.contains(output) && !producerByResource.containsKey(output)) {
-                throw new IllegalArgumentException("Graph output has no producer: " + output);
+            if (!producerByResource.containsKey(output)) {
+                throw new IllegalArgumentException("Graph output must be produced by a pass: " + output);
             }
 
             List<Pass> ordered = new ArrayList<>();

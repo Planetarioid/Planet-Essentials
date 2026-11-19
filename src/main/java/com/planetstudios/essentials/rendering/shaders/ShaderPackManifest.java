@@ -21,6 +21,7 @@ public record ShaderPackManifest(
         String description,
         String author,
         String worldPostProcessProgram,
+        PrismPostProcessGraph worldPostProcessGraph,
         List<Program> programs) {
 
     public static final int CURRENT_SCHEMA = 1;
@@ -30,8 +31,14 @@ public record ShaderPackManifest(
     private static final String RESOURCE_PATH = "[a-z0-9/._-]+";
 
     public ShaderPackManifest(int schemaVersion, String id, String name, String version,
+            String description, String author, String worldPostProcessProgram, List<Program> programs) {
+        this(schemaVersion, id, name, version, description, author,
+                worldPostProcessProgram, null, programs);
+    }
+
+    public ShaderPackManifest(int schemaVersion, String id, String name, String version,
             String description, String author, List<Program> programs) {
-        this(schemaVersion, id, name, version, description, author, "", programs);
+        this(schemaVersion, id, name, version, description, author, "", null, programs);
     }
 
     public ShaderPackManifest {
@@ -65,10 +72,36 @@ public record ShaderPackManifest(
                 throw new IllegalArgumentException("Duplicate shader program: " + program.id());
             }
         }
-        if (!worldPostProcessProgram.isBlank() && !ids.contains(worldPostProcessProgram)) {
-            throw new IllegalArgumentException("worldPostProcessProgram must reference a declared program");
+        if (!worldPostProcessProgram.isBlank() && worldPostProcessGraph != null) {
+            throw new IllegalArgumentException("Use either worldPostProcessProgram or worldPostProcessGraph, not both");
+        }
+        if (!worldPostProcessProgram.isBlank()) {
+            Program legacy = findProgram(programs, worldPostProcessProgram);
+            if (legacy == null) {
+                throw new IllegalArgumentException("worldPostProcessProgram must reference a declared program");
+            }
+            requireFullscreenSamplerContract(legacy, 1);
+            if (!legacy.samplers().equals(List.of("SceneColor"))) {
+                throw new IllegalArgumentException("Legacy worldPostProcessProgram must declare the SceneColor sampler");
+            }
+        }
+        if (worldPostProcessGraph != null) {
+            validateGraphPrograms(worldPostProcessGraph, programs);
         }
         programs = List.copyOf(programs);
+    }
+
+    /** Returns the explicit graph, or adapts the legacy single-program field to a one-pass graph. */
+    public PrismPostProcessGraph resolvedWorldPostProcessGraph() {
+        if (worldPostProcessGraph != null) return worldPostProcessGraph;
+        if (worldPostProcessProgram.isBlank()) return null;
+        return PrismPostProcessGraph.builder()
+                .externalInput(PrismPostProcessGraph.SCENE_COLOR)
+                .pass(new PrismPostProcessGraph.Pass(
+                        "planet:legacy_world_post", worldPostProcessProgram,
+                        List.of(PrismPostProcessGraph.SCENE_COLOR), "planet:legacy_world_post_output"))
+                .output("planet:legacy_world_post_output")
+                .build();
     }
 
     public static ShaderPackManifest parse(String json) {
@@ -115,8 +148,67 @@ public record ShaderPackManifest(
                     optionalStringArray(object, "texelBuffers"),
                     optionalStringArray(object, "samplers")));
         }
+        PrismPostProcessGraph graph = root.has("worldPostProcessGraph")
+                && !root.get("worldPostProcessGraph").isJsonNull()
+                ? parsePostProcessGraph(root.get("worldPostProcessGraph")) : null;
         return new ShaderPackManifest(schema, id, name, version, description, author,
-                postProcessProgram, programs);
+                postProcessProgram, graph, programs);
+    }
+
+    private static PrismPostProcessGraph parsePostProcessGraph(JsonElement element) {
+        if (!element.isJsonObject()) {
+            throw new IllegalArgumentException("worldPostProcessGraph must be an object");
+        }
+        JsonObject object = element.getAsJsonObject();
+        List<String> externalInputs = requiredStringArray(object, "externalInputs", 4);
+        if (!externalInputs.equals(List.of(PrismPostProcessGraph.SCENE_COLOR))) {
+            throw new IllegalArgumentException("World post-process graphs currently support only minecraft:scene_color as an external input");
+        }
+        JsonElement passElement = object.get("passes");
+        if (passElement == null || !passElement.isJsonArray()) {
+            throw new IllegalArgumentException("worldPostProcessGraph.passes must be an array");
+        }
+        JsonArray passArray = passElement.getAsJsonArray();
+        if (passArray.isEmpty() || passArray.size() > PrismPostProcessGraph.MAX_PASSES) {
+            throw new IllegalArgumentException("Invalid world post-process pass count");
+        }
+        PrismPostProcessGraph.Builder builder = PrismPostProcessGraph.builder();
+        externalInputs.forEach(builder::externalInput);
+        for (JsonElement entry : passArray) {
+            if (!entry.isJsonObject()) throw new IllegalArgumentException("Each post-process pass must be an object");
+            JsonObject pass = entry.getAsJsonObject();
+            builder.pass(new PrismPostProcessGraph.Pass(
+                    requiredString(pass, "id"),
+                    requiredString(pass, "program"),
+                    requiredStringArray(pass, "inputs", ShaderBindingLayout.MAX_BINDINGS_PER_KIND),
+                    requiredString(pass, "output")));
+        }
+        builder.output(requiredString(object, "output"));
+        return builder.build();
+    }
+
+    private static void validateGraphPrograms(PrismPostProcessGraph graph, List<Program> programs) {
+        for (PrismPostProcessGraph.Pass pass : graph.passes()) {
+            Program program = findProgram(programs, pass.programId());
+            if (program == null) {
+                throw new IllegalArgumentException("Post-process pass references an undeclared program: " + pass.programId());
+            }
+            requireFullscreenSamplerContract(program, pass.inputs().size());
+        }
+    }
+
+    private static void requireFullscreenSamplerContract(Program program, int inputCount) {
+        if (!program.uniformBuffers().isEmpty() || !program.texelBuffers().isEmpty()) {
+            throw new IllegalArgumentException("World post-process programs may declare samplers only: " + program.id());
+        }
+        if (program.samplers().size() != inputCount) {
+            throw new IllegalArgumentException("Post-process program " + program.id()
+                    + " must declare exactly " + inputCount + " sampler(s)");
+        }
+    }
+
+    private static Program findProgram(List<Program> programs, String id) {
+        return programs.stream().filter(program -> program.id().equals(id)).findFirst().orElse(null);
     }
 
     private static int requiredInt(JsonObject object, String key) {
@@ -152,10 +244,17 @@ public record ShaderPackManifest(
         JsonElement value = object.get(key);
         if (value == null || value.isJsonNull()) return List.of();
         if (!value.isJsonArray()) throw new IllegalArgumentException("Invalid array field: " + key);
-        JsonArray array = value.getAsJsonArray();
-        if (array.size() > ShaderBindingLayout.MAX_BINDINGS_PER_KIND) {
-            throw new IllegalArgumentException("Too many entries in " + key);
-        }
+        return readStringArray(value.getAsJsonArray(), key, ShaderBindingLayout.MAX_BINDINGS_PER_KIND);
+    }
+
+    private static List<String> requiredStringArray(JsonObject object, String key, int maxEntries) {
+        JsonElement value = object.get(key);
+        if (value == null || !value.isJsonArray()) throw new IllegalArgumentException("Missing or invalid array field: " + key);
+        return readStringArray(value.getAsJsonArray(), key, maxEntries);
+    }
+
+    private static List<String> readStringArray(JsonArray array, String key, int maxEntries) {
+        if (array.size() > maxEntries) throw new IllegalArgumentException("Too many entries in " + key);
         List<String> result = new ArrayList<>(array.size());
         for (JsonElement element : array) {
             if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
