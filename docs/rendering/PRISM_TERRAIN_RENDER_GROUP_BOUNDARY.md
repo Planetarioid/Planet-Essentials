@@ -103,3 +103,36 @@ The Prism pass-replay path now has reusable pieces:
 
 These are tested preparation/replay primitives. They are not yet called from
 the vanilla mixin, and no vanilla draw is cancelled or replaced.
+
+## Prepared draw-resource bundle
+
+`PrismTerrainReplacementCoordinator.prepareDrawResources` now creates an
+owned `PrismTerrainPreparedRenderGroup` before a Prism pass is opened. For
+the complete replacement plan it:
+
+- Resolves and precompiles the pipeline variant matching the captured vanilla
+  layer's fixed-function state
+- Verifies every uniform buffer required by the program is either the canonical
+  `PrismSection` buffer or one of the optional default uniforms actually
+  captured from vanilla
+- Resolves only declared `Sampler0` and `Sampler2` resources from the
+  captured block atlas and lightmap
+- Revalidates each CPU payload against its live GPU mesh and quad layout
+- Allocates one immutable camera-relative section-origin uniform per draw
+- Computes the maximum index requirement across the complete group and resolves
+  one shared sequential index buffer before pass creation
+- Rechecks world identity, shader generation, and frame state before publishing
+
+The result owns its section uniform allocations and closes them on the render
+thread. It borrows GPU meshes from the world's LRU cache, the compiled program,
+and the cached pipeline variant. `isValidFor` checks the world, captured
+snapshot sequence, and shader generation immediately before use. The result
+also carries the exact index buffer/type pair, sampler bindings, and external
+default-uniform names needed by the draw executor.
+
+Any preflight failure closes all section uniforms allocated during that attempt
+and returns empty. This is still a preparation API only: no pass is opened,
+no draw is submitted, and no vanilla draw is cancelled. The caller must keep
+the prepared bundle alive through all group submissions and close it afterward.
+GPU-driver failure during actual submission remains non-transactional and is
+not solved by this preparation work.
