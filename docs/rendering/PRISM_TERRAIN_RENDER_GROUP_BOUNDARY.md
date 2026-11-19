@@ -13,7 +13,9 @@ or mutating vanilla state:
   and target dimensions
 - Block atlas view and the exact `Sampler0` sampler
 - Lightmap view and the clamp-to-edge linear `Sampler2` sampler
-- Exact per-layer vanilla `RenderPipeline` object, including the debug
+- Exact per-layer vanilla `RenderPipeline` object and copied state: depth test,
+  polygon mode, culling, blend function, color/alpha/depth writes, logic op,
+  depth bias, vertex format/mode, and shader identifiers, including the debug
   wireframe override when active
 - Effective draw ordering: only TRANSLUCENT is reversed by vanilla
 - Projection, fog, globals, and lighting resources conditionally supplied by
@@ -27,12 +29,13 @@ color-write configuration by identity; this is not yet a serialized/rebuilt
 pipeline description.
 
 Known remaining state boundary:
-- `renderGroup` does not set a custom viewport or scissor. The active pass
-  starts with the render target's default full-attachment viewport and no
-  explicit scissor command; this still needs confirmation on the runtime GPU
-  backend before replacement relies on it.
-- Stencil/scissor details and driver/backend behavior are not independently
-  introspected.
+- `renderGroup` does not set a custom viewport or issue a scissor command.
+  The RenderPass API exposes explicit scissor enable/disable methods, neither
+  of which vanilla calls here. Backend default viewport and disabled-scissor
+  behavior still need runtime confirmation before replacement relies on them.
+- Stencil state is not exposed by this vanilla terrain pipeline contract;
+  scissor and viewport defaults are inferred from the RenderPass call sequence,
+  not read back from the GPU driver.
 - Capturing resource references does not prove that Prism can reproduce the
   pass or its timing safely.
 

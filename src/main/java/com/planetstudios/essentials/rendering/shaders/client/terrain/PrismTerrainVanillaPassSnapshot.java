@@ -2,7 +2,13 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.platform.LogicOp;
+import com.mojang.blaze3d.platform.PolygonMode;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.resources.Identifier;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
@@ -100,7 +106,7 @@ public record PrismTerrainVanillaPassSnapshot(
             List<?> source = input.drawsPerLayer().get(layer);
             List<?> ordered = effectiveDrawOrder(layer, source == null ? List.of() : source);
             RenderPipeline pipeline = wireframe ? RenderPipelines.WIREFRAME : layer.pipeline();
-            layers.put(layer, new LayerInput(pipeline, ordered,
+            layers.put(layer, new LayerInput(pipeline, PipelineState.capture(pipeline), ordered,
                     layer == ChunkSectionLayer.TRANSLUCENT));
         }
 
@@ -134,11 +140,57 @@ public record PrismTerrainVanillaPassSnapshot(
         return List.copyOf(ordered);
     }
 
-    public record LayerInput(RenderPipeline pipeline, List<?> orderedDraws, boolean reversedByVanilla) {
+    public record LayerInput(RenderPipeline pipeline, PipelineState state,
+            List<?> orderedDraws, boolean reversedByVanilla) {
         public LayerInput {
             Objects.requireNonNull(pipeline, "pipeline");
+            Objects.requireNonNull(state, "state");
             Objects.requireNonNull(orderedDraws, "orderedDraws");
             orderedDraws = List.copyOf(orderedDraws);
+        }
+    }
+
+    /**
+     * Immutable copy of the pipeline state applied by RenderPass.setPipeline.
+     * Both this data and the original pipeline identity are retained for parity checks.
+     */
+    public record PipelineState(
+            Identifier location,
+            Identifier vertexShader,
+            Identifier fragmentShader,
+            DepthTestFunction depthTest,
+            PolygonMode polygonMode,
+            boolean cull,
+            Optional<BlendFunction> blend,
+            boolean writeColor,
+            boolean writeAlpha,
+            boolean writeDepth,
+            LogicOp colorLogic,
+            float depthBiasScale,
+            float depthBiasConstant,
+            VertexFormat vertexFormat,
+            VertexFormat.Mode vertexMode) {
+        public PipelineState {
+            Objects.requireNonNull(location, "location");
+            Objects.requireNonNull(vertexShader, "vertexShader");
+            Objects.requireNonNull(fragmentShader, "fragmentShader");
+            Objects.requireNonNull(depthTest, "depthTest");
+            Objects.requireNonNull(polygonMode, "polygonMode");
+            Objects.requireNonNull(blend, "blend");
+            Objects.requireNonNull(colorLogic, "colorLogic");
+            Objects.requireNonNull(vertexFormat, "vertexFormat");
+            Objects.requireNonNull(vertexMode, "vertexMode");
+        }
+
+        public static PipelineState capture(RenderPipeline pipeline) {
+            Objects.requireNonNull(pipeline, "pipeline");
+            return new PipelineState(
+                    pipeline.getLocation(), pipeline.getVertexShader(), pipeline.getFragmentShader(),
+                    pipeline.getDepthTestFunction(), pipeline.getPolygonMode(), pipeline.isCull(),
+                    pipeline.getBlendFunction(), pipeline.isWriteColor(), pipeline.isWriteAlpha(),
+                    pipeline.isWriteDepth(), pipeline.getColorLogic(),
+                    pipeline.getDepthBiasScaleFactor(), pipeline.getDepthBiasConstant(),
+                    pipeline.getVertexFormat(), pipeline.getVertexFormatMode());
         }
     }
 
