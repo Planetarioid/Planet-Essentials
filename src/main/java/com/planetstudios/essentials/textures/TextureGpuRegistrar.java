@@ -22,19 +22,21 @@ import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Explicit, opt-in bridge from immutable CPU pixels to Minecraft-managed GPU textures.
  *
- * <p>CPU mip generation and NativeImage preparation happen on the caller thread.
+ * <p>CPU mip generation and NativeImage preparation happen before dispatch.
  * GPU allocation, mip uploads, sampler creation, TextureManager registration, and
- * GPU destruction are dispatched to the render/client lifecycle. Vanilla texture
- * loading and atlas ownership are never intercepted.</p>
+ * GPU destruction are dispatched to the client lifecycle. Vanilla texture loading
+ * and atlas ownership are never intercepted.</p>
  */
 public final class TextureGpuRegistrar {
     private static final String TEXTURE_NAMESPACE = "planet_essentials";
     private static final String TEXTURE_PATH_PREFIX = "decoded/";
     private static final Set<Identifier> OWNED_TEXTURES = ConcurrentHashMap.newKeySet();
+    private static final Set<PendingRegistration> PENDING = ConcurrentHashMap.newKeySet();
     private static final TextureRegistrationLifecycle LIFECYCLE =
             new TextureRegistrationLifecycle();
 
@@ -70,73 +72,122 @@ public final class TextureGpuRegistrar {
             return CompletableFuture.failedFuture(failure);
         }
 
-        Identifier textureId = identifierFor(sourceId);
-        CompletableFuture<Identifier> result = new CompletableFuture<>();
+        PendingRegistration registration = new PendingRegistration(
+                client, sourceId, decoded, identifierFor(sourceId), requestedGeneration, images);
+        PENDING.add(registration);
         try {
-            client.execute(() -> {
-                if (!LIFECYCLE.isCurrent(requestedGeneration)) {
-                    closeImages(images);
-                    result.completeExceptionally(new IllegalStateException(
-                            "Texture registration invalidated by reload or shutdown"));
-                    return;
-                }
-
-                GpuTexture texture = null;
-                GpuTextureView view = null;
-                GpuSampler sampler = null;
-                MipmappedGpuTexture managedTexture = null;
-                try {
-                    RenderSystem.assertOnRenderThread();
-                    var device = RenderSystem.getDevice();
-                    int mipLevels = images.size();
-                    texture = device.createTexture(
-                            () -> "Planet Essentials mipmapped " + sourceId,
-                            GpuTexture.USAGE_TEXTURE_BINDING | GpuTexture.USAGE_COPY_DST,
-                            TextureFormat.RGBA8,
-                            decoded.width(),
-                            decoded.height(),
-                            1,
-                            mipLevels
-                    );
-
-                    CommandEncoder encoder = device.createCommandEncoder();
-                    for (int level = 0; level < mipLevels; level++) {
-                        NativeImage image = images.get(level);
-                        encoder.writeToTexture(texture, image, level, 0,
-                                0, 0, image.getWidth(), image.getHeight(), 0, 0);
-                    }
-
-                    view = device.createTextureView(texture);
-                    sampler = device.createSampler(
-                            AddressMode.CLAMP_TO_EDGE,
-                            AddressMode.CLAMP_TO_EDGE,
-                            FilterMode.LINEAR,
-                            FilterMode.LINEAR,
-                            1,
-                            OptionalDouble.of(Math.max(0, mipLevels - 1))
-                    );
-                    managedTexture = new MipmappedGpuTexture(texture, view, sampler);
-                    client.getTextureManager().register(textureId, managedTexture);
-                    OWNED_TEXTURES.add(textureId);
-                    result.complete(textureId);
-                } catch (RuntimeException failure) {
-                    if (managedTexture != null) {
-                        managedTexture.close();
-                    } else {
-                        if (sampler != null) sampler.close();
-                        if (view != null) view.close();
-                        if (texture != null) texture.close();
-                    }
-                    result.completeExceptionally(failure);
-                } finally {
-                    closeImages(images);
-                }
-            });
+            client.execute(registration);
         } catch (RuntimeException rejected) {
-            closeImages(images);
-            result.completeExceptionally(rejected);
+            registration.cancel("Minecraft client executor rejected texture registration");
         }
-        return result;
+        return registration.result;
+    }
+
+    /**
+     * Owns the CPU-side upload buffers until either the queued render task finishes
+     * or reload/shutdown cancels it. Synchronization makes cleanup idempotent and
+     * prevents cancellation from closing NativeImages while an upload is using them.
+     */
+    private static final class PendingRegistration implements Runnable {
+        private final Minecraft client;
+        private final Identifier sourceId;
+        private final DecodedTexture decoded;
+        private final Identifier textureId;
+        private final long requestedGeneration;
+        private final List<NativeImage> images;
+        private final CompletableFuture<Identifier> result = new CompletableFuture<>();
+        private final AtomicBoolean imagesClosed = new AtomicBoolean();
+        private boolean cancelled;
+
+        private PendingRegistration(
+                Minecraft client,
+                Identifier sourceId,
+                DecodedTexture decoded,
+                Identifier textureId,
+                long requestedGeneration,
+                List<NativeImage> images) {
+            this.client = client;
+            this.sourceId = sourceId;
+            this.decoded = decoded;
+            this.textureId = textureId;
+            this.requestedGeneration = requestedGeneration;
+            this.images = images;
+        }
+
+        @Override
+        public synchronized void run() {
+            if (cancelled) return;
+            if (!LIFECYCLE.isCurrent(requestedGeneration)) {
+                cancel("Texture registration invalidated by reload or shutdown");
+                return;
+            }
+
+            GpuTexture texture = null;
+            GpuTextureView view = null;
+            GpuSampler sampler = null;
+            MipmappedGpuTexture managedTexture = null;
+            try {
+                RenderSystem.assertOnRenderThread();
+                var device = RenderSystem.getDevice();
+                int mipLevels = images.size();
+                texture = device.createTexture(
+                        () -> "Planet Essentials mipmapped " + sourceId,
+                        GpuTexture.USAGE_TEXTURE_BINDING | GpuTexture.USAGE_COPY_DST,
+                        TextureFormat.RGBA8,
+                        decoded.width(),
+                        decoded.height(),
+                        1,
+                        mipLevels
+                );
+
+                CommandEncoder encoder = device.createCommandEncoder();
+                for (int level = 0; level < mipLevels; level++) {
+                    NativeImage image = images.get(level);
+                    encoder.writeToTexture(texture, image, level, 0,
+                            0, 0, image.getWidth(), image.getHeight(), 0, 0);
+                }
+
+                view = device.createTextureView(texture);
+                sampler = device.createSampler(
+                        AddressMode.CLAMP_TO_EDGE,
+                        AddressMode.CLAMP_TO_EDGE,
+                        FilterMode.LINEAR,
+                        FilterMode.LINEAR,
+                        1,
+                        OptionalDouble.of(Math.max(0, mipLevels - 1))
+                );
+                managedTexture = new MipmappedGpuTexture(texture, view, sampler);
+                client.getTextureManager().register(textureId, managedTexture);
+                OWNED_TEXTURES.add(textureId);
+                result.complete(textureId);
+            } catch (RuntimeException failure) {
+                if (managedTexture != null) {
+                    managedTexture.close();
+                } else {
+                    if (sampler != null) sampler.close();
+                    if (view != null) view.close();
+                    if (texture != null) texture.close();
+                }
+                result.completeExceptionally(failure);
+            } finally {
+                closeImagesOnce();
+                PENDING.remove(this);
+            }
+        }
+
+        private synchronized void cancel(String reason) {
+            if (cancelled || result.isDone()) return;
+            cancelled = true;
+            closeImagesOnce();
+            PENDING.remove(this);
+            result.completeExceptionally(new IllegalStateException(reason));
+        }
+
+        private void closeImagesOnce() {
+            if (imagesClosed.compareAndSet(false, true)) {
+                closeImages(images);
+            }
+        }
     }
 
     private static NativeImage toNativeImage(DecodedTexture decoded) {
@@ -167,12 +218,18 @@ public final class TextureGpuRegistrar {
     /** Invalidates queued registrations and releases only textures owned by this adapter. */
     public static void releaseAll(Minecraft client) {
         LIFECYCLE.invalidatePending();
+        for (PendingRegistration registration : PENDING.toArray(PendingRegistration[]::new)) {
+            registration.cancel("Texture registration invalidated by resource reload");
+        }
         releaseOwned(client);
     }
 
     /** Permanently closes this adapter during client shutdown. */
     public static void shutdown(Minecraft client) {
         LIFECYCLE.close();
+        for (PendingRegistration registration : PENDING.toArray(PendingRegistration[]::new)) {
+            registration.cancel("Texture registrar closed during client shutdown");
+        }
         releaseOwned(client);
     }
 
