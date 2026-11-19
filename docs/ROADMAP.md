@@ -35,9 +35,10 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 ## 8. Planet Prism Rendering Engine (PPRE): shader subsystem
 - [x] Immutable validated source bundles and stable SHA-256 source identity
 - [x] Backend-neutral capabilities, compiler SPI, transactional reload, rollback, and handle lifecycle
-- [x] Bounded schema-1 manifest, pack discovery, resource resolution, path validation, and source budgets
+- [x] Bounded schema-1 manifest, pack discovery, active resource resolution, path validation, source budgets
 - [x] Minecraft 1.21.11 GpuDevice pipeline-precompile backend
-- [x] Validated uniform-buffer, texel-buffer, and sampler declarations in pack manifests
+- [x] Uniform-buffer, texel-buffer, and sampler declarations
+- [x] Client resource-reload discovery and transactional GPU compilation lifecycle
 - [~] Runtime binding validation and frame-stage drawing integration
 - [ ] Framebuffer/render-target lifecycle and post-processing graph
 - [ ] Terrain/entity pipeline integration and full shader-pack feature compatibility

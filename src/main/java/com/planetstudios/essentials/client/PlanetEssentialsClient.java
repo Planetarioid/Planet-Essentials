@@ -1,6 +1,8 @@
 package com.planetstudios.essentials.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
+import com.planetstudios.essentials.rendering.shaders.client.ShaderPackResourceReloadListener;
+import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
 import com.planetstudios.essentials.textures.TextureAssetCatalog;
 import com.planetstudios.essentials.textures.TextureDecodeLimits;
@@ -35,6 +37,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
     public void onInitializeClient() {
         EssentialsRuntime.initialize();
         TextureResourceReloadListener.register(TEXTURE_ASSETS, TEXTURE_DECODER);
+        ShaderPackResourceReloadListener.register();
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> record(DiagnosticEventType.CLIENT_STARTED));
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
@@ -42,6 +45,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
             TextureGpuRegistrar.shutdown(client);
             TEXTURE_ASSETS.clear();
             TEXTURE_DECODER.close();
+            ShaderPackRuntime.shutdown();
         });
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> record(DiagnosticEventType.WORLD_JOINED));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> record(DiagnosticEventType.WORLD_LEFT));
