@@ -52,6 +52,7 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
     private volatile List<PrismTerrainVertexData> frame = List.of();
     private boolean extracting;
     private volatile boolean closed;
+    private boolean frameBudgetWarningActive;
     private MappableRingBuffer sectionUniformRing;
     private GpuDevice uniformOwnerDevice;
     private PrismTerrainFrameCoordinator.Registration extractionRegistration;
@@ -99,21 +100,37 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
     private void extract(WorldExtractionContext context) {
         if (closed) return;
         List<PrismTerrainVertexData> next = new ArrayList<>();
-        int[] totalVertices = {0};
+        long[] totalVertices = {0L};
+        long[] skippedByBudget = {0L};
         extracting = true;
         try {
             provider.extract(context, data -> {
                 if (!extracting) throw new IllegalStateException("Terrain payload submitted outside extraction");
                 PrismTerrainVertexData payload = Objects.requireNonNull(data, "terrain payload");
                 if (payload.stage() != stage) return;
+                // Reject off-screen sections before consuming this adapter's bounded frame budget.
+                if (!PrismTerrainActiveFrustum.isVisible(
+                        payload.sectionX(), payload.sectionY(), payload.sectionZ())) return;
                 if (next.size() >= MAX_FRAME_PAYLOADS
-                        || (long) totalVertices[0] + payload.vertexCount() > MAX_FRAME_VERTICES) {
-                    throw new IllegalStateException("Prism terrain frame exceeded its payload or vertex budget");
+                        || totalVertices[0] + payload.vertexCount() > MAX_FRAME_VERTICES) {
+                    // Keep the valid portion of the frame instead of dropping every mesh.
+                    skippedByBudget[0]++;
+                    return;
                 }
                 next.add(payload);
                 totalVertices[0] += payload.vertexCount();
             });
             frame = List.copyOf(next);
+            if (skippedByBudget[0] > 0) {
+                if (!frameBudgetWarningActive) {
+                    PlanetEssentials.LOGGER.warn(
+                            "Prism terrain adapter '{}' reached its per-frame budget; skipped {} visible section payloads",
+                            programId, skippedByBudget[0]);
+                }
+                frameBudgetWarningActive = true;
+            } else {
+                frameBudgetWarningActive = false;
+            }
         } catch (RuntimeException failure) {
             frame = List.of();
             PlanetEssentials.LOGGER.error("Prism terrain provider '{}' failed extraction", programId, failure);

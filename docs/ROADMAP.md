@@ -64,7 +64,7 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Active LevelRenderer frame frustum snapshot and per-section AABB rejection before Prism terrain GPU upload/draw
 - [~] CPU section-AABB frustum culling utility and unit tests; occlusion culling and vanilla visibility-graph integration remain
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
-- [~] Opt-in full-attribute V1 terrain renderer adapter and per-world GPU cache integration; renderer-specific vanilla/Sodium/Canvas adapters and safe fallback negotiation remain
+- [~] Opt-in full-attribute V1 terrain renderer adapter and per-world GPU cache integration, with active-frustum filtering and graceful per-frame budget truncation; renderer-specific vanilla/Sodium/Canvas adapters and safe fallback negotiation remain
 - [x] Vanilla render-distance and simulation-distance option bounds extended to 2–64 chunks (server-imposed render-distance caps still apply)
 - [ ] Actual GPU/driver limit detection
 - [ ] In-game visual tests, GPU memory tests, benchmarks

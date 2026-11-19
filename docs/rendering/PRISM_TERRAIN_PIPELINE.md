@@ -156,7 +156,10 @@ selected-pack program ID, a stage, and a provider callback. Providers emit
 immutable `PrismTerrainVertexData` payloads during END_EXTRACTION only.
 
 The adapter publishes a bounded immutable payload list (512 payloads and
-1,048,576 vertices maximum), uploads changed payloads through a per-`ClientLevel`
+1,048,576 vertices maximum), rejects sections outside the active frame frustum
+before spending that budget, and keeps the valid portion of a frame if the
+budget is reached. It logs once while a frame remains truncated rather than
+discarding the entire frame. It uploads changed payloads through a per-`ClientLevel`
 128 MiB LRU cache, and submits indexed QUADS into the main color/depth target.
 GPU cache entries compare SHA-256 payload identities so unchanged sections
 are not re-uploaded every frame. The draw executor uses Minecraft's
