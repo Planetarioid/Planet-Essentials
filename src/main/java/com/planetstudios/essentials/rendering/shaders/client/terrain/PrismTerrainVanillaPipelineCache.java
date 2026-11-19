@@ -2,6 +2,7 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBackend;
 import net.minecraft.resources.Identifier;
 import com.planetstudios.essentials.rendering.shaders.ShaderCompileException;
 
