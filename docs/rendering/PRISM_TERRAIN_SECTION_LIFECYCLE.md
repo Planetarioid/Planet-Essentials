@@ -1,7 +1,21 @@
-# Prism Terrain Section Rebuild Lifecycle
+# Prism Terrain Section Lifecycle
 
-`PrismTerrainSectionLifecycle` coordinates CPU-side section payload caching with asynchronous rebuild work. `beginRebuild` issues a monotonically unique revision token and invalidates the previous cached payloads for that section. A completed worker result must call `publish(token, data)`; the result is accepted only if its token still matches the current section revision. A newer rebuild, explicit invalidation, or chunk unload makes older results stale.
+## Implemented
 
-`unloadChunk` invalidates all section payloads across a caller-supplied inclusive vertical section range. The caller must use the dimension's actual section bounds. This API is thread-safe for CPU-side rebuild publication and cache invalidation.
+- `PrismTerrainSectionLifecycle` issues monotonically increasing revision tokens per section, rejects stale asynchronous results, and invalidates CPU payloads on rebuild or unload.
+- `PrismTerrainChunkLifecycleEvents` registers Fabric 1.21.11 client chunk load/unload and disconnect callbacks.
+- Lifecycle state and the 32 MiB CPU section cache are isolated by `ClientLevel` object identity. Coordinates from separate dimensions or world sessions therefore cannot share a cache.
+- On chunk unload, the bridge invalidates every vertical section from `getMinSection()` through `getMaxSection() - 1`, removes matching meshes from the currently published frame, and schedules registered GPU invalidators on the render thread.
+- On disconnect, per-world CPU caches are cleared and GPU invalidators receive a world-clear callback.
+- Renderer adapters can register a `GpuInvalidator` without transferring cache ownership to this module. Callback failures are isolated and logged.
 
-This is the lifecycle contract for future chunk hooks, not an automatic hook into Minecraft's chunk builder yet. It does not infer world/dimension identity, listen to vanilla chunk events, or own GPU cache destruction. Renderer adapters must scope lifecycle instances to the relevant world and schedule GPU invalidation on the render thread.
+## Deliberate boundaries
+
+- This is actual chunk load/unload integration, not a vanilla chunk rebuild hook. Fabric's client chunk events do not expose the internal section mesher's completed vertex payload or a reliable rebuild token.
+- No GPU invalidator is registered by default because no concrete terrain renderer adapter currently owns the `PrismTerrainGpuCache` in the live render pipeline.
+- The bridge does not replace vanilla terrain rendering, infer dimension identifiers from coordinates, or upload terrain itself.
+- A future adapter must register its invalidator, scope its GPU cache to the supplied `ClientLevel`, and perform cache destruction only on the render thread.
+
+## Verification
+
+Unit tests cover revision supersession, stale-result rejection, CPU cache invalidation, chunk-range invalidation, and invalid input. CI compilation/test results are tracked separately from in-game GPU validation.

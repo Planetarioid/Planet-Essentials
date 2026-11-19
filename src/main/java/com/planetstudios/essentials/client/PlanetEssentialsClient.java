@@ -6,6 +6,7 @@ import com.planetstudios.essentials.rendering.shaders.client.ShaderPackResourceR
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStageRegistry;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainFrameCoordinator;
+import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainChunkLifecycleEvents;
 import com.planetstudios.essentials.rendering.shaders.client.PrismWorldPostProcessor;
 import com.planetstudios.essentials.rendering.shaders.client.PrismRendererCompatibility;
 import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
@@ -26,7 +27,6 @@ import net.minecraft.resources.Identifier;
 
 import java.util.concurrent.CompletableFuture;
 
-/** Client-only registrations. No client classes are loaded by dedicated servers. */
 public final class PlanetEssentialsClient implements ClientModInitializer {
     private static final long SLOW_TICK_THRESHOLD_NANOS = 50_000_000L;
     private static final TextureAssetCatalog TEXTURE_ASSETS = new TextureAssetCatalog();
@@ -52,6 +52,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         ShaderPackResourceReloadListener.register();
         PrismFrameStageRegistry.registerFabricEvents();
         PrismTerrainFrameCoordinator.registerFabricEvents();
+        PrismTerrainChunkLifecycleEvents.registerFabricEvents();
         PrismWorldPostProcessor.register();
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> record(DiagnosticEventType.CLIENT_STARTED));
@@ -64,7 +65,6 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
             ShaderPackRuntime.shutdown();
         });
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> record(DiagnosticEventType.WORLD_JOINED));
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> record(DiagnosticEventType.WORLD_LEFT));
 
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
             var config = EssentialsRuntime.config();
@@ -91,9 +91,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         });
     }
 
-    public static TextureAssetCatalog.Snapshot textureAssetsSnapshot() {
-        return TEXTURE_ASSETS.snapshot();
-    }
+    public static TextureAssetCatalog.Snapshot textureAssetsSnapshot() { return TEXTURE_ASSETS.snapshot(); }
 
     public static CompletableFuture<com.planetstudios.essentials.textures.DecodedTexture> decodeTexture(
             Identifier resourceId) {
@@ -108,8 +106,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
 
     public static CompletableFuture<Identifier> decodeAndRegisterTextureWithVanillaFallback(
             Identifier resourceId) {
-        return TextureFallback.orElse(
-                decodeAndRegisterTexture(resourceId), resourceId);
+        return TextureFallback.orElse(decodeAndRegisterTexture(resourceId), resourceId);
     }
 
     private static void record(DiagnosticEventType type) {

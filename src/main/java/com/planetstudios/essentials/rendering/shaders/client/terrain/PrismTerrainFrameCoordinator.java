@@ -47,11 +47,6 @@ public final class PrismTerrainFrameCoordinator {
                 context -> draw(PrismFrameStage.BEFORE_TRANSLUCENT, context));
     }
 
-    /**
-     * Registers an extraction provider. It is called after vanilla render-state
-     * extraction and before drawing begins. Providers submit immutable section
-     * meshes through {@link #submit(PrismTerrainMesh)}.
-     */
     public static Registration registerExtractor(Consumer<WorldExtractionContext> extractor) {
         ExtractionEntry entry = new ExtractionEntry(Objects.requireNonNull(extractor, "extractor"));
         EXTRACTORS.add(entry);
@@ -61,11 +56,6 @@ public final class PrismTerrainFrameCoordinator {
         };
     }
 
-    /**
-     * Registers a stage-specific consumer. The frame is immutable and contains
-     * only meshes targeting the requested stage. GPU upload/draw work belongs
-     * in this callback and must obey render-thread ownership.
-     */
     public static Registration registerRenderer(
             PrismFrameStage stage, BiConsumer<WorldRenderContext, PrismTerrainFrame> renderer) {
         Objects.requireNonNull(stage, "stage");
@@ -81,7 +71,6 @@ public final class PrismTerrainFrameCoordinator {
         };
     }
 
-    /** Submit only from a registered extraction callback. */
     public static void submit(PrismTerrainMesh mesh) {
         if (!extractionActive) {
             throw new IllegalStateException("Terrain meshes may only be submitted during END_EXTRACTION callbacks");
@@ -89,15 +78,21 @@ public final class PrismTerrainFrameCoordinator {
         QUEUE.submit(Objects.requireNonNull(mesh, "mesh"));
     }
 
-    /**
-     * Returns the current immutable frame filtered against a caller-supplied
-     * world-space frustum. Adapters should call this before cache lookup/upload.
-     */
     public static PrismTerrainFrame visibleFrame(PrismTerrainFrustum frustum) {
         return PrismTerrainCulling.visibleFrame(publishedFrame, Objects.requireNonNull(frustum, "frustum"));
     }
 
-    /** Last fully published immutable frame, safe to inspect from drawing callbacks. */
+    /** Removes stale section meshes for a chunk immediately after its unload event. */
+    public static void invalidateChunk(int chunkX, int chunkZ) {
+        PrismTerrainFrame frame = publishedFrame;
+        List<PrismTerrainMesh> retained = frame.meshes().stream()
+                .filter(mesh -> mesh.sectionX() != chunkX || mesh.sectionZ() != chunkZ)
+                .toList();
+        if (retained.size() == frame.meshes().size()) return;
+        int vertices = retained.stream().mapToInt(PrismTerrainMesh::vertexCount).sum();
+        publishedFrame = new PrismTerrainFrame(frame.generation(), retained, vertices);
+    }
+
     public static PrismTerrainFrame currentFrame() {
         return publishedFrame;
     }
@@ -148,22 +143,17 @@ public final class PrismTerrainFrameCoordinator {
     private static final class ExtractionEntry {
         private final Consumer<WorldExtractionContext> callback;
         private final AtomicBoolean enabled = new AtomicBoolean(true);
-        private ExtractionEntry(Consumer<WorldExtractionContext> callback) {
-            this.callback = callback;
-        }
+        private ExtractionEntry(Consumer<WorldExtractionContext> callback) { this.callback = callback; }
     }
 
     private static final class DrawEntry {
         private final BiConsumer<WorldRenderContext, PrismTerrainFrame> callback;
         private final AtomicBoolean enabled = new AtomicBoolean(true);
-        private DrawEntry(BiConsumer<WorldRenderContext, PrismTerrainFrame> callback) {
-            this.callback = callback;
-        }
+        private DrawEntry(BiConsumer<WorldRenderContext, PrismTerrainFrame> callback) { this.callback = callback; }
     }
 
     @FunctionalInterface
     public interface Registration extends AutoCloseable {
-        @Override
-        void close();
+        @Override void close();
     }
 }
