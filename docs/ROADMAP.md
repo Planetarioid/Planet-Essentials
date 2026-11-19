@@ -39,7 +39,8 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Minecraft 1.21.11 GpuDevice pipeline-precompile backend
 - [x] Uniform-buffer, texel-buffer, and sampler declarations
 - [x] Client resource-reload discovery and transactional GPU compilation lifecycle
-- [~] Runtime binding validation and frame-stage drawing integration
+- [x] Typed GPU binding sets with exact declared-versus-supplied validation for uniform buffers, texel buffers, and samplers
+- [~] Frame-stage drawing integration
 - [ ] Framebuffer/render-target lifecycle and post-processing graph
 - [ ] Terrain/entity pipeline integration and full shader-pack feature compatibility
 - [ ] Actual GPU/driver limit detection and renderer negotiation
