@@ -2,9 +2,9 @@ package com.planetstudios.essentials.textures;
 
 import com.planetstudios.essentials.PlanetEssentials;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.ResourceType;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.slf4j.Logger;
 
@@ -12,10 +12,7 @@ import java.util.Objects;
 
 /**
  * Client resource reload bridge for the metadata-only texture catalog.
- *
- * <p>The current stage intentionally does not intercept Minecraft's texture
- * upload/render path. A failed discovery leaves the last known-good snapshot
- * available, so the catalog cannot interfere with vanilla resource fallback.</p>
+ * Texture upload and rendering remain entirely vanilla at this stage.
  */
 public final class TextureResourceReloadListener implements SimpleSynchronousResourceReloadListener {
     public static final Identifier LISTENER_ID = Identifier.fromNamespaceAndPath(
@@ -30,7 +27,7 @@ public final class TextureResourceReloadListener implements SimpleSynchronousRes
     }
 
     public static void register(TextureAssetCatalog catalog) {
-        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES)
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES)
                 .registerReloadListener(new TextureResourceReloadListener(catalog));
     }
 

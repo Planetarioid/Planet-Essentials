@@ -18,71 +18,58 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [ ] Dedicated-server launch configuration
 
 ## 1. Planet Lib integration
-- [x] Resolve Planet Lib as a real build dependency (pinned source project dependency; compile-only because runtime integration is optional)
-- [x] Validate API contract version at startup (Planet Lib bridge negotiates API v1)
-- [x] Expose the typed Planet Essentials API entrypoint and accept validated integration metadata
-- [x] Handle missing/incompatible bridge without crashing (standalone Essentials mode; bridge failure is soft)
-- [x] Add integration tests against the pinned Planet Lib source project
+- [x] Resolve Planet Lib as a real build dependency (pinned source project dependency; runtime integration remains optional)
+- [x] Validate API contract version at startup
+- [x] Expose typed Planet Essentials API entrypoint and accept validated integration metadata
+- [x] Handle missing/incompatible bridge without crashing
+- [x] Add integration tests against pinned Planet Lib
 
 ## 2. Core configuration and settings
-- [x] Typed setting definitions with stable IDs, categories, defaults, and validation
-- [x] Central settings registry and category lookup
+- [x] Typed setting definitions, central registry, validation
 - [x] Configuration schema migration path (0/1/2/3 to 4)
 - [x] Atomic persistence with malformed-file preservation
-- [x] Named profile create/save/load/delete storage
-- [x] Profile import/export validation and safe profile names
-- [x] Tests for registry, migration, profile persistence, and malformed imports
-- [x] Thread-safety and lifecycle tests (serialized config/profile persistence; concurrent diagnostics and profile-store tests)
+- [x] Named profile create/save/load/delete
+- [x] Profile import/export validation and safe names
+- [x] Persistence, migration, and concurrency tests
 
 ## 3. Mod discovery and integration coordination
-- [x] Read loaded mods from Planet Lib registry
-- [x] Identify installed Planet Studios mods
+- [x] Loaded-mod discovery through Planet Lib
+- [x] Planet Studios mod identity and capability discovery
 - [x] Integration registration lifecycle
-- [x] Optional-mod capability discovery
-- [x] Graceful behavior for absent integrations
-- [x] Avoid scanning or modifying arbitrary third-party files (uses Fabric Loader and Planet Lib registries only)
+- [x] Graceful standalone behavior when Planet Lib is absent
+- [x] No arbitrary mods-folder scanning or third-party config modification
 
 ## 4. Feature priority management
-- [x] Read feature/provider metadata from Planet Lib (shared FeaturePriorityManager snapshot and FeatureRegistry descriptors)
-- [x] Present competing implementations per capability
-- [x] Display selected provider and automatic/manual selection reason
-- [x] User override controls (cycle registered implementations per capability)
-- [x] Reset to automatic selection
-- [x] Persist preferences safely (validated per-capability overrides)
-- [x] Apply changes only through provider lifecycle contracts (provider-owned callbacks with rollback on transition failure)
-- [x] Ensure choices are scoped to one capability; no whole-mod enable/disable
-- [x] Deterministic resolution and reversible override behavior covered by Planet Lib tests
+- [x] Provider metadata and competing implementation UI
+- [x] Per-capability manual selection and automatic reset
+- [x] Persisted reversible preferences
+- [x] Provider-owned lifecycle callbacks and rollback contract
+- [x] Deterministic resolution covered by Planet Lib tests
 
 ## 5. Diagnostics
-- [~] Bounded in-memory FPS history
-- [~] Diagnostics toggle and configurable history capacity
-- [x] Unit tests for bounded history and configuration validation
-- [x] Diagnostics event collection integration (local lifecycle and slow-tick events; bounded in-memory collector)
-- [x] Export diagnostics only on explicit user action (manual button; local JSON file; bounded snapshot; no background export)
-- [x] No background telemetry or personal-data collection
-- [~] Verify low overhead when diagnostics are not open (disabled subsystem paths avoid sampling and event creation; runtime profiling still required)
+- [~] Bounded FPS history and diagnostics settings (runtime verification pending)
+- [x] Bounded in-memory lifecycle and slow-tick event collection
+- [x] Explicit local diagnostics export; no telemetry
+- [~] Verify disabled-path overhead with runtime profiling
 
 ## 6. Performance architecture
-- [x] Baseline profiling methodology documented; no actual baseline measurements
-- [~] CPU bottleneck investigation deferred by user; requires real JFR before identifying or changing bottlenecks
-- [~] GPU/render bottleneck investigation deferred pending client telemetry; no bottleneck is claimed
-- [x] Memory allocation/cache strategy documented; no measured allocation reduction
-- [x] Audio processing review documented; no audio optimization implemented
-- [x] Particle processing review documented; no particle optimization implemented
-- [x] Animation processing review documented; no animation optimization implemented
-- [x] Network processing review documented; no packet behavior changes or network optimization implemented
-- [x] Per-system enable/disable controls (Diagnostics master switch plus independent FPS-monitoring and event-collection switches; persisted in schema 4; future optimization engines will register their own controls when implemented)
-- [~] Benchmark correctness and performance impact protocol documented in docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md; no optimization has been benchmarked or accepted yet
-- [~] Compatibility test matrix documented in docs/COMPATIBILITY_TEST_MATRIX.md; runtime combinations remain untested
+- [x] Baseline profiling methodology documented; no actual baseline
+- [~] CPU investigation deferred by user pending JFR
+- [~] GPU/render investigation deferred pending measurements
+- [x] Memory/cache strategy documented; no measured gains
+- [x] Audio, particle, animation, and network boundaries reviewed; no optimizations claimed
+- [x] Independent diagnostics subsystem controls
+- [~] Benchmark protocol documented; no optimization accepted yet
+- [~] Compatibility matrix documented; runtime combinations untested
 
 ## 7. Texture optimization engine
-- [~] Asset discovery and lifecycle design (metadata-only discovery, bounded immutable catalog, reload listener and shutdown cleanup implemented; client runtime verification pending)
-- [ ] Texture metadata and format validation beyond resource identity/PNG extension checks
+- [~] Asset discovery and lifecycle design (bounded metadata catalog and client reload listener implemented; CI/runtime verification pending)
+- [~] Texture metadata and format validation (namespace, resource identity, path safety, PNG format, and path-based category validation implemented; CI/runtime verification pending)
 - [ ] Safe decode/processing pipeline
 - [ ] Memory-aware caching
-- [ ] Resource reload integration (catalog discovery is wired; decoded-resource/cache lifecycle remains)
+- [ ] Decoded-resource cache reload lifecycle
 - [ ] Mipmap and filtering policy
-- [ ] Resource-pack compatibility (effective-resource discovery follows ResourceManager priority; broader coexistence tests remain)
+- [ ] Resource-pack coexistence tests
 - [ ] Failure fallback to vanilla resource behavior
 - [ ] Benchmark memory, load time, and frame-time impact
 - [ ] Verify no visual corruption or resource leaks
@@ -101,12 +88,11 @@ A feature is not marked complete merely because its class exists. Build verifica
 ## 9. User interface
 - [~] Replace vanilla Options entry point with Planet Essentials hub
 - [x] Main navigation for diagnostics, profiles, feature priority, and system controls
-- [x] Registry-driven settings pages
-- [x] Profile management screen for create/save/load/delete
+- [x] Registry-driven settings pages and profile management
 - [x] Vanilla Minecraft settings remain accessible
 - [ ] Search/filter settings
 - [ ] Per-mod settings panels
-- [~] Feature-priority controls (runtime lifecycle application and usability review remain)
+- [~] Feature-priority usability and runtime review
 - [~] Dedicated diagnostics view
 - [ ] Reset and confirmation flows
 - [ ] Accessibility, scaling, and localization review
@@ -114,9 +100,9 @@ A feature is not marked complete merely because its class exists. Build verifica
 ## 10. Compatibility and release
 - [ ] Clean client startup test
 - [ ] Dedicated-server startup test
-- [ ] No-Planet-mod standalone test
-- [ ] Each available Planet mod integration test
-- [ ] Third-party mod coexistence test matrix
+- [ ] Standalone test without Planet Lib
+- [ ] Available Planet mod integration tests
+- [ ] Third-party mod coexistence matrix execution
 - [ ] Performance regression suite
 - [ ] License decision
 - [ ] Release checklist and changelog
@@ -124,5 +110,4 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [ ] Version tag and release artifact
 
 ## Verification record
-
-CI verifies compilation, unit tests, JAR contents, and artifact creation. In-game behavior and runtime profiling remain unverified until tested in Minecraft.
+CI verifies compilation, unit tests, JAR contents, and artifact creation. In-game behavior, dedicated-server behavior, runtime compatibility, and performance gains remain unverified until tested.
