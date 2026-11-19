@@ -22,7 +22,7 @@ or mutating vanilla state:
   `RenderSystem.bindDefaultUniforms`
 - A defensive copy of the current model-view matrix
 - Maximum sequential index count, the exact QUADS sequential index-buffer object and index type, and the dynamic `ChunkSection` uniform slot
-- Exact render-pass creation options: no color clear, no depth clear, no stencil attachment, and no explicit viewport/scissor commands
+- Exact render-pass creation options from the pinned 1.21.11 implementation: no color clear, no depth clear, no stencil attachment, and no explicit viewport/scissor commands. These are source-derived call arguments, not GPU-driver readback
 - Whether vanilla actually applies a layer pipeline (empty layer draw lists skip pipeline and atlas binding)
 
 The draw-order rule is isolated in a pure helper and covered by unit tests.
