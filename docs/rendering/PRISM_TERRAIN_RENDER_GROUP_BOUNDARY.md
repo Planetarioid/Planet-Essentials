@@ -26,6 +26,17 @@ or mutating vanilla state:
 - OpenGL-only viewport and scissor defaults: full attachment viewport at (0,0), scissor disabled. These are guarded against the active `GlDevice` and derived from the 1.21.11 backend implementation, not GPU-driver readback. Unknown backends leave both facets missing
 - Whether vanilla actually applies a layer pipeline (empty layer draw lists skip pipeline and atlas binding)
 
+The sequential QUADS buffer is now resolvable against the maximum index
+requirement of a Prism replacement draw set, not only vanilla's captured
+maximum. `IndexBufferInput.resolveBufferForIndexCount` grows the sequential
+buffer during preflight, then returns the actual post-growth index type together
+with the buffer and validated byte capacity. The caller must compute the maximum
+index count across every planned section before opening a pass and pass that
+single requirement to the resolver. Six indices are required per complete
+four-vertex quad; the pure conversion helper rejects malformed vertex counts
+and integer overflow. This closes the specific gap where Prism's captured
+section meshes could require more indices than vanilla's draw group.
+
 The draw-order rule is isolated in a pure helper and covered by unit tests.
 Captured pipeline objects retain the exact vanilla blend, depth, cull, and
 color-write configuration by identity; this is not yet a serialized/rebuilt
