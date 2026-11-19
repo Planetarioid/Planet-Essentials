@@ -41,6 +41,13 @@ public final class PrismTerrainChunkLifecycleEvents {
         return state(Objects.requireNonNull(level, "level")).lifecycle;
     }
 
+    /** Starts a revision-safe rebuild for one actual vanilla section compile. */
+    public static PrismTerrainSectionLifecycle.BuildToken beginRebuild(
+            ClientLevel level, int sectionX, int sectionY, int sectionZ) {
+        return state(Objects.requireNonNull(level, "level")).lifecycle
+                .beginRebuild(sectionX, sectionY, sectionZ);
+    }
+
     /** Returns the CPU payload cache belonging to this exact client world. */
     public static PrismTerrainSectionCache cache(ClientLevel level) {
         return state(Objects.requireNonNull(level, "level")).cache;

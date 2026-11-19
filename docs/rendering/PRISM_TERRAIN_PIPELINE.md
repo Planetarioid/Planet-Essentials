@@ -180,3 +180,12 @@ frame. The adapter is opt-in and consumes provider-supplied terrain. It does
 not intercept vanilla section meshing, extract Minecraft's existing chunk
 buffers, replace vanilla terrain, or yet construct a frustum from the active
 camera.
+
+## Vanilla section rebuild observation
+
+Prism now observes Minecraft 1.21.11's actual `SectionCompiler.compile` entry point. The mixin supplies the active `SectionPos` and callback-scoped `RenderSectionRegion` to `PrismVanillaSectionRebuildEvents` before vanilla meshing begins. The region is the real snapshot used by the vanilla compiler, so CPU-side integrations can inspect block states, fluids, block entities, tint, and lighting inputs without rebuilding a separate region.
+
+Each observed compile begins a new `PrismTerrainSectionLifecycle.BuildToken` and invalidates the prior cached payload for that section. A listener can publish a `PrismTerrainVertexData` result through `RebuildContext.publish`; the lifecycle rejects results whose token has been superseded by a newer rebuild or chunk unload. Listeners execute synchronously on Minecraft's chunk-build worker. They must keep work CPU-only, must not retain the region after the callback returns, and must not call GPU APIs.
+
+This is the first real vanilla rebuild integration point, not yet a vanilla mesh replacement. Prism does not currently copy Minecraft's compiled vertex buffers or change which geometry vanilla draws. No listener is registered by default, and the existing opt-in GPU adapter still requires a provider to submit payloads at extraction time. A future adapter can bridge revision-validated rebuild payloads into the frame queue without blocking Minecraft's compiler.
+
