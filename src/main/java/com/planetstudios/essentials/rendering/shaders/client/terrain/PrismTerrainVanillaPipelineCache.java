@@ -39,13 +39,13 @@ public final class PrismTerrainVanillaPipelineCache {
             RenderPipeline cached = byVanilla.get(vanillaLayer.pipeline());
             if (cached != null) return cached;
 
-            RenderPipeline created = create(prismShaderPipeline, vanillaLayer.state());
+            RenderPipeline created = buildForVanillaState(prismShaderPipeline, vanillaLayer.state());
             byVanilla.put(vanillaLayer.pipeline(), created);
             return created;
         }
     }
 
-    private static RenderPipeline create(RenderPipeline shader, PrismTerrainVanillaPassSnapshot.PipelineState state) {
+    static RenderPipeline buildForVanillaState(RenderPipeline shader, PrismTerrainVanillaPassSnapshot.PipelineState state) {
         long id = IDS.incrementAndGet();
         Identifier location = Identifier.fromNamespaceAndPath(
                 "planet_essentials", "prism/terrain/vanilla_state/" + id);
