@@ -283,6 +283,7 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
             PrismTerrainGpuCache gpuCache = worldState(level).gpuCache;
             java.util.ArrayList<PrismTerrainPreparedRenderGroup.Draw> draws =
                     new java.util.ArrayList<>(plan.entries().size());
+            int maximumIndexCount = 0;
 
             for (PrismTerrainReplacementPlan.Entry entry : plan.entries()) {
                 var descriptor = entry.descriptor();
@@ -297,6 +298,9 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
                 if (mesh == null || mesh.vertexCount() <= 0 || mesh.vertexCount() % 4 != 0) {
                     throw new IllegalStateException("Terrain GPU mesh is missing or has an invalid quad layout");
                 }
+                maximumIndexCount = Math.max(maximumIndexCount,
+                        PrismTerrainVanillaPassSnapshot.IndexBufferInput.indexCountForQuadVertexCount(
+                                mesh.vertexCount()));
                 var transform = PrismTerrainCameraTransform.forSection(
                         descriptor.sectionX(), descriptor.sectionY(), descriptor.sectionZ(),
                         cameraPosition.x, cameraPosition.y, cameraPosition.z);
@@ -314,9 +318,12 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
                 throw new IllegalStateException("Terrain draw-resource preflight became stale before publication");
             }
 
+            var preparedIndexBuffer = snapshot.passInputs().indexBuffer()
+                    .resolveBufferForIndexCount(maximumIndexCount)
+                    .orElseThrow(() -> new IllegalStateException("No sequential index buffer was prepared"));
             PrismTerrainPreparedRenderGroup prepared = new PrismTerrainPreparedRenderGroup(
                     level, snapshot.sequence(), shaderGeneration, layer, program, pipeline,
-                    samplerBindings, capturedUniforms, draws);
+                    preparedIndexBuffer, samplerBindings, capturedUniforms, draws);
             allocated.clear(); // Ownership transferred to the prepared group.
             return java.util.Optional.of(prepared);
         } catch (Exception failure) {
