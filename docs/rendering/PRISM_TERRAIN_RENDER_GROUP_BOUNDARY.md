@@ -32,15 +32,18 @@ color-write configuration by identity; this is not yet a serialized/rebuilt
 pipeline description.
 
 Known remaining state boundary:
-- `renderGroup` does not set a custom viewport or issue a scissor command.
-  The RenderPass API exposes explicit scissor enable/disable methods, neither
-  of which vanilla calls here. Backend default viewport and disabled-scissor
-  behavior still need runtime confirmation before replacement relies on them.
-- Stencil state is not exposed by this vanilla terrain pipeline contract;
-  scissor and viewport defaults are inferred from the RenderPass call sequence,
-  not read back from the GPU driver.
-- Capturing resource references does not prove that Prism can reproduce the
-  pass or its timing safely.
+- The OpenGL backend's viewport and scissor defaults are derived from the
+  pinned 1.21.11 `GlCommandEncoder` and `GlRenderPass` implementations:
+  full attachment viewport, scissor disabled. These are source-backed defaults,
+  not GPU-driver readback; runtime confirmation is still required.
+- Unknown GPU backends intentionally leave viewport/scissor facets absent.
+- Stencil is not attached by this terrain pass. The snapshot records this as
+  a known absence rather than inventing a stencil configuration.
+- The captured `DefaultVertexFormat.BLOCK` pipeline has no overlay attribute.
+  Prism V1 retains its own overlay attribute in its vertex format, initialized
+  with the neutral value for vanilla-captured payloads.
+- CI and source inspection do not prove visual parity, resource timing, or
+  driver behavior.
 
 The snapshot can now be converted into a `PrismTerrainRenderPassState`
 evidence record. The replacement coordinator also has a snapshot-native
@@ -61,3 +64,21 @@ still unverified, so vanilla rendering remains untouched.
 
 This remains observational. Vanilla still owns every terrain draw, and the
 fail-closed `PrismTerrainRenderPassState` gate remains mandatory.
+
+The Prism pass-replay path now has reusable pieces:
+- `openCapturedTargetPass` opens a Prism-owned pass using the captured color
+  and depth attachments and the same no-clear options
+- `bindCapturedDefaultUniforms` replays the exact optional Projection, Fog,
+  Globals, and Lighting resources and returns the names actually installed
+- `samplerBindingsFor` builds only the declared vanilla Sampler0/Sampler2
+  bindings from the captured atlas and lightmap; unknown names fail closed
+- `PrismTerrainVanillaPipelineCache` clones a Prism shader pipeline with the
+  captured vanilla depth, blend, cull, color-write, polygon, logic-op, and
+  depth-bias state while retaining Prism's shader source, definitions, bindings,
+  and V1 vertex format. Variants are precompiled with the original shader source
+  and cached by pipeline identity
+- `PrismTerrainDrawExecutor.drawWithPipeline` can submit a section mesh using
+  one of those state-matched pipeline variants
+
+These are tested preparation/replay primitives. They are not yet called from
+the vanilla mixin, and no vanilla draw is cancelled or replaced.

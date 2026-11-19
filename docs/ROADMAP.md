@@ -49,8 +49,12 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [x] Snapshot vanilla output target/attachments, block atlas and lightmap bindings, default uniform resources, model-view matrix, per-layer pipeline identities/state, and exact vanilla draw order
 - [x] Convert observed vanilla snapshot facts into fail-closed render-state evidence and report missing facets
 - [x] Connect captured render-group snapshots directly to replacement-plan preparation without suppressing vanilla draws
-- [ ] Validate viewport/scissor defaults and attachment behavior against the active GPU backend
-- [ ] Serialize/reproduce captured target, samplers, default uniforms, pipeline state, and exact ordering in a Prism-owned pass
+- [x] Capture source-backed OpenGL viewport/scissor defaults, no-stencil attachment state, and BLOCK-format overlay absence; unknown backends remain fail-closed
+- [x] Add Prism-owned pass opening and exact replay of captured default uniforms and declared vanilla samplers
+- [x] Clone and precompile Prism shader pipelines with captured vanilla fixed-function layer state while retaining the Prism V1 vertex format
+- [x] Add draw-executor support for state-matched terrain pipeline variants
+- [ ] Runtime-validate viewport/scissor defaults and attachment behavior against the active GPU backend
+- [ ] Integrate pass replay and pipeline variants at the synchronous vanilla render-group boundary
 - [ ] Validate draw index mapping against actual 1.21.11 runtime behavior
 - [ ] Synchronous replacement hook at the vanilla render-group boundary calling the coordinator
 - [ ] Whole-group vanilla fallback on any missing payload, GPU allocation, shader, state, or frame
