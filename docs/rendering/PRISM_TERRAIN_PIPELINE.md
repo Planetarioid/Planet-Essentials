@@ -107,3 +107,30 @@ The helper validates the declaration contract. It does not allocate or own GPU
 buffers; adapters retain ownership and must update/recycle the per-draw uniform
 allocation according to their GPU synchronization strategy. No built-in
 renderer adapter is registered yet.
+
+
+## Renderer-owned section uniform upload and draw binding
+
+`PrismTerrainSectionUniformAllocation` now provides the concrete
+Minecraft 1.21.11 GPU path for the section-origin payload. It creates a
+16-byte `GpuBuffer.USAGE_UNIFORM` allocation initialized directly from
+`PrismTerrainSectionUniform.encode`. The allocation exposes a bounded
+`GpuBufferSlice` and owns the underlying GPU buffer.
+
+Use the section-aware `PrismTerrainDrawExecutor.draw(..., sectionUniform)`
+overload for programs that declare `PrismSection`. It verifies the
+program declaration, adds the slice to a fresh immutable
+`MinecraftShaderBindings` set, validates the full binding set, then
+submits the mesh. The original binding set is not mutated.
+
+The allocation is immutable after creation so a renderer cannot accidentally
+overwrite a uniform still referenced by queued GPU work. The renderer must
+retain each allocation until its frame submissions no longer reference it,
+then close it on the render thread. This first implementation favors explicit,
+safe ownership over a premature shared ring-buffer strategy; a fenced or
+frame-retired uniform arena can replace per-section allocations after its
+synchronization behavior is validated on supported backends.
+
+This completes the reusable upload/bind/draw API contract for cooperating
+terrain renderers. It still does not register a production renderer, provide
+vanilla chunk meshes, or prove visual correctness in-game.

@@ -12,9 +12,38 @@ public final class PrismTerrainDrawExecutor {
     private PrismTerrainDrawExecutor() {}
 
     /**
-     * Draws a whole quad mesh into an already-open pass.
-     * The caller is responsible for selecting the correct world stage and camera-relative transform.
+     * Draws a whole quad mesh and supplies its per-section origin uniform.
+     * The allocation must remain open until the submitted GPU work no longer
+     * references it. The renderer owns that lifetime.
      */
+    public static boolean draw(RenderPass pass,
+            MinecraftShaderBackend.MinecraftCompiledProgram program,
+            PrismTerrainGpuMesh mesh,
+            MinecraftShaderBindings bindings,
+            PrismTerrainSectionUniformAllocation sectionUniform) {
+        Objects.requireNonNull(program, "program");
+        Objects.requireNonNull(sectionUniform, "sectionUniform");
+        PrismTerrainSectionUniform.requireDeclared(program.bindings()::uniformBuffers);
+        MinecraftShaderBindings completeBindings = Objects.requireNonNull(bindings, "bindings")
+                .withUniformBuffer(PrismTerrainSectionUniform.BINDING_NAME, sectionUniform.slice());
+        return drawValidated(pass, program, mesh, completeBindings);
+    }
+
+    /**
+     * Draws a whole quad mesh into an already-open pass without injecting
+     * a section uniform. Kept for non-section terrain pipelines.
+     */
+    public static boolean draw(RenderPass pass,
+            MinecraftShaderBackend.MinecraftCompiledProgram program,
+            PrismTerrainGpuMesh mesh,
+            MinecraftShaderBindings bindings) {
+        return drawValidated(pass, program, mesh, bindings);
+    }
+
+    private static boolean drawValidated(RenderPass pass,
+            MinecraftShaderBackend.MinecraftCompiledProgram program,
+            PrismTerrainGpuMesh mesh,
+            MinecraftShaderBindings bindings) {
     public static boolean draw(RenderPass pass,
             MinecraftShaderBackend.MinecraftCompiledProgram program,
             PrismTerrainGpuMesh mesh,

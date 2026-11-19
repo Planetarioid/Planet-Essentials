@@ -58,7 +58,7 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [ ] Vanilla chunk mesher integration and chunk rebuild lifecycle
 - [x] Double-precision camera-relative section-origin transform utility with unit coverage
 - [x] Canonical 16-byte std140 camera-relative section-origin uniform payload and declaration contract
-- [ ] Renderer-owned GPU uniform upload, binding, and terrain submission
+- [x] Renderer-owned immutable GPU section-uniform allocation, binding injection, and terrain draw overload
 - [ ] Frustum and occlusion culling
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
 - [ ] Renderer-specific integration adapters and safe fallback negotiation

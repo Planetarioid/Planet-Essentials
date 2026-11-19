@@ -48,6 +48,19 @@ public final class MinecraftShaderBindings {
                 pass.bindTexture(name, binding.view(), binding.sampler()));
     }
 
+    /**
+     * Returns a new binding set with one additional uniform-buffer slice.
+     * Existing bindings are preserved and duplicate names are rejected.
+     */
+    public MinecraftShaderBindings withUniformBuffer(String name, GpuBufferSlice slice) {
+        Builder builder = new Builder();
+        builder.uniformBuffers.putAll(uniformBuffers);
+        builder.texelBuffers.putAll(texelBuffers);
+        builder.samplers.putAll(samplers);
+        builder.uniformBuffer(name, slice);
+        return builder.build();
+    }
+
     public void apply(RenderPass pass, ShaderBindingLayout layout) {
         Objects.requireNonNull(pass, "pass");
         validate(layout);
