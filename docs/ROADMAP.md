@@ -27,7 +27,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 ## 2. Core configuration and settings
 - [x] Typed setting definitions with stable IDs, categories, defaults, and validation
 - [x] Central settings registry and category lookup
-- [x] Configuration schema migration path (0/1/2 to 3)
+- [x] Configuration schema migration path (0/1/2/3 to 4)
 - [x] Atomic persistence with malformed-file preservation
 - [x] Named profile create/save/load/delete storage
 - [x] Profile import/export validation and safe profile names
@@ -48,8 +48,8 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Display selected provider and automatic/manual selection reason
 - [x] User override controls (cycle registered implementations per capability)
 - [x] Reset to automatic selection
-- [x] Persist preferences safely (schema 3, validated per-capability overrides; stale entries retained)
-- [x] Apply changes only through provider lifecycle contracts (provider-owned onSelected/onDeselected callbacks with rollback on transition failure)
+- [x] Persist preferences safely (validated per-capability overrides)
+- [x] Apply changes only through provider lifecycle contracts (provider-owned callbacks with rollback on transition failure)
 - [x] Ensure choices are scoped to one capability; no whole-mod enable/disable
 - [x] Deterministic resolution and reversible override behavior covered by Planet Lib tests
 
@@ -59,19 +59,19 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Unit tests for bounded history and configuration validation
 - [x] Diagnostics event collection integration (local lifecycle and slow-tick events; bounded in-memory collector)
 - [x] Export diagnostics only on explicit user action (manual button; local JSON file; bounded snapshot; no background export)
-- [x] No background telemetry or personal-data collection (export contains only timestamps, FPS values, event types, and durations)
-- [~] Verify low overhead when diagnostics are not open (disabled tick path avoids clock reads, sampling, event creation, and collector locking after one cached config read; runtime profiling still required)
+- [x] No background telemetry or personal-data collection
+- [~] Verify low overhead when diagnostics are not open (disabled subsystem paths avoid sampling and event creation; runtime profiling still required)
 
 ## 6. Performance architecture
-- [x] Establish baseline profiling methodology (repeatable scenarios, environment controls, frame-time/CPU/GPU/JVM metrics, diagnostics A/B procedure, acceptance criteria documented in docs/performance/BASELINE_PROFILING.md)
-- [~] Identify measurable CPU bottlenecks (deferred by user; source-level targets documented in docs/performance/CPU_BOTTLENECK_INVESTIGATION.md; still requires a real Java Flight Recording before identifying or changing any bottleneck)
-- [~] Identify measurable GPU/render bottlenecks (capture protocol documented in docs/performance/GPU_BOTTLENECK_INVESTIGATION.md; deferred pending client telemetry; no bottleneck is claimed or optimized)
-- [x] Memory allocation and cache strategy documented (bounded ownership, invalidation, reload/shutdown cleanup, allocation-aware hot-path rules in docs/performance/MEMORY_ALLOCATION_AND_CACHE_STRATEGY.md; runtime profiling and implementation review remain separate)
-- [x] Audio processing review (source-level boundaries and verification protocol documented in docs/performance/AUDIO_PROCESSING_REVIEW.md; no bottleneck measured and no audio optimization implemented)
-- [x] Particle processing review (source-level boundaries and verification protocol documented in docs/performance/PARTICLE_PROCESSING_REVIEW.md; no bottleneck measured and no particle optimization implemented)
-- [x] Animation processing review (source-level boundaries and verification protocol documented in docs/performance/ANIMATION_PROCESSING_REVIEW.md; no bottleneck measured and no animation optimization implemented)
-- [x] Network processing review (safe client-side observation and investigation boundaries documented in docs/performance/NETWORK_PROCESSING_REVIEW.md; no packet behavior changes, bottleneck measured, or network optimization implemented)
-- [ ] Per-system enable/disable controls
+- [x] Baseline profiling methodology documented; no actual baseline measurements
+- [~] CPU bottleneck investigation deferred by user; requires real JFR before identifying or changing bottlenecks
+- [~] GPU/render bottleneck investigation deferred pending client telemetry; no bottleneck is claimed
+- [x] Memory allocation/cache strategy documented; no measured allocation reduction
+- [x] Audio processing review documented; no audio optimization implemented
+- [x] Particle processing review documented; no particle optimization implemented
+- [x] Animation processing review documented; no animation optimization implemented
+- [x] Network processing review documented; no packet behavior changes or network optimization implemented
+- [x] Per-system enable/disable controls (Diagnostics master switch plus independent FPS-monitoring and event-collection switches; persisted in schema 4; future optimization engines will register their own controls when implemented)
 - [ ] Benchmark correctness and performance impact
 - [ ] Compatibility test matrix
 
@@ -100,13 +100,13 @@ A feature is not marked complete merely because its class exists. Build verifica
 
 ## 9. User interface
 - [~] Replace vanilla Options entry point with Planet Essentials hub
-- [x] Main navigation for diagnostics and profiles
-- [x] Registry-driven diagnostics settings page
+- [x] Main navigation for diagnostics, profiles, feature priority, and system controls
+- [x] Registry-driven settings pages
 - [x] Profile management screen for create/save/load/delete
 - [x] Vanilla Minecraft settings remain accessible
 - [ ] Search/filter settings
 - [ ] Per-mod settings panels
-- [~] Feature-priority controls (initial provider selector screen; runtime lifecycle application and usability review remain)
+- [~] Feature-priority controls (runtime lifecycle application and usability review remain)
 - [~] Dedicated diagnostics view
 - [ ] Reset and confirmation flows
 - [ ] Accessibility, scaling, and localization review

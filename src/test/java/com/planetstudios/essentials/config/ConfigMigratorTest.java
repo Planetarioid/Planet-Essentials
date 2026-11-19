@@ -10,15 +10,22 @@ class ConfigMigratorTest {
   assertEquals(ConfigMigrator.CURRENT_SCHEMA,migrated.get("schemaVersion").getAsInt());
   assertEquals("default",migrated.get("activeProfile").getAsString());
   assertTrue(migrated.get("featurePriorityOverrides").isJsonObject());
+  assertTrue(migrated.get("performanceMonitoringEnabled").getAsBoolean());
+  assertTrue(migrated.get("eventCollectionEnabled").getAsBoolean());
   assertFalse(migrated.get("diagnosticsEnabled").getAsBoolean());
  }
  @Test void migratesSchemaTwoAndPreservesExistingOverrides()throws Exception{
   JsonObject old=new JsonObject();old.addProperty("schemaVersion",2);
-  JsonObject overrides=new JsonObject();overrides.addProperty("planet:rendering/entity","planet_alpha:renderer");
-  old.add("featurePriorityOverrides",overrides);
+  JsonObject overrides=new JsonObject();overrides.addProperty("planet:rendering/entity","planet_alpha:renderer");old.add("featurePriorityOverrides",overrides);
   JsonObject migrated=ConfigMigrator.migrate(old);
-  assertEquals(3,migrated.get("schemaVersion").getAsInt());
+  assertEquals(4,migrated.get("schemaVersion").getAsInt());
   assertEquals("planet_alpha:renderer",migrated.getAsJsonObject("featurePriorityOverrides").get("planet:rendering/entity").getAsString());
+ }
+ @Test void preservesExplicitSubsystemPreferences(){
+  JsonObject old=new JsonObject();old.addProperty("schemaVersion",3);old.addProperty("performanceMonitoringEnabled",false);
+  JsonObject migrated=assertDoesNotThrow(()->ConfigMigrator.migrate(old));
+  assertFalse(migrated.get("performanceMonitoringEnabled").getAsBoolean());
+  assertTrue(migrated.get("eventCollectionEnabled").getAsBoolean());
  }
  @Test void rejectsFutureSchemaInsteadOfOverwritingIt(){
   JsonObject future=new JsonObject();future.addProperty("schemaVersion",999);

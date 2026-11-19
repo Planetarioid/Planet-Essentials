@@ -5,6 +5,8 @@ import java.util.TreeMap;
 public final class EssentialsConfig {
  public int schemaVersion=ConfigMigrator.CURRENT_SCHEMA;
  public boolean diagnosticsEnabled=true, showPerformanceScreen=true;
+ /** Independent switches for active diagnostics subsystems; diagnosticsEnabled is the master switch. */
+ public boolean performanceMonitoringEnabled=true, eventCollectionEnabled=true;
  public int diagnosticsHistorySize=120;
  public String activeProfile="default";
  /** Capability ID to explicitly preferred FeatureId (modId:featureId). */

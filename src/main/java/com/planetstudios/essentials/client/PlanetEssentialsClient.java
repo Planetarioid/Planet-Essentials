@@ -11,6 +11,8 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
  private static final long SLOW_TICK_THRESHOLD_NANOS=50_000_000L;
  private static long tickStartedAtNanos;
  private static boolean diagnosticsEnabledForCurrentTick;
+ private static boolean performanceSamplingEnabledForCurrentTick;
+ private static boolean eventCollectionEnabledForCurrentTick;
  @Override public void onInitializeClient(){
   EssentialsRuntime.initialize();
   ClientLifecycleEvents.CLIENT_STARTED.register(client->record(DiagnosticEventType.CLIENT_STARTED));
@@ -18,15 +20,17 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
   ClientPlayConnectionEvents.JOIN.register((handler,sender,client)->record(DiagnosticEventType.WORLD_JOINED));
   ClientPlayConnectionEvents.DISCONNECT.register((handler,client)->record(DiagnosticEventType.WORLD_LEFT));
   ClientTickEvents.START_CLIENT_TICK.register(client->{
-   // Read the synchronized config once per tick. The disabled path avoids clock reads,
-   // monitor lookups, sample/event creation, and collector locking.
-   diagnosticsEnabledForCurrentTick=EssentialsRuntime.config().diagnosticsEnabled;
-   tickStartedAtNanos=diagnosticsEnabledForCurrentTick?System.nanoTime():0L;
+   // One config read per tick. Disabled subsystems do not sample or allocate.
+   var config=EssentialsRuntime.config();
+   diagnosticsEnabledForCurrentTick=config.diagnosticsEnabled;
+   performanceSamplingEnabledForCurrentTick=diagnosticsEnabledForCurrentTick&&config.performanceMonitoringEnabled;
+   eventCollectionEnabledForCurrentTick=diagnosticsEnabledForCurrentTick&&config.eventCollectionEnabled;
+   tickStartedAtNanos=eventCollectionEnabledForCurrentTick?System.nanoTime():0L;
   });
   ClientTickEvents.END_CLIENT_TICK.register(client->{
-   if(!diagnosticsEnabledForCurrentTick){tickStartedAtNanos=0L;return;}
-   if(client.level!=null)EssentialsRuntime.performance().recordFps(Minecraft.getInstance().getFps());
-   if(tickStartedAtNanos!=0L){
+   if(performanceSamplingEnabledForCurrentTick&&client.level!=null)
+    EssentialsRuntime.performance().recordFps(Minecraft.getInstance().getFps());
+   if(eventCollectionEnabledForCurrentTick&&tickStartedAtNanos!=0L){
     long elapsed=System.nanoTime()-tickStartedAtNanos;
     if(elapsed>=SLOW_TICK_THRESHOLD_NANOS)
      EssentialsRuntime.diagnosticEvents().record(DiagnosticEventType.SLOW_CLIENT_TICK,elapsed/1_000_000L);
@@ -35,6 +39,8 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
   });
  }
  private static void record(DiagnosticEventType type){
-  if(EssentialsRuntime.config().diagnosticsEnabled)EssentialsRuntime.diagnosticEvents().record(type);
+  var config=EssentialsRuntime.config();
+  if(config.diagnosticsEnabled&&config.eventCollectionEnabled)
+   EssentialsRuntime.diagnosticEvents().record(type);
  }
 }

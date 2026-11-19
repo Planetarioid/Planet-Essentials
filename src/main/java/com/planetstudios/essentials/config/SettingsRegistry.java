@@ -13,7 +13,7 @@ public final class SettingsRegistry {
 
     static {
         register(new SettingDefinition<>("diagnostics.enabled", "diagnostics",
-                "Performance diagnostics", "Collect a bounded local FPS history.",
+                "Diagnostics master switch", "Master switch for all local diagnostics collection.",
                 SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
                 config -> config.diagnosticsEnabled, (config, value) -> config.diagnosticsEnabled = value));
         register(new SettingDefinition<>("diagnostics.performance_screen", "diagnostics",
@@ -21,9 +21,17 @@ public final class SettingsRegistry {
                 SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
                 config -> config.showPerformanceScreen, (config, value) -> config.showPerformanceScreen = value));
         register(new SettingDefinition<>("diagnostics.history_size", "diagnostics",
-                "History capacity", "Maximum number of FPS samples retained (20 to 1200).",
+                "History capacity", "Maximum number of samples retained (20 to 1200).",
                 SettingDefinition.Kind.INTEGER, 120, value -> value != null && value >= 20 && value <= 1200,
                 config -> config.diagnosticsHistorySize, (config, value) -> config.diagnosticsHistorySize = value));
+        register(new SettingDefinition<>("systems.performance_monitoring", "systems",
+                "FPS monitoring", "Independently enable or disable FPS sampling.",
+                SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
+                config -> config.performanceMonitoringEnabled, (config, value) -> config.performanceMonitoringEnabled = value));
+        register(new SettingDefinition<>("systems.event_collection", "systems",
+                "Event collection", "Independently enable or disable local lifecycle and slow-tick event collection.",
+                SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
+                config -> config.eventCollectionEnabled, (config, value) -> config.eventCollectionEnabled = value));
     }
 
     private SettingsRegistry() {}
