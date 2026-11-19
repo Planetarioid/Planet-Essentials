@@ -19,6 +19,7 @@ import java.util.function.Consumer;
  * the graph. Pass order is topologically sorted and deterministic.
  */
 public final class PrismPostProcessGraph {
+    public static final int MAX_PASSES = 32;
     public record Pass(String id, String programId, List<String> inputs, String output) {
         public Pass {
             requireId(id, "pass");
@@ -89,6 +90,7 @@ public final class PrismPostProcessGraph {
 
         public PrismPostProcessGraph build() {
             if (passes.isEmpty()) throw new IllegalArgumentException("Post-process graph must contain at least one pass");
+            if (passes.size() > MAX_PASSES) throw new IllegalArgumentException("Post-process graph exceeds " + MAX_PASSES + " passes");
             if (output == null) throw new IllegalArgumentException("Post-process graph output is not declared");
 
             Map<String, Pass> producerByResource = new LinkedHashMap<>();

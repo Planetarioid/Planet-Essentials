@@ -2,27 +2,21 @@ package com.planetstudios.essentials.rendering.shaders.client;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.GpuDevice;
-import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
 import net.minecraft.client.renderer.rendertype.OutputTarget;
 
+import java.util.List;
 import java.util.OptionalDouble;
-import java.util.OptionalInt;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.planetstudios.essentials.PlanetEssentials;
+import com.planetstudios.essentials.rendering.shaders.PrismPostProcessGraph;
 
-/**
- * Optional full-screen world post-process pass. It renders into a private target
- * while sampling the main render target, then uses Minecraft's render-target blit
- * path to composite the result back. It never samples from the texture currently
- * attached as its render destination.
- */
+/** Optional world post-process graph integration at the END_MAIN drawing stage. */
 public final class PrismWorldPostProcessor {
-    public static final String SCENE_COLOR_SAMPLER = "SceneColor";
     private static final PrismRenderTargetManager TARGETS = new PrismRenderTargetManager();
     private static final AtomicBoolean REGISTERED = new AtomicBoolean();
     private static GpuDevice ownerDevice;
@@ -48,31 +42,22 @@ public final class PrismWorldPostProcessor {
             RenderSystem.assertOnRenderThread();
             GpuDevice device = RenderSystem.tryGetDevice();
             RenderTarget main = OutputTarget.MAIN_TARGET.getRenderTarget();
-            if (device == null || main == null) return;
-            if (main.getColorTexture() == null || main.getColorTextureView() == null) return;
+            if (device == null || main == null || main.getColorTextureView() == null) return;
             ensureDeviceResources(device);
 
-            PrismRenderTarget scratch = TARGETS.ensureTarget(
-                    device, "planet:world_post_source",
-                    main.width, main.height, false);
-            var layout = ShaderPackRuntime.programBindings(programId);
-            if (layout == null || !layout.uniformBuffers().isEmpty()
-                    || !layout.texelBuffers().isEmpty()
-                    || !layout.samplers().equals(java.util.List.of(SCENE_COLOR_SAMPLER))) {
-                throw new IllegalStateException("World post-process program must declare only the SceneColor sampler");
-            }
-
-            MinecraftShaderBindings bindings = MinecraftShaderBindings.builder()
-                    .sampler(SCENE_COLOR_SAMPLER, main.getColorTextureView(), sceneSampler)
+            PrismPostProcessGraph graph = PrismPostProcessGraph.builder()
+                    .externalInput(PrismPostProcessExecutor.SCENE_COLOR)
+                    .pass(new PrismPostProcessGraph.Pass(
+                            "planet:world_post", programId,
+                            List.of(PrismPostProcessExecutor.SCENE_COLOR),
+                            "planet:world_post_output"))
+                    .output("planet:world_post_output")
                     .build();
-            var encoder = device.createCommandEncoder();
-            try (RenderPass pass = scratch.beginPass(encoder, "Prism world post-process",
-                    OptionalInt.of(0), OptionalDouble.empty())) {
-                if (!PrismDrawExecutor.draw(pass, programId, fullscreenQuad.buffer(),
-                        0, 4, bindings, layout)) return;
+
+            if (!PrismPostProcessExecutor.execute(
+                    graph, main, device, sceneSampler, fullscreenQuad, TARGETS)) {
+                return;
             }
-            // Minecraft owns the main render target and performs the final composite.
-            main.blitAndBlendToTexture(scratch.colorView());
         } catch (RuntimeException failure) {
             failedGeneration = generation;
             PlanetEssentials.LOGGER.error(
@@ -95,11 +80,11 @@ public final class PrismWorldPostProcessor {
     public static void shutdown() {
         if (RenderSystem.isOnRenderThread()) {
             releaseDeviceResources();
-            TARGETS.close();
+            TARGETS.clear();
         } else {
             RenderSystem.queueFencedTask(() -> {
                 releaseDeviceResources();
-                TARGETS.close();
+                TARGETS.clear();
             });
         }
     }

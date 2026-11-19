@@ -1,5 +1,6 @@
 package com.planetstudios.essentials.rendering.shaders;
 
+import com.planetstudios.essentials.rendering.shaders.client.PrismPostProcessExecutor;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -11,13 +12,12 @@ class PrismPostProcessGraphTest {
     @Test
     void topologicallyOrdersPassesAndExecutesInDependencyOrder() {
         var graph = PrismPostProcessGraph.builder()
-                .externalInput("planet:scene")
+                .externalInput(PrismPostProcessExecutor.SCENE_COLOR)
                 .pass(new PrismPostProcessGraph.Pass("planet:composite", "planet:composite",
-                        List.of("planet:blurred", "planet:scene"), "planet:final"))
+                        List.of("planet:blurred", PrismPostProcessExecutor.SCENE_COLOR), "planet:final"))
                 .pass(new PrismPostProcessGraph.Pass("planet:blur", "planet:blur",
-                        List.of("planet:scene"), "planet:blurred"))
-                .output("planet:final")
-                .build();
+                        List.of(PrismPostProcessExecutor.SCENE_COLOR), "planet:blurred"))
+                .output("planet:final").build();
 
         assertEquals(List.of("planet:blur", "planet:composite"),
                 graph.passes().stream().map(PrismPostProcessGraph.Pass::id).toList());
@@ -29,7 +29,7 @@ class PrismPostProcessGraphTest {
     @Test
     void rejectsUnknownInputsAndCycles() {
         assertThrows(IllegalArgumentException.class, () -> PrismPostProcessGraph.builder()
-                .externalInput("planet:scene")
+                .externalInput(PrismPostProcessExecutor.SCENE_COLOR)
                 .pass(new PrismPostProcessGraph.Pass("planet:fx", "planet:fx",
                         List.of("planet:missing"), "planet:out"))
                 .output("planet:out").build());
@@ -46,13 +46,25 @@ class PrismPostProcessGraphTest {
     void rejectsDuplicateOutputsAndInPlaceFeedback() {
         assertThrows(IllegalArgumentException.class, () ->
                 new PrismPostProcessGraph.Pass("planet:copy", "planet:copy",
-                        List.of("planet:scene"), "planet:scene"));
+                        List.of(PrismPostProcessExecutor.SCENE_COLOR), PrismPostProcessExecutor.SCENE_COLOR));
         assertThrows(IllegalArgumentException.class, () -> PrismPostProcessGraph.builder()
-                .externalInput("planet:scene")
+                .externalInput(PrismPostProcessExecutor.SCENE_COLOR)
                 .pass(new PrismPostProcessGraph.Pass("planet:a", "planet:a",
-                        List.of("planet:scene"), "planet:out"))
+                        List.of(PrismPostProcessExecutor.SCENE_COLOR), "planet:out"))
                 .pass(new PrismPostProcessGraph.Pass("planet:b", "planet:b",
-                        List.of("planet:scene"), "planet:out"))
+                        List.of(PrismPostProcessExecutor.SCENE_COLOR), "planet:out"))
                 .output("planet:out").build());
+    }
+
+    @Test
+    void capsGraphSize() {
+        var builder = PrismPostProcessGraph.builder().externalInput(PrismPostProcessExecutor.SCENE_COLOR);
+        for (int i = 0; i < PrismPostProcessGraph.MAX_PASSES + 1; i++) {
+            String output = "planet:out_" + i;
+            String input = i == 0 ? PrismPostProcessExecutor.SCENE_COLOR : "planet:out_" + (i - 1);
+            builder.pass(new PrismPostProcessGraph.Pass("planet:pass_" + i,
+                    "planet:program_" + i, List.of(input), output));
+        }
+        assertThrows(IllegalArgumentException.class, () -> builder.output("planet:out_32").build());
     }
 }
