@@ -3,6 +3,7 @@ package com.planetstudios.essentials.rendering.shaders.client;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.util.LinkedHashSet;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -20,6 +21,7 @@ public final class PrismRendererCompatibility {
         SODIUM,
         CANVAS,
         VULKANMOD,
+        CONFLICTED,
         UNKNOWN
     }
 
@@ -54,6 +56,7 @@ public final class PrismRendererCompatibility {
                 case SODIUM -> "sodium";
                 case CANVAS -> "canvas";
                 case VULKANMOD -> "vulkanmod";
+                case CONFLICTED -> "conflicted";
                 case UNKNOWN -> "unknown";
             };
         }
@@ -71,20 +74,27 @@ public final class PrismRendererCompatibility {
         return detect(mods, loader.isModLoaded("iris"));
     }
 
-    /** Pure resolver kept separate so renderer precedence can be unit-tested. */
+    /** Pure resolver kept separate so renderer combinations can be unit-tested. */
     public static Snapshot detect(Set<String> installedMods, boolean irisPresent) {
         Objects.requireNonNull(installedMods, "installedMods");
         Set<String> normalized = new LinkedHashSet<>();
         for (String id : installedMods) {
-            if (id != null && !id.isBlank()) normalized.add(id.toLowerCase(java.util.Locale.ROOT));
+            if (id != null && !id.isBlank()) normalized.add(id.toLowerCase(Locale.ROOT));
+        }
+
+        Set<String> primary = new LinkedHashSet<>();
+        for (String id : Set.of("sodium", "canvas", "vulkanmod")) {
+            if (normalized.contains(id)) primary.add(id);
         }
 
         Renderer renderer;
-        if (normalized.contains("vulkanmod")) {
+        if (primary.size() > 1) {
+            renderer = Renderer.CONFLICTED;
+        } else if (primary.contains("vulkanmod")) {
             renderer = Renderer.VULKANMOD;
-        } else if (normalized.contains("canvas")) {
+        } else if (primary.contains("canvas")) {
             renderer = Renderer.CANVAS;
-        } else if (normalized.contains("sodium")) {
+        } else if (primary.contains("sodium")) {
             renderer = Renderer.SODIUM;
         } else if (normalized.contains("optifabric")) {
             renderer = Renderer.UNKNOWN;
@@ -93,10 +103,14 @@ public final class PrismRendererCompatibility {
         }
 
         String note;
-        if (renderer == Renderer.VANILLA && !irisPresent) {
+        if (renderer == Renderer.CONFLICTED) {
+            note = "Multiple primary renderer implementations were detected. Prism disables renderer-specific takeover until the environment is resolved.";
+        } else if (renderer == Renderer.VANILLA && !irisPresent) {
             note = "Vanilla renderer detected. Prism world post-processing is available; automatic terrain/entity replacement requires an explicit adapter.";
         } else if (irisPresent) {
             note = "Iris detected. Prism does not inject into Iris or Sodium internals; renderer-specific shader coexistence remains unverified.";
+        } else if (renderer == Renderer.UNKNOWN) {
+            note = "An unclassified or legacy renderer signal was detected. Prism keeps renderer-specific takeover disabled.";
         } else {
             note = "A non-vanilla renderer was detected. Prism uses conservative integration and does not replace its terrain/entity pipelines without a registered adapter.";
         }

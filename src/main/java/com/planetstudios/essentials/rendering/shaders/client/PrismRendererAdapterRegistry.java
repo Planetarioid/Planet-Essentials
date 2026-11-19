@@ -3,6 +3,7 @@ package com.planetstudios.essentials.rendering.shaders.client;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Registry for explicit, separately tested renderer bridge implementations. */
@@ -17,13 +18,18 @@ public final class PrismRendererAdapterRegistry {
         if (!id.matches("[a-z0-9_.-]+")) {
             throw new IllegalArgumentException("Invalid Prism renderer ID: " + id);
         }
-        Objects.requireNonNull(adapter.testedVersion(), "testedVersion");
-        Objects.requireNonNull(adapter.supportedFeatures(), "supportedFeatures");
-        PrismRendererAdapter previous = ADAPTERS.putIfAbsent(id, adapter);
+        String testedVersion = Objects.requireNonNull(adapter.testedVersion(), "testedVersion");
+        if (testedVersion.isBlank()) {
+            throw new IllegalArgumentException("testedVersion must not be blank");
+        }
+        Set<PrismRendererAdapter.Feature> features =
+                Set.copyOf(Objects.requireNonNull(adapter.supportedFeatures(), "supportedFeatures"));
+        PrismRendererAdapter frozen = new RegisteredAdapter(id, testedVersion, features);
+        PrismRendererAdapter previous = ADAPTERS.putIfAbsent(id, frozen);
         if (previous != null) {
             throw new IllegalArgumentException("A Prism renderer adapter is already registered: " + id);
         }
-        return () -> ADAPTERS.remove(id, adapter);
+        return () -> ADAPTERS.remove(id, frozen);
     }
 
     public static Optional<PrismRendererAdapter> find(String rendererId) {
@@ -32,6 +38,16 @@ public final class PrismRendererAdapterRegistry {
 
     public static Map<String, PrismRendererAdapter> snapshot() {
         return Map.copyOf(ADAPTERS);
+    }
+
+    private record RegisteredAdapter(
+            String rendererId,
+            String testedVersion,
+            Set<PrismRendererAdapter.Feature> supportedFeatures)
+            implements PrismRendererAdapter {
+        private RegisteredAdapter {
+            supportedFeatures = Set.copyOf(supportedFeatures);
+        }
     }
 
     @FunctionalInterface

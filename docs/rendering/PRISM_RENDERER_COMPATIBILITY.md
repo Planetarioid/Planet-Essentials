@@ -12,7 +12,10 @@ The compatibility probe records known renderer mod IDs and classifies the primar
 - Sodium (Iris is tracked separately as a shader/renderer integration signal)
 - Canvas
 - VulkanMod
+- Conflicted (multiple primary renderer implementations detected)
 - Unknown (for legacy OptiFabric detection)
+
+Indium is recorded as an extension signal and is not classified as a primary renderer. Multiple primary renderer IDs are treated as a conflicted environment. Prism does not select one by arbitrary precedence.
 
 This is environment detection only. It is not a compatibility certification.
 
@@ -21,6 +24,8 @@ This is environment detection only. It is not a compatibility certification.
 No automatic terrain or entity pipeline replacement is enabled for any renderer today. The current Prism world post-process and cooperative material APIs remain separate integration paths. A renderer is considered supported for pipeline replacement only after a dedicated adapter has been implemented, tested against that renderer's supported version, and registered explicitly.
 
 Prism must not reflect into renderer internals, guess mixin targets, or silently patch a renderer based only on its mod ID. When an adapter is absent, renderers keep their normal pipeline. This is the required fallback, not an error.
+
+Registered adapters are frozen snapshots: their ID, tested version, and supported feature set are copied at registration time. A bridge cannot mutate its advertised feature list after registration.
 
 ## Adapter contract required before implementation
 
