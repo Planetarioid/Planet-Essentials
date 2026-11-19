@@ -335,14 +335,55 @@ public record PrismTerrainVanillaPassSnapshot(
         }
 
         public Optional<GpuBuffer> resolveBuffer() {
+            return resolveBufferForIndexCount(maximumIndexCount).map(PreparedIndexBuffer::buffer);
+        }
+
+        /**
+         * Resolves enough sequential QUADS indices for both the captured vanilla
+         * requirement and a caller's complete Prism replacement draw set.
+         * This may grow GPU storage and therefore belongs in preflight, before
+         * opening a RenderPass. The post-growth index type is returned with the
+         * allocation rather than assuming the type observed during capture.
+         */
+        public Optional<PreparedIndexBuffer> resolveBufferForIndexCount(int requiredIndexCount) {
             RenderSystem.assertOnRenderThread();
-            if (maximumIndexCount == 0) return Optional.empty();
+            if (requiredIndexCount < 0) {
+                throw new IllegalArgumentException("Required index count cannot be negative");
+            }
+            int capacityCount = Math.max(maximumIndexCount, requiredIndexCount);
+            if (capacityCount == 0) return Optional.empty();
             RenderSystem.AutoStorageIndexBuffer sequential =
                     RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
-            if (sequential.type() != type.orElseThrow()) {
-                throw new IllegalStateException("Sequential QUADS index type changed after capture");
+            GpuBuffer buffer = sequential.getBuffer(capacityCount);
+            VertexFormat.IndexType resolvedType = sequential.type();
+            if (!PrismTerrainDrawExecutor.indexRangeFits(buffer.size(), resolvedType, 0, capacityCount)) {
+                throw new IllegalStateException("Sequential QUADS index buffer is smaller than its requested range");
             }
-            return Optional.of(sequential.getBuffer(maximumIndexCount));
+            return Optional.of(new PreparedIndexBuffer(buffer, resolvedType, capacityCount));
+        }
+
+        /** Six sequential indices address each complete four-vertex quad. */
+        public static int indexCountForQuadVertexCount(int vertexCount) {
+            if (vertexCount < 0 || vertexCount % 4 != 0) {
+                throw new IllegalArgumentException("Terrain vertex count must be a nonnegative multiple of four");
+            }
+            long indexCount = (long) (vertexCount / 4) * 6L;
+            if (indexCount > Integer.MAX_VALUE) {
+                throw new IllegalArgumentException("Terrain index requirement exceeds supported integer range");
+            }
+            return (int) indexCount;
+        }
+    }
+
+    /** Buffer and index type resolved together after any required growth. */
+    public record PreparedIndexBuffer(GpuBuffer buffer, VertexFormat.IndexType type, int indexCount) {
+        public PreparedIndexBuffer {
+            Objects.requireNonNull(buffer, "buffer");
+            Objects.requireNonNull(type, "type");
+            if (indexCount <= 0) throw new IllegalArgumentException("Prepared index count must be positive");
+            if (!PrismTerrainDrawExecutor.indexRangeFits(buffer.size(), type, 0, indexCount)) {
+                throw new IllegalArgumentException("Prepared index buffer does not cover its declared range");
+            }
         }
     }
 
