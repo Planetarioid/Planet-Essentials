@@ -11,6 +11,8 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.resources.Identifier;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.opengl.GlDevice;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
@@ -27,6 +29,8 @@ import org.joml.Matrix4f;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -93,6 +97,32 @@ public record PrismTerrainVanillaPassSnapshot(
     @Override
     public Matrix4f modelView() {
         return new Matrix4f(modelView);
+    }
+
+    /**
+     * Opens a new pass against the exact captured vanilla attachments and clear
+     * options. The caller owns and must close the returned pass.
+     */
+    public RenderPass openCapturedTargetPass(GpuDevice device, String debugLabel) {
+        RenderSystem.assertOnRenderThread();
+        Objects.requireNonNull(device, "device");
+        if (debugLabel == null || debugLabel.isBlank()) {
+            throw new IllegalArgumentException("Render-pass debug label cannot be blank");
+        }
+        return device.createCommandEncoder().createRenderPass(
+                () -> debugLabel, colorAttachment, passOptions.colorClear(),
+                depthAttachment.orElse(null), passOptions.depthClear());
+    }
+
+    /**
+     * Replays the exact optional default-uniform bindings captured from
+     * RenderSystem.bindDefaultUniforms. The returned names can be supplied as
+     * externally-bound uniforms when validating the Prism shader layout.
+     */
+    public Set<String> bindCapturedDefaultUniforms(RenderPass pass) {
+        RenderSystem.assertOnRenderThread();
+        Objects.requireNonNull(pass, "pass");
+        return defaultUniforms.bindTo(pass);
     }
 
     /** Captures the same resource choices and ordering made by vanilla 1.21.11. */
@@ -270,7 +300,35 @@ public record PrismTerrainVanillaPassSnapshot(
         }
     }
 
-    /** The four exact resources conditionally bound by RenderSystem.bindDefaultUniforms. */
+    /** Captured nullable default bindings, replayed with vanilla's exact names. */
+    public record DefaultUniformInputs(
+            GpuBufferSlice projection,
+            GpuBufferSlice fog,
+            GpuBuffer globals,
+            GpuBufferSlice lighting) {
+        public Set<String> bindTo(RenderPass pass) {
+            Objects.requireNonNull(pass, "pass");
+            HashSet<String> names = new HashSet<>();
+            if (projection != null) {
+                pass.setUniform("Projection", projection);
+                names.add("Projection");
+            }
+            if (fog != null) {
+                pass.setUniform("Fog", fog);
+                names.add("Fog");
+            }
+            if (globals != null) {
+                pass.setUniform("Globals", globals);
+                names.add("Globals");
+            }
+            if (lighting != null) {
+                pass.setUniform("Lighting", lighting);
+                names.add("Lighting");
+            }
+            return Set.copyOf(names);
+        }
+    }
+
     public record DefaultUniformInputs(
             GpuBufferSlice projection,
             GpuBufferSlice fog,

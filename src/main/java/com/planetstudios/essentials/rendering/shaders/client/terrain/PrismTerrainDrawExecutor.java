@@ -27,6 +27,22 @@ public final class PrismTerrainDrawExecutor {
         return drawValidated(pass, program, mesh, completeBindings, Set.of(), null, null, 0);
     }
 
+    /** Draws one section while accounting for captured vanilla default uniforms already bound to the pass. */
+    public static boolean draw(RenderPass pass,
+            MinecraftShaderBackend.MinecraftCompiledProgram program,
+            PrismTerrainGpuMesh mesh,
+            MinecraftShaderBindings bindings,
+            PrismTerrainSectionUniformAllocation sectionUniform,
+            Set<String> externallyBoundUniforms) {
+        Objects.requireNonNull(sectionUniform, "sectionUniform");
+        Objects.requireNonNull(externallyBoundUniforms, "externallyBoundUniforms");
+        PrismTerrainSectionUniform.requireDeclared(program.bindings()::uniformBuffers);
+        MinecraftShaderBindings completeBindings = Objects.requireNonNull(bindings, "bindings")
+                .withUniformBuffer(PrismTerrainSectionUniform.BINDING_NAME, sectionUniform.slice());
+        return drawValidated(pass, program, mesh, completeBindings,
+                externallyBoundUniforms, null, null, 0);
+    }
+
     /** Draws using explicit bindings plus uniforms already installed by Minecraft. */
     public static boolean draw(RenderPass pass,
             MinecraftShaderBackend.MinecraftCompiledProgram program,
