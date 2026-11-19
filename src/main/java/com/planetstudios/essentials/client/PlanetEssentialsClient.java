@@ -3,6 +3,7 @@ package com.planetstudios.essentials.client;
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackResourceReloadListener;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
+import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStageRegistry;
 import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
 import com.planetstudios.essentials.textures.TextureAssetCatalog;
 import com.planetstudios.essentials.textures.TextureDecodeLimits;
@@ -38,6 +39,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         EssentialsRuntime.initialize();
         TextureResourceReloadListener.register(TEXTURE_ASSETS, TEXTURE_DECODER);
         ShaderPackResourceReloadListener.register();
+        PrismFrameStageRegistry.registerFabricEvents();
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> record(DiagnosticEventType.CLIENT_STARTED));
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {

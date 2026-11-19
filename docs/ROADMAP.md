@@ -40,7 +40,8 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Uniform-buffer, texel-buffer, and sampler declarations
 - [x] Client resource-reload discovery and transactional GPU compilation lifecycle
 - [x] Typed GPU binding sets with exact declared-versus-supplied validation for uniform buffers, texel buffers, and samplers
-- [~] Frame-stage drawing integration
+- [~] Fabric 1.21.11 AFTER_ENTITIES, BEFORE_TRANSLUCENT, and END_MAIN callback dispatch
+- [ ] Built-in world/terrain shader draw integration and extraction-to-draw state flow
 - [~] Owned GPU color/depth render targets, bounded dimensions, and render-pass creation
 - [ ] Resize/reload lifecycle and post-processing graph
 - [ ] Terrain/entity pipeline integration and full shader-pack feature compatibility
