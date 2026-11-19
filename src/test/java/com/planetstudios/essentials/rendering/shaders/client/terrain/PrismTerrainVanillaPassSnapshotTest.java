@@ -9,8 +9,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalDouble;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 class PrismTerrainVanillaPassSnapshotTest {
     @Test
