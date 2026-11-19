@@ -2,7 +2,7 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.planetstudios.essentials.PlanetEssentials;
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage;
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+import com.mojang.blaze3d.vertex.CompactVectorArray;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -32,7 +32,8 @@ public final class PrismVanillaTerrainCapture {
             if (!(entry.getKey() instanceof ChunkSectionLayer layer)
                     || !(entry.getValue() instanceof MeshData mesh)) continue;
             try {
-                PrismTerrainVertexData data = convert(context.sectionPos(), layer, mesh);
+                PrismTerrainVertexData data = convert(context.sectionPos(), layer, mesh,
+                        layer == ChunkSectionLayer.TRANSLUCENT ? results.transparencyState : null);
                 if (data != null && !context.publish(data)) {
                     PlanetEssentials.LOGGER.debug("Discarded stale Prism terrain capture for section {}",
                             context.sectionPos());
@@ -45,15 +46,20 @@ public final class PrismVanillaTerrainCapture {
     }
 
     private static PrismTerrainVertexData convert(SectionPos sectionPos,
-            ChunkSectionLayer layer, MeshData mesh) {
+            ChunkSectionLayer layer, MeshData mesh, MeshData.SortState sortState) {
         MeshData.DrawState draw = mesh.drawState();
         if (draw.mode() != VertexFormat.Mode.QUADS) return null;
-        return convert(sectionPos, layer, mesh.vertexBuffer(), draw.format(), draw.vertexCount());
+        return convert(sectionPos, layer, mesh.vertexBuffer(), draw.format(), draw.vertexCount(), sortState);
     }
 
     /** Package-visible pure conversion entry used by tests. */
     static PrismTerrainVertexData convert(SectionPos sectionPos, ChunkSectionLayer layer,
             ByteBuffer source, VertexFormat format, int vertexCount) {
+        return convert(sectionPos, layer, source, format, vertexCount, null);
+    }
+
+    static PrismTerrainVertexData convert(SectionPos sectionPos, ChunkSectionLayer layer,
+            ByteBuffer source, VertexFormat format, int vertexCount, MeshData.SortState sortState) {
         if (!DefaultVertexFormat.BLOCK.equals(format) || format.getVertexSize() != VANILLA_STRIDE) {
             throw new IllegalArgumentException("Unsupported vanilla terrain vertex format: " + format);
         }
@@ -98,6 +104,21 @@ public final class PrismVanillaTerrainCapture {
                 vertices[corner] = new PrismTerrainVertex(x, y, z, u, v, color, light, 0, normal);
             }
             builder.addQuad(vertices[0], vertices[1], vertices[2], vertices[3]);
+        }
+        if (layer == ChunkSectionLayer.TRANSLUCENT && sortState != null) {
+            CompactVectorArray centroids = sortState.centroids();
+            if (centroids.size() != vertexCount / 4) {
+                throw new IllegalArgumentException("Vanilla translucent sort centers do not match the captured quad count");
+            }
+            float[] centers = new float[centroids.size() * 3];
+            org.joml.Vector3f point = new org.joml.Vector3f();
+            for (int i = 0; i < centroids.size(); i++) {
+                centroids.get(i, point);
+                centers[i * 3] = point.x;
+                centers[i * 3 + 1] = point.y;
+                centers[i * 3 + 2] = point.z;
+            }
+            builder.quadCenters(centers);
         }
         return builder.build();
     }

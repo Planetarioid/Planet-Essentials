@@ -23,6 +23,7 @@ import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
     private static final Set<String> AUTOMATIC_UNIFORMS = Set.of("Projection", "Globals", "Fog");
     private static final int MAX_FRAME_PAYLOADS = 512;
     private static final int MAX_FRAME_VERTICES = 1_048_576;
+    private static final int MAX_FRAME_INDEX_BYTES = MAX_FRAME_VERTICES * 3;
     private static final int SECTION_UNIFORM_BYTES = PrismTerrainSectionUniform.BYTE_SIZE;
     private static final int UNIFORM_RING_BYTES = MAX_FRAME_PAYLOADS * SECTION_UNIFORM_BYTES;
     private static final Vector4f COLOR_MODULATOR = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -55,6 +57,8 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
     private boolean frameBudgetWarningActive;
     private MappableRingBuffer sectionUniformRing;
     private GpuDevice uniformOwnerDevice;
+    private MappableRingBuffer sortedIndexRing;
+    private GpuDevice indexOwnerDevice;
     private PrismTerrainFrameCoordinator.Registration extractionRegistration;
     private PrismTerrainFrameCoordinator.Registration drawRegistration;
     private PrismTerrainChunkLifecycleEvents.Registration invalidatorRegistration;
@@ -170,12 +174,23 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
         double cameraX = camera.pos.x;
         double cameraY = camera.pos.y;
         double cameraZ = camera.pos.z;
+        if (stage == PrismFrameStage.BEFORE_TRANSLUCENT) {
+            List<PrismTerrainVertexData> ordered = new ArrayList<>(payloads);
+            ordered.sort(Comparator.comparingDouble(
+                    (PrismTerrainVertexData data) -> sectionDistanceSquared(data, cameraX, cameraY, cameraZ))
+                    .reversed());
+            payloads = ordered;
+        }
 
         GpuDevice device = RenderSystem.getDevice();
         PrismTerrainGpuCache cache = cacheFor(level);
         RenderTarget target = OutputTarget.MAIN_TARGET.getRenderTarget();
         if (target == null || target.getColorTextureView() == null) return;
         ensureUniformRing(device);
+        boolean needsSortedIndices = payloads.stream().anyMatch(PrismTerrainVertexData::hasQuadCenters);
+        if (needsSortedIndices) ensureSortedIndexRing(device);
+        GpuBuffer sortedIndexBuffer = needsSortedIndices ? sortedIndexRing.currentBuffer() : null;
+        int sortedIndexOffset = 0;
 
         var dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(
                 RenderSystem.getModelViewMatrix(), COLOR_MODULATOR, MODEL_OFFSET, TEXTURE_MATRIX);
@@ -206,14 +221,50 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
                 }
                 MinecraftShaderBindings sectionBindings = baseBindings.withUniformBuffer(
                         PrismTerrainSectionUniform.BINDING_NAME, uniformSlice);
-                PrismTerrainDrawExecutor.draw(pass, program, mesh, sectionBindings, defaultUniforms);
+                if (sortedIndexBuffer != null && data.hasQuadCenters()) {
+                    short[] indices = PrismTerrainTranslucentSorter.sortedIndices(data, cameraX, cameraY, cameraZ);
+                    int indexBytes = Math.multiplyExact(indices.length, Short.BYTES);
+                    if ((long) sortedIndexOffset + indexBytes > MAX_FRAME_INDEX_BYTES) {
+                        continue;
+                    }
+                    GpuBufferSlice indexSlice = sortedIndexBuffer.slice(sortedIndexOffset, indexBytes);
+                    try (GpuBuffer.MappedView mapped = encoder.mapBuffer(indexSlice, false, true)) {
+                        for (short index : indices) mapped.data().putShort(index);
+                    }
+                    PrismTerrainDrawExecutor.drawSorted(pass, program, mesh, sectionBindings,
+                            defaultUniforms, sortedIndexBuffer, sortedIndexOffset / Short.BYTES);
+                    sortedIndexOffset += indexBytes;
+                } else {
+                    PrismTerrainDrawExecutor.draw(pass, program, mesh, sectionBindings, defaultUniforms);
+                }
                 uniformOffset += SECTION_UNIFORM_BYTES;
             }
         } catch (RuntimeException failure) {
             PlanetEssentials.LOGGER.error("Prism terrain adapter '{}' failed draw submission", programId, failure);
         } finally {
-            if (passOpened) sectionUniformRing.rotate();
+            if (passOpened) {
+                sectionUniformRing.rotate();
+                if (sortedIndexBuffer != null) sortedIndexRing.rotate();
+            }
         }
+    }
+
+    private static double sectionDistanceSquared(PrismTerrainVertexData data,
+            double cameraX, double cameraY, double cameraZ) {
+        double dx = (double) data.sectionX() * 16.0 + 8.0 - cameraX;
+        double dy = (double) data.sectionY() * 16.0 + 8.0 - cameraY;
+        double dz = (double) data.sectionZ() * 16.0 + 8.0 - cameraZ;
+        return dx * dx + dy * dy + dz * dz;
+    }
+
+    private synchronized void ensureSortedIndexRing(GpuDevice device) {
+        if (indexOwnerDevice == device && sortedIndexRing != null) return;
+        if (sortedIndexRing != null) sortedIndexRing.close();
+        indexOwnerDevice = device;
+        sortedIndexRing = new MappableRingBuffer(
+                () -> "Planet Prism sorted translucent terrain indices",
+                GpuBuffer.USAGE_INDEX | GpuBuffer.USAGE_MAP_WRITE,
+                MAX_FRAME_INDEX_BYTES);
     }
 
     private synchronized void ensureUniformRing(GpuDevice device) {
@@ -256,6 +307,11 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
                     sectionUniformRing.close();
                     sectionUniformRing = null;
                     uniformOwnerDevice = null;
+                }
+                if (sortedIndexRing != null) {
+                    sortedIndexRing.close();
+                    sortedIndexRing = null;
+                    indexOwnerDevice = null;
                 }
                 frame = List.of();
             }

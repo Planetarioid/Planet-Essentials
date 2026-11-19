@@ -19,12 +19,13 @@ public final class PrismTerrainVertexData {
     private final byte[] bytes;
     private final int vertexCount;
     private final String contentHash;
+    private final float[] quadCenters;
 
     private PrismTerrainVertexData(int x, int y, int z, String material, PrismFrameStage stage,
-            byte[] bytes, int count) {
+            byte[] bytes, int count, float[] quadCenters) {
         sectionX=x; sectionY=y; sectionZ=z; materialId=material; this.stage=stage;
-        // Builder transfers ownership of this freshly allocated exact-size array.
-        this.bytes=bytes; vertexCount=count; contentHash=hash(this.bytes);
+        // Builder transfers ownership of these freshly allocated immutable arrays.
+        this.bytes=bytes; vertexCount=count; this.quadCenters=quadCenters; contentHash=hash(this.bytes);
     }
     public static Builder builder(int x,int y,int z,String material,PrismFrameStage stage) {
         return new Builder(x,y,z,material,stage);
@@ -34,7 +35,17 @@ public final class PrismTerrainVertexData {
     public int layoutVersion(){return PrismTerrainVertexLayout.VERSION;}
     public int strideBytes(){return STRIDE;}
     public int vertexCount(){return vertexCount;} public int byteSize(){return bytes.length;}
-    public long estimatedCpuBytes(){return bytes.length;}
+    public long estimatedCpuBytes(){return bytes.length + (quadCenters == null ? 0L : (long) quadCenters.length * Float.BYTES);}
+    public boolean hasQuadCenters(){return quadCenters != null;}
+    public int quadCount(){return vertexCount / 4;}
+    public float quadCenterX(int index){return center(index,0);}
+    public float quadCenterY(int index){return center(index,1);}
+    public float quadCenterZ(int index){return center(index,2);}
+    private float center(int index,int component){
+        if(quadCenters==null)throw new IllegalStateException("Terrain payload has no translucent sort centers");
+        if(index<0||index>=quadCount())throw new IndexOutOfBoundsException(index);
+        return quadCenters[index*3+component];
+    }
     public String contentHash(){return contentHash;}
     public byte[] bytes(){return bytes.clone();}
     public ByteBuffer readOnlyBuffer(){return ByteBuffer.wrap(bytes).asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);}
@@ -50,6 +61,7 @@ public final class PrismTerrainVertexData {
         private ByteBuffer data=ByteBuffer.allocate(16*STRIDE).order(ByteOrder.LITTLE_ENDIAN);
         private int vertices;
         private boolean built;
+        private float[] quadCenters;
         private Builder(int x,int y,int z,String material,PrismFrameStage stage) {
             this.x=x; this.y=y; this.z=z; this.material=Objects.requireNonNull(material,"material");
             this.stage=Objects.requireNonNull(stage,"stage");
@@ -65,6 +77,16 @@ public final class PrismTerrainVertexData {
             if(vertices>MAX_VERTICES-4) throw new IllegalStateException("Terrain vertex limit exceeded");
             ensureCapacityForQuad();
             put(a); put(b); put(c); put(d); vertices+=4; return this;
+        }
+        /** Stores vanilla translucent quad centroids in section-local XYZ order. */
+        public Builder quadCenters(float[] centers) {
+            ensureMutable();
+            Objects.requireNonNull(centers,"centers");
+            if(quadCenters!=null)throw new IllegalStateException("Quad centers have already been supplied");
+            if(centers.length==0 || centers.length%3!=0)throw new IllegalArgumentException("Quad centers must contain XYZ triples");
+            for(float value:centers)if(!Float.isFinite(value))throw new IllegalArgumentException("Quad centers must be finite");
+            quadCenters=centers.clone();
+            return this;
         }
         private void ensureCapacityForQuad() {
             int required = Math.addExact(data.position(), 4*STRIDE);
@@ -83,9 +105,11 @@ public final class PrismTerrainVertexData {
         private void ensureMutable(){if(built)throw new IllegalStateException("Terrain vertex builder has already been built");}
         public PrismTerrainVertexData build() {
             ensureMutable(); if(vertices==0)throw new IllegalStateException("Cannot build empty terrain vertex data");
+            if(quadCenters!=null && quadCenters.length!=(vertices/4)*3)
+                throw new IllegalStateException("Translucent sort-center count must match the terrain quad count");
             built=true; byte[] result=new byte[data.position()]; data.flip(); data.get(result);
             data=null;
-            return new PrismTerrainVertexData(x,y,z,material,stage,result,vertices);
+            return new PrismTerrainVertexData(x,y,z,material,stage,result,vertices,quadCenters);
         }
     }
 }

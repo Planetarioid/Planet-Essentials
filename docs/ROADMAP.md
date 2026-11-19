@@ -56,7 +56,7 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Terrain-specific shader compilation path and validated quad draw executor
 - [x] Fabric END_EXTRACTION frame publication and BEFORE_ENTITIES/BEFORE_TRANSLUCENT terrain scheduling bridge for cooperating providers
 - [~] Revision-token rebuild lifecycle, per-ClientLevel CPU caches, Fabric chunk load/unload hooks, stale-frame removal, render-thread GPU invalidation, and opt-in V1 GPU terrain adapter
-- [x] Vanilla SectionCompiler result capture: copy SOLID, CUTOUT, TRANSLUCENT, and TRIPWIRE BLOCK-format quad buffers into revision-validated Prism V1 CPU payloads
+- [x] Vanilla SectionCompiler result capture: copy SOLID, CUTOUT, TRANSLUCENT, and TRIPWIRE BLOCK-format quad buffers into revision-validated Prism V1 CPU payloads, retaining vanilla translucent quad centroids for per-frame sorting
 - [~] Vanilla terrain GPU draw replacement, live camera-frustum wiring, occlusion culling, and renderer-specific compatibility adapters remain
 - [x] Double-precision camera-relative section-origin transform utility with unit coverage
 - [x] Canonical 16-byte std140 camera-relative section-origin uniform payload and declaration contract
@@ -64,7 +64,7 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Active LevelRenderer frame frustum snapshot and per-section AABB rejection before Prism terrain GPU upload/draw
 - [~] CPU section-AABB frustum culling utility and unit tests; occlusion culling and vanilla visibility-graph integration remain
 - [ ] Automatic vanilla entity/block-entity material pipeline replacement
-- [~] Opt-in full-attribute V1 terrain renderer adapter and per-world GPU cache integration, with active-frustum filtering and graceful per-frame budget truncation; renderer-specific vanilla/Sodium/Canvas adapters and safe fallback negotiation remain
+- [~] Opt-in full-attribute V1 terrain renderer adapter and per-world GPU cache integration, with active-frustum filtering, graceful per-frame budget truncation, and vanilla-compatible translucent quad sorting; renderer-specific vanilla/Sodium/Canvas adapters and safe fallback negotiation remain
 - [x] Vanilla render-distance and simulation-distance option bounds extended to 2–64 chunks (server-imposed render-distance caps still apply)
 - [ ] Actual GPU/driver limit detection
 - [ ] In-game visual tests, GPU memory tests, benchmarks

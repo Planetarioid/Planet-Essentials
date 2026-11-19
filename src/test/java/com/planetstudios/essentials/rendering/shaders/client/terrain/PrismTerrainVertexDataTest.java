@@ -34,6 +34,20 @@ class PrismTerrainVertexDataTest {
         assertEquals(first.contentHash(), same.contentHash());
         assertNotEquals(first.contentHash(), changed.contentHash());
     }
+    @Test void retainsImmutableTranslucentQuadCentersInCpuBudget() {
+        float[] centers={0,0,1, 0,0,8};
+        var builder=PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT)
+                .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1))
+                .addQuad(v(0,0,8,0,0),v(1,0,8,1,0),v(1,1,8,1,1),v(0,1,8,0,1))
+                .quadCenters(centers);
+        centers[2]=99;
+        var data=builder.build();
+        assertTrue(data.hasQuadCenters());
+        assertEquals(2,data.quadCount());
+        assertEquals(1,data.quadCenterZ(0));
+        assertEquals(8,data.quadCenterZ(1));
+        assertEquals(data.byteSize()+6*Float.BYTES,data.estimatedCpuBytes());
+    }
     @Test void growsItsBackingStorageOnlyAsRequiredForLargerVanillaSections() {
         var builder=PrismTerrainVertexData.builder(0,0,0,"example:stone",PrismFrameStage.BEFORE_ENTITIES);
         for(int i=0;i<20;i++) {

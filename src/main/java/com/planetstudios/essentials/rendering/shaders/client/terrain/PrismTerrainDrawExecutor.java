@@ -1,5 +1,6 @@
 package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
+import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -23,7 +24,7 @@ public final class PrismTerrainDrawExecutor {
         PrismTerrainSectionUniform.requireDeclared(program.bindings()::uniformBuffers);
         MinecraftShaderBindings completeBindings = Objects.requireNonNull(bindings, "bindings")
                 .withUniformBuffer(PrismTerrainSectionUniform.BINDING_NAME, sectionUniform.slice());
-        return drawValidated(pass, program, mesh, completeBindings, Set.of());
+        return drawValidated(pass, program, mesh, completeBindings, Set.of(), null, null, 0);
     }
 
     /** Draws using explicit bindings plus uniforms already installed by Minecraft. */
@@ -31,9 +32,12 @@ public final class PrismTerrainDrawExecutor {
             MinecraftShaderBackend.MinecraftCompiledProgram program,
             PrismTerrainGpuMesh mesh,
             MinecraftShaderBindings bindings,
-            Set<String> externallyBoundUniforms) {
+            Set<String> externallyBoundUniforms,
+            GpuBuffer explicitIndexBuffer,
+            VertexFormat.IndexType explicitIndexType,
+            int firstIndex) {
         return drawValidated(pass, program, mesh, bindings,
-                Objects.requireNonNull(externallyBoundUniforms, "externallyBoundUniforms"));
+                Objects.requireNonNull(externallyBoundUniforms, "externallyBoundUniforms"), null, null, 0);
     }
 
     /** Draws a whole quad mesh into an already-open pass without injecting a section uniform. */
@@ -41,7 +45,22 @@ public final class PrismTerrainDrawExecutor {
             MinecraftShaderBackend.MinecraftCompiledProgram program,
             PrismTerrainGpuMesh mesh,
             MinecraftShaderBindings bindings) {
-        return drawValidated(pass, program, mesh, bindings, Set.of());
+        return drawValidated(pass, program, mesh, bindings, Set.of(), null, null, 0);
+    }
+
+    /** Draws with a caller-owned SHORT index buffer, used for camera-sorted translucent quads. */
+    public static boolean drawSorted(RenderPass pass,
+            MinecraftShaderBackend.MinecraftCompiledProgram program,
+            PrismTerrainGpuMesh mesh,
+            MinecraftShaderBindings bindings,
+            Set<String> externallyBoundUniforms,
+            GpuBuffer indexBuffer,
+            int firstIndex) {
+        Objects.requireNonNull(indexBuffer, "indexBuffer");
+        if (firstIndex < 0) throw new IllegalArgumentException("First terrain index cannot be negative");
+        return drawValidated(pass, program, mesh, bindings,
+                Objects.requireNonNull(externallyBoundUniforms, "externallyBoundUniforms"),
+                indexBuffer, VertexFormat.IndexType.SHORT, firstIndex);
     }
 
     private static boolean drawValidated(RenderPass pass,
@@ -65,9 +84,14 @@ public final class PrismTerrainDrawExecutor {
         pass.setPipeline(program.pipeline());
         pass.setVertexBuffer(0, mesh.vertexBuffer());
         int indexCount = (mesh.vertexCount() / 4) * 6;
-        var sequentialIndices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
-        pass.setIndexBuffer(sequentialIndices.getBuffer(indexCount), sequentialIndices.type());
-        pass.drawIndexed(0, 0, indexCount, 1);
+        if (explicitIndexBuffer == null) {
+            var sequentialIndices = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
+            pass.setIndexBuffer(sequentialIndices.getBuffer(indexCount), sequentialIndices.type());
+        } else {
+            if (explicitIndexType == null) throw new IllegalArgumentException("Explicit terrain index type is required");
+            pass.setIndexBuffer(explicitIndexBuffer, explicitIndexType);
+        }
+        pass.drawIndexed(0, firstIndex, indexCount, 1);
         return true;
     }
 }

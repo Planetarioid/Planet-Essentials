@@ -161,10 +161,19 @@ before spending that budget, and keeps the valid portion of a frame if the
 budget is reached. It logs once while a frame remains truncated rather than
 discarding the entire frame. It uploads changed payloads through a per-`ClientLevel`
 128 MiB LRU cache, and submits indexed QUADS into the main color/depth target.
+
+For vanilla translucent sections, capture also retains the compiler's
+`MeshData.SortState` quad centroids. Prism rebuilds the far-to-near SHORT index
+order from those centroids and the current camera position each frame, using
+Minecraft's own `VertexSorting.byDistance` algorithm. Section payloads are
+submitted far-to-near at the translucent stage, and their temporary indices
+are written into a bounded, GPU-fenced index ring. This avoids treating the
+initial compile-time translucent order as permanent. Layers without vanilla
+sort metadata, such as tripwire, retain sequential quad indices.
 GPU cache entries compare SHA-256 payload identities so unchanged sections
-are not re-uploaded every frame. The draw executor uses Minecraft's
-sequential quad index buffer rather than issuing a non-indexed draw for
-QUADS.
+are not re-uploaded every frame. The draw executor uses Minecraft's sequential quad index buffer for ordinary
+QUADS and accepts explicit SHORT index ranges for the camera-sorted
+translucent path.
 
 The selected shader program is recompiled through the terrain V1 vertex format
 on demand and cached by shader generation plus source hash. Terrain pipeline
