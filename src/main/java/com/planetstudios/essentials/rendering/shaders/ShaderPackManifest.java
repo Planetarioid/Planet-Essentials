@@ -92,7 +92,10 @@ public record ShaderPackManifest(
             programs.add(new Program(
                     requiredString(object, "id"),
                     requiredString(object, "vertex"),
-                    requiredString(object, "fragment")));
+                    requiredString(object, "fragment"),
+                    optionalStringArray(object, "uniformBuffers"),
+                    optionalStringArray(object, "texelBuffers"),
+                    optionalStringArray(object, "samplers")));
         }
         return new ShaderPackManifest(schema, id, name, version, description, author, programs);
     }
@@ -126,6 +129,24 @@ public record ShaderPackManifest(
         return value.getAsString();
     }
 
+    private static List<String> optionalStringArray(JsonObject object, String key) {
+        JsonElement value = object.get(key);
+        if (value == null || value.isJsonNull()) return List.of();
+        if (!value.isJsonArray()) throw new IllegalArgumentException("Invalid array field: " + key);
+        JsonArray array = value.getAsJsonArray();
+        if (array.size() > ShaderBindingLayout.MAX_BINDINGS_PER_KIND) {
+            throw new IllegalArgumentException("Too many entries in " + key);
+        }
+        List<String> result = new ArrayList<>(array.size());
+        for (JsonElement element : array) {
+            if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isString()) {
+                throw new IllegalArgumentException("Invalid entry in " + key);
+            }
+            result.add(element.getAsString());
+        }
+        return List.copyOf(result);
+    }
+
     private static void requireText(String value, String field, int maxLength) {
         bounded(value, field, maxLength);
         if (value.isBlank()) throw new IllegalArgumentException("Field must not be blank: " + field);
@@ -137,7 +158,17 @@ public record ShaderPackManifest(
         return value;
     }
 
-    public record Program(String id, String vertex, String fragment) {
+    public record Program(
+            String id,
+            String vertex,
+            String fragment,
+            List<String> uniformBuffers,
+            List<String> texelBuffers,
+            List<String> samplers) {
+        public Program(String id, String vertex, String fragment) {
+            this(id, vertex, fragment, List.of(), List.of(), List.of());
+        }
+
         public Program {
             requireText(id, "program id", 128);
             validateResourceId(vertex, "vertex");
@@ -146,6 +177,14 @@ public record ShaderPackManifest(
                     || id.contains("..") || id.contains("//")) {
                 throw new IllegalArgumentException("Invalid shader program identifier: " + id);
             }
+            ShaderBindingLayout validated = new ShaderBindingLayout(uniformBuffers, texelBuffers, samplers);
+            uniformBuffers = validated.uniformBuffers();
+            texelBuffers = validated.texelBuffers();
+            samplers = validated.samplers();
+        }
+
+        public ShaderBindingLayout bindings() {
+            return new ShaderBindingLayout(uniformBuffers, texelBuffers, samplers);
         }
 
         private static void validateResourceId(String value, String stage) {

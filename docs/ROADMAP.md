@@ -33,18 +33,17 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [ ] Resource-pack coexistence, visual correctness, leak checks, performance benchmarks
 
 ## 8. Planet Prism Rendering Engine (PPRE): shader subsystem
-- [x] Immutable validated vertex/fragment source bundle and stable SHA-256 identity
+- [x] Immutable validated source bundles and stable SHA-256 source identity
 - [x] Backend-neutral capabilities, compiler SPI, transactional reload, rollback, and handle lifecycle
-- [x] Bounded schema-1 pack manifest parser and immutable pack model
-- [x] Bounded source loader, path validation, unique-source cache, and aggregate pack budget
-- [x] Minecraft ResourceManager resolver and pack discovery using active resource-pack priority
-- [x] Minecraft 1.21.11 GpuDevice pipeline-precompile adapter and source injection
-- [~] Defined render-stage contract and world-render drawing integration
-- [ ] Uniform, sampler, buffer, framebuffer, and render-target binding model
-- [ ] Terrain/entity pipeline integration and shader-pack feature compatibility
-- [ ] Actual GPU/driver limit detection and complete capability negotiation
+- [x] Bounded schema-1 manifest, pack discovery, resource resolution, path validation, and source budgets
+- [x] Minecraft 1.21.11 GpuDevice pipeline-precompile backend
+- [x] Validated uniform-buffer, texel-buffer, and sampler declarations in pack manifests
+- [~] Runtime binding validation and frame-stage drawing integration
+- [ ] Framebuffer/render-target lifecycle and post-processing graph
+- [ ] Terrain/entity pipeline integration and full shader-pack feature compatibility
+- [ ] Actual GPU/driver limit detection and renderer negotiation
 - [ ] Vanilla fallback and coexistence with Sodium, Iris, and other renderers
-- [ ] In-game shader tests, visual regression, GPU memory tests, benchmarks
+- [ ] In-game visual tests, GPU memory tests, benchmarks
 
 ## 9. UI
 - [~] Main settings hub and registry-driven pages

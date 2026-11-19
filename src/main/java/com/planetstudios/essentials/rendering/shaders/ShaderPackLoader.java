@@ -28,7 +28,8 @@ public final class ShaderPackLoader {
             }
             programs.add(new ShaderProgramSpec(
                     program.id(),
-                    Map.of(ShaderStage.VERTEX, vertex, ShaderStage.FRAGMENT, fragment)));
+                    Map.of(ShaderStage.VERTEX, vertex, ShaderStage.FRAGMENT, fragment),
+                    program.bindings()));
         }
         return new LoadedPack(manifest, programs, uniqueSourceBytes(sourceCache));
     }
@@ -44,9 +45,7 @@ public final class ShaderPackLoader {
         String cached = sourceCache.get(resourceId);
         if (cached != null) return cached;
         String source = resolver.readUtf8(resourceId, ShaderProgramSpec.MAX_SOURCE_BYTES);
-        if (source == null) {
-            throw new IllegalArgumentException("Missing shader source: " + resourceId);
-        }
+        if (source == null) throw new IllegalArgumentException("Missing shader source: " + resourceId);
         int bytes = source.getBytes(StandardCharsets.UTF_8).length;
         if (bytes == 0 || bytes > ShaderProgramSpec.MAX_SOURCE_BYTES || source.isBlank()) {
             throw new IllegalArgumentException("Invalid or oversized shader source: " + resourceId);
