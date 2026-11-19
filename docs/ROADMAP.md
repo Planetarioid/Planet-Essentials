@@ -71,8 +71,8 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [x] Memory-aware decoded-pixel LRU cache (128 MiB default hard budget)
 - [x] Resource reload generation invalidation and client-shutdown cleanup
 - [x] Effective texture resource stream resolution through Minecraft ResourceManager
-- [~] Lazy decoder-to-Minecraft texture registration/render integration (explicit DynamicTexture adapter implemented; in-game GPU verification and real consumer integration pending)
-- [~] CPU mipmap policy and bounded mip-chain generation (GPU mip-level upload and sampler selection pending)
+- [~] Lazy decoder-to-Minecraft texture registration/render integration (explicit GpuTexture-backed AbstractTexture adapter implemented with mip upload and sampler; in-game verification and real consumer integration pending)
+- [x] CPU mipmap policy and bounded mip-chain generation (bounded CPU levels uploaded to matching GPU mip levels; runtime sampling verification pending)
 - [ ] Resource-pack coexistence tests
 - [ ] Failure fallback to vanilla resource behavior
 - [ ] Benchmark memory, load time, and frame-time impact

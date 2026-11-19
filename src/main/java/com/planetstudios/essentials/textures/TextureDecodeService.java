@@ -64,9 +64,6 @@ public final class TextureDecodeService implements AutoCloseable {
         long requestedGeneration = cache.generation();
         try {
             executor.execute(() -> {
-                if (result.isDone()) {
-                    return;
-                }
                 if (closed || requestedGeneration != cache.generation()) {
                     result.completeExceptionally(new CancellationException("Texture generation changed"));
                     return;
@@ -77,13 +74,7 @@ public final class TextureDecodeService implements AutoCloseable {
                     return;
                 }
                 try (InputStream input = source.open()) {
-                    if (result.isDone()) {
-                        return;
-                    }
                     DecodedTexture decoded = PngTextureDecoder.decode(input, limits);
-                    if (result.isDone()) {
-                        return;
-                    }
                     if (closed || requestedGeneration != cache.generation()) {
                         result.completeExceptionally(new CancellationException("Texture generation changed during decode"));
                         return;
@@ -101,24 +92,15 @@ public final class TextureDecodeService implements AutoCloseable {
     }
 
     /**
-     * Invalidates stale work on reload and completes every outstanding request
-     * immediately. A worker already inside a resource stream may finish closing
-     * that stream, but it cannot publish decoded pixels into the new generation.
+     * Invalidates stale work on reload. Queued tasks are deliberately retained:
+     * each must run its generation check and complete its future as cancelled.
      */
     public long onResourceReload() {
-        long generation = cache.invalidateForReload();
-        CancellationException cancellation =
-                new CancellationException("Texture resource generation changed during reload");
-        for (CompletableFuture<DecodedTexture> future : pending) {
-            future.completeExceptionally(cancellation);
-        }
-        return generation;
+        return cache.invalidateForReload();
     }
 
     public int queuedTasks() { return executor.getQueue().size(); }
     public int activeTasks() { return executor.getActiveCount(); }
-    public int pendingTasks() { return pending.size(); }
-    public boolean isClosed() { return closed; }
 
     @Override
     public void close() {
