@@ -81,10 +81,10 @@ public final class MinecraftShaderBackend implements ShaderBackend {
         }
     }
 
-    private static final class MinecraftCompiledProgram implements CompiledProgram {
+    /** Public read-only handle used by Prism's draw executor. */
+    public static final class MinecraftCompiledProgram implements CompiledProgram {
         private final String programId;
         private final String sourceHash;
-        @SuppressWarnings("unused")
         private final RenderPipeline pipeline;
         @SuppressWarnings("unused")
         private final CompiledRenderPipeline compiled;
@@ -97,6 +97,7 @@ public final class MinecraftShaderBackend implements ShaderBackend {
             this.compiled = compiled;
         }
 
+        public RenderPipeline pipeline() { return pipeline; }
         @Override public String programId() { return programId; }
         @Override public String sourceHash() { return sourceHash; }
 

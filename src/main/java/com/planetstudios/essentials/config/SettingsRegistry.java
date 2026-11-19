@@ -32,6 +32,10 @@ public final class SettingsRegistry {
                 "Event collection", "Independently enable or disable local lifecycle and slow-tick event collection.",
                 SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
                 config -> config.eventCollectionEnabled, (config, value) -> config.eventCollectionEnabled = value));
+        register(new SettingDefinition<>("shaders.enabled", "shaders",
+                "Enable Prism shaders", "Enable the selected Prism shader pack. Turning this off immediately bypasses Prism effects.",
+                SettingDefinition.Kind.BOOLEAN, false, value -> value != null,
+                config -> config.shadersEnabled, (config, value) -> config.shadersEnabled = value));
     }
 
     private SettingsRegistry() {}

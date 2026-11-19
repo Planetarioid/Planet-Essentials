@@ -7,6 +7,9 @@ public final class EssentialsConfig {
  public boolean diagnosticsEnabled=true, showPerformanceScreen=true;
  /** Independent switches for active diagnostics subsystems; diagnosticsEnabled is the master switch. */
  public boolean performanceMonitoringEnabled=true, eventCollectionEnabled=true;
+ /** Prism is opt-in: vanilla rendering remains active until the user enables a selected pack. */
+ public boolean shadersEnabled=false;
+ public String selectedShaderPack="";
  public int diagnosticsHistorySize=120;
  public String activeProfile="default";
  /** Capability ID to explicitly preferred FeatureId (modId:featureId). */
@@ -14,6 +17,9 @@ public final class EssentialsConfig {
  public void validate(){
   schemaVersion=ConfigMigrator.CURRENT_SCHEMA;
   if(activeProfile==null||!activeProfile.matches("[a-z0-9_-]{1,32}")) activeProfile="default";
+  if(selectedShaderPack==null||selectedShaderPack.length()>128
+    ||(!selectedShaderPack.isEmpty()&&!selectedShaderPack.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"))
+    ||selectedShaderPack.contains("..")||selectedShaderPack.contains("//")) selectedShaderPack="";
   diagnosticsHistorySize=Math.max(20,Math.min(1200,diagnosticsHistorySize));
   if(featurePriorityOverrides==null) featurePriorityOverrides=new TreeMap<>();
   Map<String,String> valid=new TreeMap<>();

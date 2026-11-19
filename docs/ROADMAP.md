@@ -38,12 +38,17 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Bounded schema-1 manifest, pack discovery, active resource resolution, path validation, source budgets
 - [x] Minecraft 1.21.11 GpuDevice pipeline-precompile backend
 - [x] Uniform-buffer, texel-buffer, and sampler declarations
+- [x] Opt-in shader enable/disable setting and persisted shader-pack selection UI
+- [x] Typed draw executor, reusable fullscreen quad, and shader-program pipeline access
 - [x] Client resource-reload discovery and transactional GPU compilation lifecycle
 - [x] Typed GPU binding sets with exact declared-versus-supplied validation for uniform buffers, texel buffers, and samplers
 - [~] Fabric 1.21.11 AFTER_ENTITIES, BEFORE_TRANSLUCENT, and END_MAIN callback dispatch
+- [~] Generic draw execution into caller-owned render passes; built-in world-stage orchestration remains
 - [ ] Built-in world/terrain shader draw integration and extraction-to-draw state flow
-- [~] Owned GPU color/depth render targets, bounded dimensions, and render-pass creation
-- [ ] Resize/reload lifecycle and post-processing graph
+- [x] Owned GPU color/depth render targets, bounded dimensions, and render-pass creation
+- [x] Transactional render-target resize/ownership manager
+- [x] Validated post-processing dependency graph with deterministic topological execution
+- [ ] Built-in scene-color capture, graph resource allocation, and end-to-end post-processing execution
 - [ ] Terrain/entity pipeline integration and full shader-pack feature compatibility
 - [ ] Actual GPU/driver limit detection and renderer negotiation
 - [ ] Vanilla fallback and coexistence with Sodium, Iris, and other renderers
@@ -51,7 +56,8 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 
 ## 9. UI
 - [~] Main settings hub and registry-driven pages
-- [ ] Shader settings and pack selection, search/filter, per-mod panels, reset flows, accessibility/localization
+- [x] Shader enable/disable and discovered pack selection screen
+- [ ] Pack search/filter, per-mod panels, reset flows, accessibility/localization
 
 ## 10. Compatibility and release
 - [ ] Client/server runtime tests, mod coexistence matrix, performance regression suite, license, changelog, version, release artifact

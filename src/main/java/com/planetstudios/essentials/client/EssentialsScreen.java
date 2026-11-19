@@ -22,17 +22,20 @@ public final class EssentialsScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("System Controls"),button->
                 minecraft.setScreen(new SettingsCategoryScreen(this,"systems")))
                 .bounds(center-100,top+50,200,20).build());
+        addRenderableWidget(Button.builder(Component.literal("Shader Settings"),button->
+                minecraft.setScreen(new ShaderSettingsScreen(this)))
+                .bounds(center-100,top+76,200,20).build());
         addRenderableWidget(Button.builder(Component.literal("Configuration Profiles"),button->
                 minecraft.setScreen(new ProfilesScreen(this)))
-                .bounds(center-100,top+76,200,20).build());
+                .bounds(center-100,top+102,200,20).build());
         addRenderableWidget(Button.builder(Component.literal("Feature Priority Management"),button->
                 minecraft.setScreen(new FeaturePriorityScreen(this)))
-                .bounds(center-100,top+102,200,20).build());
+                .bounds(center-100,top+128,200,20).build());
         addRenderableWidget(Button.builder(Component.literal("Vanilla Minecraft Settings"),button->
                 MinecraftMixin.openVanillaOptions(minecraft,this))
-                .bounds(center-100,top+128,200,20).build());
+                .bounds(center-100,top+154,200,20).build());
         addRenderableWidget(Button.builder(Component.literal("Done"),button->onClose())
-                .bounds(center-100,top+158,200,20).build());
+                .bounds(center-100,top+184,200,20).build());
     }
 
     @Override public void render(GuiGraphics graphics,int mouseX,int mouseY,float partialTick) {
@@ -42,9 +45,9 @@ public final class EssentialsScreen extends Screen {
         var config=EssentialsRuntime.config();
         if(config.showPerformanceScreen&&config.diagnosticsEnabled&&config.performanceMonitoringEnabled){
             PerformanceMonitor monitor=EssentialsRuntime.performance();
-            graphics.drawCenteredString(font,"Latest FPS: "+monitor.latestFps(),center,top+190,0xD8E8FF);
-            graphics.drawCenteredString(font,String.format(java.util.Locale.ROOT,"Average FPS: %.1f",monitor.averageFps()),center,top+202,0xD8E8FF);
-            graphics.drawCenteredString(font,"Samples retained: "+monitor.sampleCount(),center,top+214,0xAAAAAA);
+            graphics.drawCenteredString(font,"Latest FPS: "+monitor.latestFps(),center,top+222,0xD8E8FF);
+            graphics.drawCenteredString(font,String.format(java.util.Locale.ROOT,"Average FPS: %.1f",monitor.averageFps()),center,top+234,0xD8E8FF);
+            graphics.drawCenteredString(font,"Samples retained: "+monitor.sampleCount(),center,top+246,0xAAAAAA);
         }
         graphics.drawCenteredString(font,"Registered settings: "+SettingsRegistry.all().size(),center,height-18,0x888888);
     }

@@ -13,4 +13,8 @@ class EssentialsConfigTest {
   c.featurePriorityOverrides.put("../bad","planet_beta:renderer");c.featurePriorityOverrides.put("planet:audio","../bad");c.validate();
   assertEquals(1,c.featurePriorityOverrides.size());assertEquals("planet_alpha:renderer",c.featurePriorityOverrides.get("planet:rendering/entity"));
  }
+ @Test void shadersAreOffByDefaultAndInvalidPackIdsAreCleared(){
+  EssentialsConfig c=new EssentialsConfig();c.validate();assertFalse(c.shadersEnabled);assertEquals("",c.selectedShaderPack);
+  c.shadersEnabled=true;c.selectedShaderPack="../unsafe";c.validate();assertTrue(c.shadersEnabled);assertEquals("",c.selectedShaderPack);
+ }
 }

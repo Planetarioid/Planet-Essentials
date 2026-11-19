@@ -12,12 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Immutable, non-owning resource bindings for one Prism draw.
- *
- * GPU resources remain owned by their creators. A binding set only references them
- * for the duration of a render pass and never closes or mutates the resources.
- */
+/** Immutable, non-owning resource bindings for one Prism draw. */
 public final class MinecraftShaderBindings {
     public record SampledTexture(GpuTextureView view, GpuSampler sampler) {
         public SampledTexture {
@@ -36,22 +31,27 @@ public final class MinecraftShaderBindings {
         samplers = Map.copyOf(builder.samplers);
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
+    public static Builder builder() { return new Builder(); }
 
-    /** Validate all declared bindings before mutating the active render pass. */
-    public void apply(RenderPass pass, ShaderBindingLayout layout) {
-        Objects.requireNonNull(pass, "pass");
+    void validate(ShaderBindingLayout layout) {
         Objects.requireNonNull(layout, "layout");
         ShaderBindingValidator.validate(layout,
                 uniformBuffers.keySet(), texelBuffers.keySet(), samplers.keySet());
+    }
 
+    void applyValidated(RenderPass pass) {
+        Objects.requireNonNull(pass, "pass");
         uniformBuffers.forEach(pass::setUniform);
-        // Minecraft's TEXEL_BUFFER uniform type is backed by a GpuBuffer, not a sampled texture.
+        // Minecraft's TEXEL_BUFFER uniform type is backed by a GpuBuffer.
         texelBuffers.forEach(pass::setUniform);
         samplers.forEach((name, binding) ->
                 pass.bindTexture(name, binding.view(), binding.sampler()));
+    }
+
+    public void apply(RenderPass pass, ShaderBindingLayout layout) {
+        Objects.requireNonNull(pass, "pass");
+        validate(layout);
+        applyValidated(pass);
     }
 
     public static final class Builder {
@@ -76,9 +76,7 @@ public final class MinecraftShaderBindings {
             return this;
         }
 
-        public MinecraftShaderBindings build() {
-            return new MinecraftShaderBindings(this);
-        }
+        public MinecraftShaderBindings build() { return new MinecraftShaderBindings(this); }
 
         private static <T> void putUnique(Map<String, T> target, String name, T value, String kind) {
             Objects.requireNonNull(name, "name");
