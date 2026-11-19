@@ -1,7 +1,9 @@
 package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBackend;
 import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBindings;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
@@ -29,6 +31,7 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
     private final MinecraftShaderBindings samplerBindings;
     private final Set<String> externallyBoundUniforms;
     private final List<Draw> draws;
+    private final PrismTerrainSubmissionState submissionState = new PrismTerrainSubmissionState();
     private boolean closed;
 
     public PrismTerrainPreparedRenderGroup(ClientLevel level, long snapshotSequence,
@@ -75,6 +78,56 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
                     PrismTerrainVanillaPassSnapshot.IndexBufferInput.indexCountForQuadVertexCount(vertexCount));
         }
         return maximum;
+    }
+
+    /**
+     * Submits this prepared group exactly once into a caller-opened render pass.
+     * Every predictable resource and index-capacity check must have completed
+     * before this method is called. If submission fails, inspect
+     * mayFallBackToVanilla(): it is false after any draw was issued.
+     *
+     * <p>The caller owns the RenderPass and must close it. Closing a pass does
+     * not roll back draw commands already submitted by this method.</p>
+     */
+    public void submitDraws(RenderPass pass) {
+        RenderSystem.assertOnRenderThread();
+        ensureOpen();
+        Objects.requireNonNull(pass, "pass");
+        if (!isValidFor(level, null) && (Minecraft.getInstance().level != level
+                || !ShaderPackRuntime.isEnabled()
+                || ShaderPackRuntime.pipelineSnapshot().generation() != shaderGeneration)) {
+            throw new IllegalStateException("Prepared terrain group became stale before submission");
+        }
+
+        submissionState.begin();
+        try {
+            for (Draw draw : draws) {
+                boolean submitted = PrismTerrainDrawExecutor.drawWithPipeline(
+                        pass, program, pipeline, draw.mesh(), samplerBindings,
+                        draw.sectionUniform(), externallyBoundUniforms,
+                        indexBuffer.buffer(), indexBuffer.type());
+                if (!submitted) {
+                    throw new IllegalStateException("Prism terrain draw executor rejected a prepared draw");
+                }
+                submissionState.recordSubmittedDraw();
+            }
+            submissionState.complete();
+        } catch (RuntimeException | Error failure) {
+            submissionState.fail();
+            throw failure;
+        }
+    }
+
+    public boolean mayFallBackToVanilla() {
+        return submissionState.mayFallBackToVanilla();
+    }
+
+    public PrismTerrainSubmissionState.Phase submissionPhase() {
+        return submissionState.phase();
+    }
+
+    public int submittedDrawCount() {
+        return submissionState.submittedDraws();
     }
 
     public ClientLevel level() { return level; }
