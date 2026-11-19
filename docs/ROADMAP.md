@@ -1,119 +1,58 @@
 # Planet Essentials Development Roadmap
 
-Statuses:
-- [ ] Not started
-- [~] In progress
-- [x] Implemented and verified at the stated level
+Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the stated level.
 
-A feature is not marked complete merely because its class exists. Build verification, tests, and runtime validation are tracked separately.
+## 0. Foundation
+- [x] Fabric 1.21.11 / Java 21 build, pinned Planet Lib dependency, CI build/test and JAR verification
+- [ ] Client and dedicated-server launch validation
 
-## 0. Project foundation
-- [x] Repository and default branch
-- [x] Fabric Loom project structure
-- [x] Minecraft 1.21.11 and Java 21 targets
-- [x] Fabric metadata and common entrypoint
-- [x] CI build/test baseline
-- [x] Reproducible Planet Lib development dependency (pinned Git submodule + Gradle multi-project build)
-- [ ] Client launch configuration
-- [ ] Dedicated-server launch configuration
+## 1. Planet Lib
+- [x] Typed Essentials API, contract validation, loaded-mod/capability discovery, standalone behavior, integration tests
 
-## 1. Planet Lib integration
-- [x] Resolve Planet Lib as a real build dependency (pinned source project dependency; runtime integration remains optional)
-- [x] Validate API contract version at startup
-- [x] Expose typed Planet Essentials API entrypoint and accept validated integration metadata
-- [x] Handle missing/incompatible bridge without crashing
-- [x] Add integration tests against pinned Planet Lib
+## 2. Configuration
+- [x] Typed settings, validation, migrations, atomic persistence, profiles, import/export, concurrency tests
 
-## 2. Core configuration and settings
-- [x] Typed setting definitions, central registry, validation
-- [x] Configuration schema migration path (0/1/2/3 to 4)
-- [x] Atomic persistence with malformed-file preservation
-- [x] Named profile create/save/load/delete
-- [x] Profile import/export validation and safe names
-- [x] Persistence, migration, and concurrency tests
+## 3. Discovery and integration
+- [x] Loaded-mod discovery, Planet Studios capability discovery, reversible integration lifecycle
 
-## 3. Mod discovery and integration coordination
-- [x] Loaded-mod discovery through Planet Lib
-- [x] Planet Studios mod identity and capability discovery
-- [x] Integration registration lifecycle
-- [x] Graceful standalone behavior when Planet Lib is absent
-- [x] No arbitrary mods-folder scanning or third-party config modification
-
-## 4. Feature priority management
-- [x] Provider metadata and competing implementation UI
-- [x] Per-capability manual selection and automatic reset
-- [x] Persisted reversible preferences
-- [x] Provider-owned lifecycle callbacks and rollback contract
-- [x] Deterministic resolution covered by Planet Lib tests
+## 4. Feature priorities
+- [x] Per-capability provider selection, automatic reset, persistence, lifecycle rollback contract
 
 ## 5. Diagnostics
-- [~] Bounded FPS history and diagnostics settings (runtime verification pending)
-- [x] Bounded in-memory lifecycle and slow-tick event collection
-- [x] Explicit local diagnostics export; no telemetry
-- [~] Verify disabled-path overhead with runtime profiling
+- [x] Bounded local event collection and explicit diagnostics export
+- [~] FPS/runtime overhead verification
 
 ## 6. Performance architecture
-- [x] Baseline profiling methodology documented; no actual baseline
-- [~] CPU investigation deferred pending Java Flight Recorder data
-- [~] GPU/render investigation deferred pending measurements
-- [x] Memory/cache strategy documented; no measured gains
-- [x] Audio, particle, animation, and network boundaries reviewed; no optimizations claimed
-- [x] Independent diagnostics subsystem controls
-- [~] Benchmark protocol documented; no optimization accepted yet
-- [~] Compatibility matrix documented; runtime combinations untested
+- [x] Profiling methodology and subsystem boundaries documented
+- [~] JFR/GPU investigation, runtime compatibility, and benchmarks
 
-## 7. Planet Prism Rendering Engine (PPRE): texture subsystem
-- [x] Prism architecture name and subsystem boundaries documented
-- [x] Effective resource discovery through Minecraft ResourceManager, bounded metadata catalog, deterministic immutable snapshots
-- [x] Texture metadata and format validation (namespace, resource identity, path safety, PNG format, and path-based category validation)
-- [x] PNG signature, IHDR CRC, dimensions, pixel-count, bit-depth, and method preflight
-- [x] Encoded PNG stream hard limit enforced before ImageIO decode
-- [x] Bounded asynchronous CPU decode (2 workers, 64 queued jobs, immutable decoded pixels)
-- [x] Memory-aware decoded-pixel LRU cache (128 MiB default hard budget)
-- [x] Resource reload generation invalidation and client-shutdown cleanup
-- [x] Effective texture resource stream resolution through Minecraft ResourceManager
-- [~] Lazy decoder-to-Minecraft texture registration/render integration (GpuTexture-backed AbstractTexture adapter implemented; client runtime and real consumer integration pending)
-- [x] CPU mipmap policy and bounded mip-chain generation
-- [ ] Resource-pack coexistence tests
-- [x] Explicit opt-in API fallback returns the original vanilla resource identifier when decode or GPU registration fails
-- [ ] Benchmark memory, load time, and frame-time impact
-- [ ] Verify no visual corruption or resource leaks
+## 7. Prism texture subsystem
+- [x] Bounded resource discovery, PNG validation, async decode, immutable pixel cache, reload/shutdown lifecycle, CPU mip generation
+- [x] Opt-in GpuTexture adapter, mip uploads, pending NativeImage cleanup, vanilla identifier fallback API
+- [~] Client GPU validation and production consumer integration
+- [ ] Resource-pack coexistence, visual correctness, leak checks, performance benchmarks
 
-## 8. Prism shader and rendering subsystem
-- [ ] Shader architecture and supported pipeline boundaries
-- [ ] Shader resource lifecycle and reload invalidation
-- [ ] Shader configuration model integrated with settings/profiles
-- [ ] Shader compilation and actionable error reporting
-- [ ] GPU capability detection and backend limits
-- [ ] Graceful fallback paths that preserve vanilla rendering
-- [ ] Resource-pack and other-renderer compatibility review
-- [ ] Narrow real consumer integration, avoiding global vanilla interception
-- [ ] Visual correctness tests
-- [ ] GPU performance benchmarks
+## 8. Planet Prism Rendering Engine (PPRE): shader subsystem
+- [x] Immutable validated vertex/fragment source bundle and per-stage source limit
+- [x] Stable SHA-256 source identity
+- [x] Backend-neutral capability snapshot and compiler SPI
+- [x] Transactional reload and rollback on compilation failure
+- [x] Native handle disposal, invalidation, and close lifecycle
+- [x] Unit tests for source validation, hashing, rollback, duplicate IDs, and lifecycle
+- [ ] Concrete Minecraft 1.21.11 GPU shader backend
+- [ ] Shader-pack discovery, manifest/schema, versioning, pack priority
+- [ ] Uniform, sampler, buffer, framebuffer, render-target binding model
+- [ ] World render-stage integration and shader-pack features
+- [ ] Actual GPU/driver capability detection
+- [ ] Vanilla fallback and coexistence with Sodium, Iris, and other renderers
+- [ ] In-game shader tests, visual regression, GPU memory tests, benchmarks
 
-## 9. User interface
-- [~] Replace vanilla Options entry point with Planet Essentials hub
-- [x] Main navigation for diagnostics, profiles, feature priority, and system controls
-- [x] Registry-driven settings pages and profile management
-- [x] Vanilla Minecraft settings remain accessible
-- [ ] Search/filter settings
-- [ ] Per-mod settings panels
-- [~] Feature-priority usability and runtime review
-- [~] Dedicated diagnostics view
-- [ ] Reset and confirmation flows
-- [ ] Accessibility, scaling, and localization review
+## 9. UI
+- [~] Main settings hub and registry-driven pages
+- [ ] Shader settings and pack selection, search/filter, per-mod panels, reset flows, accessibility/localization
 
 ## 10. Compatibility and release
-- [ ] Clean client startup test
-- [ ] Dedicated-server startup test
-- [ ] Standalone test without Planet Lib
-- [ ] Available Planet mod integration tests
-- [ ] Third-party mod coexistence matrix execution
-- [ ] Performance regression suite
-- [ ] License decision
-- [ ] Release checklist and changelog
-- [ ] Distribution decision
-- [ ] Version tag and release artifact
+- [ ] Client/server runtime tests, mod coexistence matrix, performance regression suite, license, changelog, version, release artifact
 
-## Verification record
-The latest main-branch CI run verifies compilation, unit tests, distributable JAR contents, and artifact creation. In-game behavior, dedicated-server behavior, runtime compatibility, and performance gains remain unverified until tested.
+## Verification boundary
+CI and unit tests do not prove graphics-context integration, real GPU shader compilation, visual correctness, renderer compatibility, or performance superiority.
