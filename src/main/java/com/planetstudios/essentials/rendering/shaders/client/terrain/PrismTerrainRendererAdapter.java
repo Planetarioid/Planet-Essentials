@@ -261,7 +261,6 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
     }
 
     private static double sectionDistanceSquared(PrismTerrainVertexData data,
-            double cameraX, double cameraY, double cameraZ) {PrismTerrainVertexData data,
             double cameraX, double cameraY, double cameraZ) {
         double dx = (double) data.sectionX() * 16.0 + 8.0 - cameraX;
         double dy = (double) data.sectionY() * 16.0 + 8.0 - cameraY;
