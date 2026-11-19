@@ -8,6 +8,7 @@ import com.mojang.blaze3d.shaders.ShaderType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.planetstudios.essentials.rendering.shaders.ShaderBackend;
+import com.planetstudios.essentials.rendering.shaders.ShaderBindingLayout;
 import com.planetstudios.essentials.rendering.shaders.ShaderCapabilities;
 import com.planetstudios.essentials.rendering.shaders.ShaderCompileException;
 import com.planetstudios.essentials.rendering.shaders.ShaderProgramSpec;
@@ -74,7 +75,8 @@ public final class MinecraftShaderBackend implements ShaderBackend {
                 return null;
             });
             if (compiled == null) throw new IllegalStateException("Minecraft returned no compiled render pipeline");
-            return new MinecraftCompiledProgram(spec.id(), spec.contentHash(), pipeline, compiled);
+            return new MinecraftCompiledProgram(
+                    spec.id(), spec.contentHash(), spec.bindings(), pipeline, compiled);
         } catch (RuntimeException failure) {
             throw new ShaderCompileException(spec.id(), "Minecraft shader pipeline compilation failed",
                     failure.getClass().getSimpleName() + ": " + String.valueOf(failure.getMessage()));
@@ -85,26 +87,28 @@ public final class MinecraftShaderBackend implements ShaderBackend {
     public static final class MinecraftCompiledProgram implements CompiledProgram {
         private final String programId;
         private final String sourceHash;
+        private final ShaderBindingLayout bindings;
         private final RenderPipeline pipeline;
         @SuppressWarnings("unused")
         private final CompiledRenderPipeline compiled;
 
         private MinecraftCompiledProgram(String programId, String sourceHash,
-                RenderPipeline pipeline, CompiledRenderPipeline compiled) {
+                ShaderBindingLayout bindings, RenderPipeline pipeline, CompiledRenderPipeline compiled) {
             this.programId = programId;
             this.sourceHash = sourceHash;
+            this.bindings = bindings;
             this.pipeline = pipeline;
             this.compiled = compiled;
         }
 
         public RenderPipeline pipeline() { return pipeline; }
+        public ShaderBindingLayout bindings() { return bindings; }
         @Override public String programId() { return programId; }
         @Override public String sourceHash() { return sourceHash; }
 
         @Override
         public void close() {
             // CompiledRenderPipeline is cached and owned by Minecraft's GpuDevice.
-            // Clearing that cache here would invalidate unrelated vanilla/mod pipelines.
         }
     }
 }

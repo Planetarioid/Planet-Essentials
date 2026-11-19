@@ -2,6 +2,7 @@ package com.planetstudios.essentials.rendering.shaders.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.PlanetEssentials;
+import com.planetstudios.essentials.rendering.shaders.ShaderBindingLayout;
 import com.planetstudios.essentials.rendering.shaders.ShaderPackCatalog;
 import com.planetstudios.essentials.rendering.shaders.ShaderPackLoader;
 import com.planetstudios.essentials.rendering.shaders.ShaderProgramSpec;
@@ -12,8 +13,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import org.slf4j.Logger;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** Client-side Prism shader pack discovery and transactional GPU compilation lifecycle. */
 public final class ShaderPackRuntime {
@@ -23,6 +22,7 @@ public final class ShaderPackRuntime {
     private static final MinecraftShaderBackend BACKEND = new MinecraftShaderBackend();
     private static volatile ResourceManager lastResourceManager;
     private static volatile String compiledPackId = "";
+    private static volatile String compiledPostProcessProgramId = "";
 
     private ShaderPackRuntime() {}
 
@@ -34,14 +34,14 @@ public final class ShaderPackRuntime {
         List<ShaderPackLoader.LoadedPack> packs = discovered.packs();
         var snapshot = CATALOG.replace(packs, discovered.errors());
 
-        List<ShaderProgramSpec> programs = packs.stream()
+        ShaderPackLoader.LoadedPack selectedPack = packs.stream()
                 .filter(pack -> pack.manifest().id().equals(selectedId))
-                .findFirst()
-                .map(ShaderPackLoader.LoadedPack::programs)
-                .orElse(List.of());
+                .findFirst().orElse(null);
+        List<ShaderProgramSpec> programs = selectedPack == null ? List.of() : selectedPack.programs();
+        String postProcessId = selectedPack == null ? "" : selectedPack.manifest().worldPostProcessProgram();
 
-        if (!selectedId.isBlank() && programs.isEmpty()) {
-            LOGGER.warn("Selected Prism shader pack '{}' was not found or contains no valid programs.", selectedId);
+        if (!selectedId.isBlank() && selectedPack == null) {
+            LOGGER.warn("Selected Prism shader pack '{}' was not found in active resources.", selectedId);
         }
         LOGGER.info("Prism discovered {} shader packs and selected {} programs (catalog generation {}).",
                 snapshot.packs().size(), programs.size(), snapshot.generation());
@@ -50,6 +50,7 @@ public final class ShaderPackRuntime {
             boolean published = PIPELINE.reload(programs, BACKEND);
             if (published) {
                 compiledPackId = selectedId;
+                compiledPostProcessProgramId = postProcessId;
                 LOGGER.info("Prism compiled and published {} shader programs for pack '{}' (generation {}).",
                         PIPELINE.snapshot().programCount(), compiledPackId, PIPELINE.snapshot().generation());
             } else {
@@ -83,6 +84,19 @@ public final class ShaderPackRuntime {
         return compiledPackId;
     }
 
+    public static String worldPostProcessProgramId() {
+        return isEnabled() ? compiledPostProcessProgramId : "";
+    }
+
+    public static ShaderBindingLayout programBindings(String programId) {
+        if (!isEnabled()) return null;
+        var program = PIPELINE.program(programId);
+        if (program instanceof MinecraftShaderBackend.MinecraftCompiledProgram minecraftProgram) {
+            return minecraftProgram.bindings();
+        }
+        return null;
+    }
+
     public static RenderPipeline renderPipeline(String programId) {
         if (!isEnabled()) return null;
         var program = PIPELINE.program(programId);
@@ -104,6 +118,7 @@ public final class ShaderPackRuntime {
         CATALOG.clear();
         lastResourceManager = null;
         compiledPackId = "";
+        compiledPostProcessProgramId = "";
         if (RenderSystem.isOnRenderThread()) {
             PIPELINE.close();
         } else {

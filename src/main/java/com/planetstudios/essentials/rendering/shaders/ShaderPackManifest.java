@@ -20,6 +20,7 @@ public record ShaderPackManifest(
         String version,
         String description,
         String author,
+        String worldPostProcessProgram,
         List<Program> programs) {
 
     public static final int CURRENT_SCHEMA = 1;
@@ -27,6 +28,11 @@ public record ShaderPackManifest(
     public static final int MAX_PROGRAMS = 128;
     private static final String NAMESPACE = "[a-z0-9_.-]+";
     private static final String RESOURCE_PATH = "[a-z0-9/._-]+";
+
+    public ShaderPackManifest(int schemaVersion, String id, String name, String version,
+            String description, String author, List<Program> programs) {
+        this(schemaVersion, id, name, version, description, author, "", programs);
+    }
 
     public ShaderPackManifest {
         if (schemaVersion != CURRENT_SCHEMA) {
@@ -37,9 +43,17 @@ public record ShaderPackManifest(
         requireText(version, "version", 48);
         description = description == null ? "" : bounded(description, "description", 512);
         author = author == null ? "" : bounded(author, "author", 96);
+        worldPostProcessProgram = worldPostProcessProgram == null ? ""
+                : bounded(worldPostProcessProgram, "worldPostProcessProgram", 128);
         if (!id.matches(NAMESPACE + ":" + RESOURCE_PATH) || id.endsWith(":")
                 || id.contains("..") || id.contains("//")) {
             throw new IllegalArgumentException("Invalid shader pack identifier: " + id);
+        }
+        if (!worldPostProcessProgram.isBlank()
+                && (!worldPostProcessProgram.matches(NAMESPACE + ":" + RESOURCE_PATH)
+                || worldPostProcessProgram.endsWith(":") || worldPostProcessProgram.contains("..")
+                || worldPostProcessProgram.contains("//"))) {
+            throw new IllegalArgumentException("Invalid world post-process program identifier");
         }
         Objects.requireNonNull(programs, "programs");
         if (programs.isEmpty() || programs.size() > MAX_PROGRAMS) {
@@ -50,6 +64,9 @@ public record ShaderPackManifest(
             if (!ids.add(program.id())) {
                 throw new IllegalArgumentException("Duplicate shader program: " + program.id());
             }
+        }
+        if (!worldPostProcessProgram.isBlank() && !ids.contains(worldPostProcessProgram)) {
+            throw new IllegalArgumentException("worldPostProcessProgram must reference a declared program");
         }
         programs = List.copyOf(programs);
     }
@@ -75,6 +92,7 @@ public record ShaderPackManifest(
         String version = requiredString(root, "version");
         String description = optionalString(root, "description");
         String author = optionalString(root, "author");
+        String postProcessProgram = optionalString(root, "worldPostProcessProgram");
         JsonElement programsElement = root.get("programs");
         if (programsElement == null || !programsElement.isJsonArray()) {
             throw new IllegalArgumentException("Manifest programs must be an array");
@@ -97,7 +115,8 @@ public record ShaderPackManifest(
                     optionalStringArray(object, "texelBuffers"),
                     optionalStringArray(object, "samplers")));
         }
-        return new ShaderPackManifest(schema, id, name, version, description, author, programs);
+        return new ShaderPackManifest(schema, id, name, version, description, author,
+                postProcessProgram, programs);
     }
 
     private static int requiredInt(JsonObject object, String key) {

@@ -25,8 +25,8 @@ public final class PrismRenderTargetManager implements AutoCloseable {
         PrismRenderTarget existing = targets.get(id);
         if (existing != null && existing.spec().equals(requested)) return existing;
 
-        // Allocate first. If allocation fails, the previous target remains usable.
-        PrismRenderTarget replacement = PrismRenderTarget.create(device, "prism-" + id.replace(':', '-'), requested);
+        PrismRenderTarget replacement = PrismRenderTarget.create(
+                device, "prism-" + id.replace(':', '-'), requested);
         PrismRenderTarget previous = targets.put(id, replacement);
         if (previous != null) previous.close();
         return replacement;
@@ -44,8 +44,15 @@ public final class PrismRenderTargetManager implements AutoCloseable {
         if (removed != null) removed.close();
     }
 
-    public int size() {
-        return targets.size();
+    public int size() { return targets.size(); }
+
+    public void clear() {
+        RenderSystem.assertOnRenderThread();
+        ensureOpen();
+        for (PrismRenderTarget target : targets.values()) {
+            try { target.close(); } catch (RuntimeException ignored) {}
+        }
+        targets.clear();
     }
 
     private void ensureOpen() {
@@ -56,10 +63,7 @@ public final class PrismRenderTargetManager implements AutoCloseable {
     public void close() {
         RenderSystem.assertOnRenderThread();
         if (closed) return;
+        clear();
         closed = true;
-        for (PrismRenderTarget target : targets.values()) {
-            try { target.close(); } catch (RuntimeException ignored) {}
-        }
-        targets.clear();
     }
 }

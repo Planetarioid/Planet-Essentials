@@ -39,6 +39,15 @@ class ShaderPackLoaderTest {
     }
 
     @Test
+    void validatesOptionalWorldPostProcessProgramReference() {
+        String valid = MANIFEST.replace("\"programs\":",
+                "\"worldPostProcessProgram\": \"planet:world\", \"programs\":");
+        assertEquals("planet:world", ShaderPackManifest.parse(valid).worldPostProcessProgram());
+        String invalid = valid.replace("planet:world", "planet:missing");
+        assertThrows(IllegalArgumentException.class, () -> ShaderPackManifest.parse(invalid));
+    }
+
+    @Test
     void rejectsUnsupportedSchemaAndTraversal() {
         assertThrows(IllegalArgumentException.class,
                 () -> ShaderPackManifest.parse(MANIFEST.replace("\"schema\": 1", "\"schema\": 2")));

@@ -1,37 +1,50 @@
 # Prism Shader System
 
-## Status
-Prism now includes bounded pack metadata/source loading, active ResourceManager discovery, a Minecraft 1.21.11 GPU pipeline compiler, typed uniform-buffer/texel-buffer/sampler declarations, and a client resource-reload lifecycle that transactionally compiles discovered programs.
+## Current implementation
+Prism includes bounded schema-1 shader-pack discovery, source validation, content hashing, transactional Minecraft 1.21.11 GPU compilation, typed resource bindings, shader enable/disable controls, persisted pack selection, a fullscreen draw primitive, owned render targets, resize-safe target management, and a validated post-process dependency graph.
 
-This is **not yet a complete Iris-equivalent shader-pack renderer**. Programs are compiled into Minecraft render-pipeline objects, but Prism does not yet substitute them into the vanilla terrain/entity renderer or provide a full post-processing graph. The current compile adapter is position-only and quad-format.
+The built-in world post-process hook is opt-in. A pack may declare a `worldPostProcessProgram` at the manifest root. That program must declare exactly one sampler named `SceneColor`, no custom uniform buffers or texel buffers, and use the position-only quad contract. Prism renders it into a private target while sampling Minecraft's main render target, then composites the result using Minecraft's render-target blit path. This keeps source and destination textures separate.
 
-## Pack format and location
+Example manifest shape:
+
+```json
+{
+  "schema": 1,
+  "id": "example:cinematic",
+  "name": "Cinematic Example",
+  "version": "1.0.0",
+  "worldPostProcessProgram": "example:post",
+  "programs": [
+    {
+      "id": "example:post",
+      "vertex": "example:shaders/post.vsh",
+      "fragment": "example:shaders/post.fsh",
+      "samplers": ["SceneColor"]
+    }
+  ]
+}
+```
+
+The program's vertex shader receives the `Position` attribute as clip-space quad coordinates. It should derive UV coordinates from that position and sample `SceneColor` in its fragment shader. The pack can omit `worldPostProcessProgram` if it only wants to provide compiled programs for other integrations.
+
+## Pack location and limits
 Packs are discovered at:
 `assets/<namespace>/prism/shaderpacks/<pack-folder>/prism.json`
 
-Schema 1 requires pack `id`, `name`, `version`, and `programs`. Each program has unique namespaced `id`, vertex and fragment resource IDs, and optional `uniformBuffers`, `texelBuffers`, and `samplers` arrays. Binding names are unique GLSL identifiers, with at most 16 of each kind.
-
-## Safety and limits
 - Manifest: 64 KiB.
 - Each shader stage: 1 MiB UTF-8.
 - Programs per pack: 128.
 - Aggregate unique source: 16 MiB.
+- Binding names are unique GLSL identifiers, with at most 16 of each kind.
 - Resource paths reject traversal, duplicate separators, and backslashes.
-- UTF-8 decoding is strict and source reads are byte-limited.
-- ResourceManager resolution respects active resource-pack priority for each resource path.
+- ResourceManager resolution respects active resource-pack priority.
 - Duplicate program IDs across distinct packs are excluded rather than arbitrarily overriding one another.
 - A failed compile keeps the previous active compiled generation.
 
-## GPU backend and lifecycle
-The client reload listener discovers packs, updates an immutable catalog, then schedules compilation on Minecraft's render-task queue. The backend obtains the active GpuDevice, builds RenderPipeline objects with declared buffer/sampler slots, supplies custom shader source through Minecraft's shader-source callback, and invokes GpuDevice.precompilePipeline. Minecraft owns the compiled pipeline cache; Prism does not clear the global cache when pack handles close.
+## In-game controls
+Open Planet Essentials -> Shader Settings. Prism is disabled by default. The screen allows users to enable or disable shader effects, cycle through discovered packs, and rescan active resource packs. Disabling Prism bypasses the built-in post-process hook immediately; it does not require a restart.
 
-## Remaining implementation
-1. Runtime buffer/texture binding validation and resource ownership.
-2. Frame-stage contracts and actual drawing integration.
-3. Owned framebuffer/render-target lifecycle and post-process graph.
-4. Terrain/entity pipeline integration and shader-pack feature mapping.
-5. Actual GPU/driver limit detection, renderer negotiation, and compatibility with vanilla, Sodium, and Iris.
-6. Client launch, visual regression, GPU memory/leak tests, and controlled benchmarks.
+## Compatibility and verification boundary
+Fabric's world-render drawing events are used instead of broad LevelRenderer injections. The built-in post-process hook runs at END_MAIN, after the main terrain/entity/translucency pass and before particles, clouds, weather, hand, and GUI rendering. It does not replace terrain or entity material pipelines.
 
-## Performance claims
-Prism does not claim to outperform Iris. Comparisons require identical packs, scenes, GPU, driver, render distance, and settings. Do not copy Iris code or shader-pack assets.
+This is not yet an Iris-equivalent renderer. Terrain/entity shader integration, multi-pass graph resource allocation and execution, full pack feature compatibility, renderer negotiation, in-game visual regression, GPU leak testing, and controlled performance benchmarks remain open. CI and unit tests do not prove driver behavior or visual correctness. Prism makes no performance-superiority claim over Iris.

@@ -44,11 +44,13 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Typed GPU binding sets with exact declared-versus-supplied validation for uniform buffers, texel buffers, and samplers
 - [~] Fabric 1.21.11 AFTER_ENTITIES, BEFORE_TRANSLUCENT, and END_MAIN callback dispatch
 - [~] Generic draw execution into caller-owned render passes; built-in world-stage orchestration remains
-- [ ] Built-in world/terrain shader draw integration and extraction-to-draw state flow
+- [~] Built-in END_MAIN full-screen world post-process pass with isolated source/destination targets
+- [ ] Terrain/entity shader pipeline integration and extraction-to-draw state flow
 - [x] Owned GPU color/depth render targets, bounded dimensions, and render-pass creation
 - [x] Transactional render-target resize/ownership manager
 - [x] Validated post-processing dependency graph with deterministic topological execution
-- [ ] Built-in scene-color capture, graph resource allocation, and end-to-end post-processing execution
+- [~] Single-pass scene-color post-processing and final composite
+- [ ] Multi-pass graph resource allocation/execution, terrain/entity feature mapping, and full shader-pack compatibility
 - [ ] Terrain/entity pipeline integration and full shader-pack feature compatibility
 - [ ] Actual GPU/driver limit detection and renderer negotiation
 - [ ] Vanilla fallback and coexistence with Sodium, Iris, and other renderers

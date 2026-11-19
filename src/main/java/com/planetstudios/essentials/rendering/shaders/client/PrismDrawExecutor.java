@@ -36,7 +36,6 @@ public final class PrismDrawExecutor {
         // Validate bindings before setting pipeline state so invalid packs fail atomically.
         bindings.validate(layout);
         pass.setPipeline(pipeline);
-        RenderSystem.bindDefaultUniforms(pass);
         bindings.applyValidated(pass);
         pass.setVertexBuffer(0, vertexBuffer);
         pass.draw(vertexOffset, vertexCount);

@@ -4,6 +4,7 @@ import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackResourceReloadListener;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStageRegistry;
+import com.planetstudios.essentials.rendering.shaders.client.PrismWorldPostProcessor;
 import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
 import com.planetstudios.essentials.textures.TextureAssetCatalog;
 import com.planetstudios.essentials.textures.TextureDecodeLimits;
@@ -40,6 +41,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         TextureResourceReloadListener.register(TEXTURE_ASSETS, TEXTURE_DECODER);
         ShaderPackResourceReloadListener.register();
         PrismFrameStageRegistry.registerFabricEvents();
+        PrismWorldPostProcessor.register();
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> record(DiagnosticEventType.CLIENT_STARTED));
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
@@ -47,13 +49,13 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
             TextureGpuRegistrar.shutdown(client);
             TEXTURE_ASSETS.clear();
             TEXTURE_DECODER.close();
+            PrismWorldPostProcessor.shutdown();
             ShaderPackRuntime.shutdown();
         });
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> record(DiagnosticEventType.WORLD_JOINED));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> record(DiagnosticEventType.WORLD_LEFT));
 
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
-            // One config read per tick. Disabled subsystems do not sample or allocate.
             var config = EssentialsRuntime.config();
             boolean diagnosticsEnabled = config.diagnosticsEnabled;
             performanceSamplingEnabledForCurrentTick =
@@ -78,35 +80,21 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         });
     }
 
-    /** Metadata-only view used by diagnostics and integration code. */
     public static TextureAssetCatalog.Snapshot textureAssetsSnapshot() {
         return TEXTURE_ASSETS.snapshot();
     }
 
-    /**
-     * Resolves the effective resource through Minecraft's active ResourceManager
-     * and decodes it off-thread. Only catalogued PNG texture assets are accepted.
-     */
     public static CompletableFuture<com.planetstudios.essentials.textures.DecodedTexture> decodeTexture(
             Identifier resourceId) {
         return TextureResourceDecoder.decode(
                 Minecraft.getInstance().getResourceManager(), resourceId, TEXTURE_DECODER);
     }
 
-    /**
-     * Explicit opt-in GPU path. Decoding and mip generation remain CPU-side;
-     * the final GpuTexture allocation, upload, and registration run on the client thread.
-     */
     public static CompletableFuture<Identifier> decodeAndRegisterTexture(Identifier resourceId) {
         return decodeTexture(resourceId).thenCompose(decoded ->
                 TextureGpuRegistrar.register(Minecraft.getInstance(), resourceId, decoded));
     }
 
-    /**
-     * Explicit opt-in GPU path with a vanilla identifier fallback. If decoding or
-     * GPU registration fails, callers receive the original resource identifier
-     * and can continue using Minecraft's normal resource/atlas path.
-     */
     public static CompletableFuture<Identifier> decodeAndRegisterTextureWithVanillaFallback(
             Identifier resourceId) {
         return TextureFallback.orElse(
