@@ -13,6 +13,7 @@ import com.planetstudios.essentials.rendering.shaders.ShaderCapabilities;
 import com.planetstudios.essentials.rendering.shaders.ShaderCompileException;
 import com.planetstudios.essentials.rendering.shaders.ShaderProgramSpec;
 import com.planetstudios.essentials.rendering.shaders.ShaderStage;
+import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVertexLayout;
 import com.mojang.blaze3d.shaders.UniformType;
 import net.minecraft.resources.Identifier;
 
@@ -35,6 +36,7 @@ public final class MinecraftShaderBackend implements ShaderBackend {
         features.add("minecraft-render-pipeline");
         features.add("custom-shader-source");
         features.add("position-vertex-format");
+        features.add("terrain-v1-vertex-format");
         features.add("uniform-buffers");
         features.add("texel-buffers");
         features.add("samplers");
@@ -45,6 +47,19 @@ public final class MinecraftShaderBackend implements ShaderBackend {
 
     @Override
     public CompiledProgram compile(ShaderProgramSpec spec) throws ShaderCompileException {
+        return compileWithFormat(spec, DefaultVertexFormat.POSITION);
+    }
+
+    /**
+     * Compiles a terrain V1 program using Prism's complete Minecraft vertex format.
+     * This explicit path avoids accidentally binding a terrain buffer to a POSITION-only pipeline.
+     */
+    public CompiledProgram compileTerrain(ShaderProgramSpec spec) throws ShaderCompileException {
+        return compileWithFormat(spec, PrismTerrainVertexLayout.minecraftVertexFormat());
+    }
+
+    private CompiledProgram compileWithFormat(ShaderProgramSpec spec, VertexFormat vertexFormat)
+            throws ShaderCompileException {
         RenderSystem.assertOnRenderThread();
         GpuDevice device = RenderSystem.tryGetDevice();
         if (device == null) {
@@ -62,7 +77,7 @@ public final class MinecraftShaderBackend implements ShaderBackend {
                 .withLocation(pipelineId)
                 .withVertexShader(vertexId)
                 .withFragmentShader(fragmentId)
-                .withVertexFormat(DefaultVertexFormat.POSITION, VertexFormat.Mode.QUADS);
+                .withVertexFormat(vertexFormat, VertexFormat.Mode.QUADS);
         spec.bindings().uniformBuffers().forEach(name -> builder.withUniform(name, UniformType.UNIFORM_BUFFER));
         spec.bindings().texelBuffers().forEach(name -> builder.withUniform(name, UniformType.TEXEL_BUFFER));
         spec.bindings().samplers().forEach(builder::withSampler);
@@ -83,7 +98,7 @@ public final class MinecraftShaderBackend implements ShaderBackend {
         }
     }
 
-    /** Public read-only handle used by Prism's draw executor. */
+    /** Public read-only handle used by Prism's draw executor and terrain adapters. */
     public static final class MinecraftCompiledProgram implements CompiledProgram {
         private final String programId;
         private final String sourceHash;
