@@ -101,13 +101,10 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         submissionState.begin();
         try {
             for (Draw draw : draws) {
-                // Mark the attempt before calling into the backend. If drawIndexed throws
-                // after partial command submission, vanilla must still not redraw this group.
-                submissionState.markDrawSubmissionStarted();
-                boolean submitted = PrismTerrainDrawExecutor.drawWithPipeline(
+                boolean submitted = PrismTerrainDrawExecutor.drawPreparedWithPipeline(
                         pass, program, pipeline, draw.mesh(), samplerBindings,
                         draw.sectionUniform(), externallyBoundUniforms,
-                        indexBuffer.buffer(), indexBuffer.type());
+                        indexBuffer.buffer(), indexBuffer.type(), submissionState);
                 if (!submitted) {
                     throw new IllegalStateException("Prism terrain draw executor rejected a prepared draw");
                 }
@@ -128,7 +125,7 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
     }
 
     public int submittedDrawCount() {
-        return submissionState.submittedDraws();
+        return submissionState.drawSubmissionAttempts();
     }
 
     public ClientLevel level() { return level; }

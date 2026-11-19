@@ -109,6 +109,33 @@ public final class PrismTerrainDrawExecutor {
                 externallyBoundUniforms, preparedIndexBuffer, preparedIndexType, 0);
     }
 
+    /**
+     * Prepared-group variant that records the irreversible boundary immediately
+     * before RenderPass.drawIndexed, after validation and binding setup complete.
+     */
+    public static boolean drawPreparedWithPipeline(RenderPass pass,
+            MinecraftShaderBackend.MinecraftCompiledProgram program,
+            RenderPipeline drawPipeline,
+            PrismTerrainGpuMesh mesh,
+            MinecraftShaderBindings bindings,
+            PrismTerrainSectionUniformAllocation sectionUniform,
+            Set<String> externallyBoundUniforms,
+            GpuBuffer preparedIndexBuffer,
+            VertexFormat.IndexType preparedIndexType,
+            PrismTerrainSubmissionState submissionState) {
+        Objects.requireNonNull(drawPipeline, "drawPipeline");
+        Objects.requireNonNull(sectionUniform, "sectionUniform");
+        Objects.requireNonNull(externallyBoundUniforms, "externallyBoundUniforms");
+        Objects.requireNonNull(preparedIndexBuffer, "preparedIndexBuffer");
+        Objects.requireNonNull(preparedIndexType, "preparedIndexType");
+        Objects.requireNonNull(submissionState, "submissionState");
+        PrismTerrainSectionUniform.requireDeclared(program.bindings()::uniformBuffers);
+        MinecraftShaderBindings completeBindings = Objects.requireNonNull(bindings, "bindings")
+                .withUniformBuffer(PrismTerrainSectionUniform.BINDING_NAME, sectionUniform.slice());
+        return drawValidated(pass, program, drawPipeline, mesh, completeBindings,
+                externallyBoundUniforms, preparedIndexBuffer, preparedIndexType, 0, submissionState);
+    }
+
     /** Draws with a caller-owned SHORT index buffer, used for camera-sorted translucent quads. */
     public static boolean drawSorted(RenderPass pass,
             MinecraftShaderBackend.MinecraftCompiledProgram program,
@@ -147,6 +174,20 @@ public final class PrismTerrainDrawExecutor {
             GpuBuffer explicitIndexBuffer,
             VertexFormat.IndexType explicitIndexType,
             int firstIndex) {
+        return drawValidated(pass, program, drawPipeline, mesh, bindings,
+                externallyBoundUniforms, explicitIndexBuffer, explicitIndexType, firstIndex, null);
+    }
+
+    private static boolean drawValidated(RenderPass pass,
+            MinecraftShaderBackend.MinecraftCompiledProgram program,
+            RenderPipeline drawPipeline,
+            PrismTerrainGpuMesh mesh,
+            MinecraftShaderBindings bindings,
+            Set<String> externallyBoundUniforms,
+            GpuBuffer explicitIndexBuffer,
+            VertexFormat.IndexType explicitIndexType,
+            int firstIndex,
+            PrismTerrainSubmissionState submissionState) {
         RenderSystem.assertOnRenderThread();
         Objects.requireNonNull(pass, "pass");
         Objects.requireNonNull(program, "program");
@@ -178,6 +219,7 @@ public final class PrismTerrainDrawExecutor {
             if (explicitIndexType == null) throw new IllegalArgumentException("Explicit terrain index type is required");
             pass.setIndexBuffer(explicitIndexBuffer, explicitIndexType);
         }
+        if (submissionState != null) submissionState.markDrawSubmissionStarted();
         pass.drawIndexed(0, firstIndex, indexCount, 1);
         return true;
     }
