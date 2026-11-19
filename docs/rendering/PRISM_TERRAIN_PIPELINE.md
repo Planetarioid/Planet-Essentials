@@ -165,8 +165,8 @@ discarding the entire frame. It uploads changed payloads through a per-`ClientLe
 For vanilla translucent sections, capture also retains the compiler's
 `MeshData.SortState` quad centroids. Prism rebuilds the far-to-near SHORT index
 order from those centroids and the current camera position each frame, using
-Minecraft's own `VertexSorting.byDistance` algorithm. Section payloads are
-submitted far-to-near at the translucent stage, and their temporary indices
+Minecraft's own `VertexSorting.byDistance` algorithm. Translucent sections are
+submitted far-to-near, followed by the vanilla TRIPWIRE group, and their temporary indices
 are written into a bounded, GPU-fenced index ring. This avoids treating the
 initial compile-time translucent order as permanent. Layers without vanilla
 sort metadata, such as tripwire, retain sequential quad indices.

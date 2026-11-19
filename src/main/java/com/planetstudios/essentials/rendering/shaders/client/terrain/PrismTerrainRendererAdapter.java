@@ -176,9 +176,16 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
         double cameraZ = camera.pos.z;
         if (stage == PrismFrameStage.BEFORE_TRANSLUCENT) {
             List<PrismTerrainVertexData> ordered = new ArrayList<>(payloads);
-            ordered.sort(Comparator.comparingDouble(
-                    (PrismTerrainVertexData data) -> sectionDistanceSquared(data, cameraX, cameraY, cameraZ))
-                    .reversed());
+            ordered.sort((first, second) -> {
+                // Vanilla renders the TRIPWIRE group after the translucent group.
+                int firstGroup = isTripwire(first) ? 1 : 0;
+                int secondGroup = isTripwire(second) ? 1 : 0;
+                int groupOrder = Integer.compare(firstGroup, secondGroup);
+                if (groupOrder != 0) return groupOrder;
+                return Double.compare(
+                        sectionDistanceSquared(second, cameraX, cameraY, cameraZ),
+                        sectionDistanceSquared(first, cameraX, cameraY, cameraZ));
+            });
             payloads = ordered;
         }
 
@@ -249,7 +256,12 @@ public final class PrismTerrainRendererAdapter implements AutoCloseable {
         }
     }
 
+    private static boolean isTripwire(PrismTerrainVertexData data) {
+        return data.materialId().endsWith("/tripwire");
+    }
+
     private static double sectionDistanceSquared(PrismTerrainVertexData data,
+            double cameraX, double cameraY, double cameraZ) {PrismTerrainVertexData data,
             double cameraX, double cameraY, double cameraZ) {
         double dx = (double) data.sectionX() * 16.0 + 8.0 - cameraX;
         double dy = (double) data.sectionY() * 16.0 + 8.0 - cameraY;
