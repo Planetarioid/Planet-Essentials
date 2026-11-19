@@ -5,7 +5,7 @@ import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
-import net.minecraft.client.gl.GpuSampler;
+import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.textures.TextureFormat;
@@ -73,7 +73,7 @@ public final class TextureGpuRegistrar {
         Identifier textureId = identifierFor(sourceId);
         CompletableFuture<Identifier> result = new CompletableFuture<>();
         try {
-            RenderSystem.recordRenderCall(() -> {
+            client.execute(() -> {
                 if (!LIFECYCLE.isCurrent(requestedGeneration)) {
                     closeImages(images);
                     result.completeExceptionally(new IllegalStateException(

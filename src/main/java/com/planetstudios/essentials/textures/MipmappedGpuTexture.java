@@ -11,8 +11,8 @@ import net.minecraft.client.renderer.texture.AbstractTexture;
  */
 final class MipmappedGpuTexture extends AbstractTexture {
     MipmappedGpuTexture(GpuTexture texture, GpuTextureView view, GpuSampler sampler) {
-        this.glTexture = texture;
-        this.glTextureView = view;
+        this.texture = texture;
+        this.textureView = view;
         this.sampler = sampler;
     }
 }
