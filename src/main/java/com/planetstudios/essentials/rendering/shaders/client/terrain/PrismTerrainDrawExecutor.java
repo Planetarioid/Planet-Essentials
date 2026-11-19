@@ -44,26 +44,22 @@ public final class PrismTerrainDrawExecutor {
             MinecraftShaderBackend.MinecraftCompiledProgram program,
             PrismTerrainGpuMesh mesh,
             MinecraftShaderBindings bindings) {
-    public static boolean draw(RenderPass pass,
-            MinecraftShaderBackend.MinecraftCompiledProgram program,
-            PrismTerrainGpuMesh mesh,
-            MinecraftShaderBindings bindings) {
         RenderSystem.assertOnRenderThread();
-        Objects.requireNonNull(pass,"pass");
-        Objects.requireNonNull(program,"program");
-        Objects.requireNonNull(mesh,"mesh");
-        Objects.requireNonNull(bindings,"bindings");
-        if(!program.supportsTerrainV1()) {
+        Objects.requireNonNull(pass, "pass");
+        Objects.requireNonNull(program, "program");
+        Objects.requireNonNull(mesh, "mesh");
+        Objects.requireNonNull(bindings, "bindings");
+        if (!program.supportsTerrainV1()) {
             throw new IllegalArgumentException("Prism terrain V1 data requires a terrain V1 compiled pipeline");
         }
-        if(mesh.vertexCount()<=0 || mesh.vertexCount()%4!=0) {
+        if (mesh.vertexCount() <= 0 || mesh.vertexCount() % 4 != 0) {
             throw new IllegalArgumentException("Prism terrain mesh must contain complete quads");
         }
         // Validate the complete binding set before mutating RenderPass state.
         bindings.apply(pass, program.bindings());
         pass.setPipeline(program.pipeline());
-        pass.setVertexBuffer(0,mesh.vertexBuffer());
-        pass.draw(0,mesh.vertexCount());
+        pass.setVertexBuffer(0, mesh.vertexBuffer());
+        pass.draw(0, mesh.vertexCount());
         return true;
     }
 }
