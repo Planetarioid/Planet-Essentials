@@ -1,19 +1,10 @@
 package com.planetstudios.essentials.rendering.shaders.client;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class PrismMaterialRegistryTest {
-    @AfterEach
-    void clearRegistrations() {
-        for (String id : PrismMaterialRegistry.snapshot().keySet()) {
-            PrismMaterialRegistry.find(id).ifPresent(material ->
-                    PrismMaterialRegistry.unregisterForTests(material));
-        }
-    }
-
     @Test
     void registersAndResolvesMaterialMetadata() {
         PrismMaterial material = new PrismMaterial(
