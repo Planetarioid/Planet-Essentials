@@ -74,7 +74,7 @@ A feature is not marked complete merely because its class exists. Build verifica
 - [~] Lazy decoder-to-Minecraft texture registration/render integration (explicit GpuTexture-backed AbstractTexture adapter implemented with mip upload and sampler; in-game verification and real consumer integration pending)
 - [x] CPU mipmap policy and bounded mip-chain generation (bounded CPU levels uploaded to matching GPU mip levels; runtime sampling verification pending)
 - [ ] Resource-pack coexistence tests
-- [ ] Failure fallback to vanilla resource behavior
+- [x] Explicit opt-in API fallback returns the original vanilla resource identifier when decode or GPU registration fails
 - [ ] Benchmark memory, load time, and frame-time impact
 - [ ] Verify no visual corruption or resource leaks
 

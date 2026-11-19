@@ -8,6 +8,7 @@ import com.planetstudios.essentials.textures.TextureDecodeService;
 import com.planetstudios.essentials.textures.TexturePixelCache;
 import com.planetstudios.essentials.textures.TextureResourceDecoder;
 import com.planetstudios.essentials.textures.TextureGpuRegistrar;
+import com.planetstudios.essentials.textures.TextureFallback;
 import com.planetstudios.essentials.textures.TextureResourceReloadListener;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -93,6 +94,17 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
     public static CompletableFuture<Identifier> decodeAndRegisterTexture(Identifier resourceId) {
         return decodeTexture(resourceId).thenCompose(decoded ->
                 TextureGpuRegistrar.register(Minecraft.getInstance(), resourceId, decoded));
+    }
+
+    /**
+     * Explicit opt-in GPU path with a vanilla identifier fallback. If decoding or
+     * GPU registration fails, callers receive the original resource identifier
+     * and can continue using Minecraft's normal resource/atlas path.
+     */
+    public static CompletableFuture<Identifier> decodeAndRegisterTextureWithVanillaFallback(
+            Identifier resourceId) {
+        return TextureFallback.orElse(
+                decodeAndRegisterTexture(resourceId), resourceId);
     }
 
     private static void record(DiagnosticEventType type) {
