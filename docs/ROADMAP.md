@@ -46,6 +46,7 @@ Statuses: [ ] not started, [~] in progress, [x] implemented and verified at the 
 - [x] Cooperative Prism material registration and active-pack pipeline resolution API for renderer integrations
 - [x] Renderer environment detection for Vanilla, Sodium, Canvas, VulkanMod, Iris, legacy OptiFabric, and conflicted multi-renderer environments
 - [x] Explicit renderer-adapter SPI and registry with immutable feature declarations
+- [x] Immutable diagnostics snapshot for discovery, compilation, active graph, and renderer state
 - [x] Built-in END_MAIN world post-process graph and final composite
 - [x] GPU fullscreen multi-pass execution, sampler mapping, last-use target-slot reuse, and final composite
 - [x] Shader-pack manifest authoring for multi-pass world post-processing graphs with strict reference and sampler validation
