@@ -9,7 +9,7 @@ public final class PrismTerrainReplacementGate {
 
     public enum FallbackReason {
         NONE, EMPTY_GROUP, INCOMPLETE_COVERAGE, PROGRAM_UNAVAILABLE,
-        INCOMPATIBLE_DEVICE, FRAME_NOT_READY
+        INCOMPATIBLE_DEVICE, FRAME_NOT_READY, RENDER_STATE_NOT_READY
     }
 
     public record Readiness(int requiredDraws, int readyDraws,

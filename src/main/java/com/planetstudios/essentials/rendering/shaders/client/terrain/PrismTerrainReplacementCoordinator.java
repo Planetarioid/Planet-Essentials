@@ -95,6 +95,10 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
         if (program == null || !program.supportsTerrainV1()) {
             return fallback(required, PrismTerrainReplacementGate.FallbackReason.PROGRAM_UNAVAILABLE);
         }
+        if (renderState == null || !renderState.isCompleteFor(layer,
+                Set.copyOf(program.bindings().samplers()))) {
+            return fallback(required, PrismTerrainReplacementGate.FallbackReason.RENDER_STATE_NOT_READY);
+        }
         long shaderGeneration = ShaderPackRuntime.pipelineSnapshot().generation();
         if (shaderGeneration <= 0 || !ShaderPackRuntime.isEnabled()) {
             return fallback(required, PrismTerrainReplacementGate.FallbackReason.PROGRAM_UNAVAILABLE);
