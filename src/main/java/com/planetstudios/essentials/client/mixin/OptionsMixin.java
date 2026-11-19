@@ -1,5 +1,6 @@
 package com.planetstudios.essentials.client.mixin;
 
+import com.mojang.serialization.Codec;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
@@ -10,10 +11,16 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.io.File;
+import java.lang.reflect.Field;
+import java.util.Arrays;
 
 /**
  * Extends both vanilla chunk-distance controls to the same inclusive range.
  * The server's view-distance limit can still cap effective multiplayer rendering.
+ *
+ * OptionInstance.ValueSet is package-private in Minecraft 1.21.11, so the
+ * implementation locates its two private final fields by their runtime types
+ * rather than referring to that inaccessible nested interface in source.
  */
 @Mixin(Options.class)
 public abstract class OptionsMixin {
@@ -30,14 +37,26 @@ public abstract class OptionsMixin {
         planetEssentials$extend(simulationDistance());
     }
 
-    @SuppressWarnings("unchecked")
     private static void planetEssentials$extend(OptionInstance<Integer> option) {
         OptionInstance.IntRange range = new OptionInstance.IntRange(
                 PLANET_ESSENTIALS$MIN_DISTANCE, PLANET_ESSENTIALS$MAX_DISTANCE);
-        PrismOptionInstanceAccessor<Integer> accessor =
-                (PrismOptionInstanceAccessor<Integer>) (Object) option;
-        accessor.planetEssentials$setValues(range);
-        accessor.planetEssentials$setCodec(range.codec());
+        try {
+            Field valuesField = Arrays.stream(OptionInstance.class.getDeclaredFields())
+                    .filter(field -> field.getType().getSimpleName().equals("ValueSet"))
+                    .findFirst()
+                    .orElseThrow(() -> new NoSuchFieldException("OptionInstance.ValueSet field"));
+            Field codecField = Arrays.stream(OptionInstance.class.getDeclaredFields())
+                    .filter(field -> Codec.class.isAssignableFrom(field.getType()))
+                    .findFirst()
+                    .orElseThrow(() -> new NoSuchFieldException("OptionInstance codec field"));
+            valuesField.setAccessible(true);
+            codecField.setAccessible(true);
+            valuesField.set(option, range);
+            codecField.set(option, range.codec());
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            throw new IllegalStateException("Unable to extend Minecraft chunk-distance option bounds", failure);
+        }
+
         int current = option.get();
         option.set(Math.max(PLANET_ESSENTIALS$MIN_DISTANCE,
                 Math.min(PLANET_ESSENTIALS$MAX_DISTANCE, current)));

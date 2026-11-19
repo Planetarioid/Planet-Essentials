@@ -5,7 +5,6 @@
   "client": [
     "MinecraftMixin",
     "OptionsMixin",
-    "PrismOptionInstanceAccessor",
     "SectionCompilerMixin",
     "RenderSectionRegionAccessor"
   ],
