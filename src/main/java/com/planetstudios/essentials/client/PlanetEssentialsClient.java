@@ -87,8 +87,8 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
     }
 
     /**
-     * Explicit opt-in GPU path. Decoding remains asynchronous; only the final
-     * DynamicTexture creation/registration is dispatched to Minecraft's thread.
+     * Explicit opt-in GPU path. Decoding and mip generation remain CPU-side;
+     * the final GpuTexture allocation, upload, and registration run on the client thread.
      */
     public static CompletableFuture<Identifier> decodeAndRegisterTexture(Identifier resourceId) {
         return decodeTexture(resourceId).thenCompose(decoded ->

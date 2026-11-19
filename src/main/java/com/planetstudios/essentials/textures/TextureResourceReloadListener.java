@@ -13,7 +13,7 @@ import java.util.Objects;
 
 /**
  * Client resource reload bridge for texture discovery and decoded-pixel
- * invalidation. Texture upload and rendering remain vanilla at this stage.
+ * invalidation. It also cancels and releases textures owned by the opt-in GPU adapter.
  */
 public final class TextureResourceReloadListener implements SimpleSynchronousResourceReloadListener {
     public static final Identifier LISTENER_ID = Identifier.fromNamespaceAndPath(
