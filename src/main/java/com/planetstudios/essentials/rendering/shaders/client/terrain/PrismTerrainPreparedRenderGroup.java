@@ -50,20 +50,31 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         this.externallyBoundUniforms = Set.copyOf(externallyBoundUniforms);
         this.draws = List.copyOf(draws);
         if (this.draws.isEmpty()) throw new IllegalArgumentException("Prepared render group cannot be empty");
-        int requiredIndexCount = 0;
+        java.util.ArrayList<Integer> vertexCounts = new java.util.ArrayList<>(this.draws.size());
         for (Draw draw : this.draws) {
             if (draw.descriptor().layer() != layer) {
                 throw new IllegalArgumentException("Prepared draw belongs to a different terrain layer");
             }
-            int drawIndexCount = PrismTerrainVanillaPassSnapshot.IndexBufferInput
-                    .indexCountForQuadVertexCount(draw.mesh().vertexCount());
-            requiredIndexCount = Math.max(requiredIndexCount, drawIndexCount);
+            vertexCounts.add(draw.mesh().vertexCount());
         }
+        int requiredIndexCount = requiredIndexCount(vertexCounts);
         if (indexBuffer.indexCount() < requiredIndexCount
                 || !PrismTerrainDrawExecutor.indexRangeFits(indexBuffer.buffer().size(),
                         indexBuffer.type(), 0, requiredIndexCount)) {
             throw new IllegalArgumentException("Prepared sequential index buffer cannot cover every draw in the group");
         }
+    }
+
+    static int requiredIndexCount(List<Integer> vertexCounts) {
+        Objects.requireNonNull(vertexCounts, "vertexCounts");
+        if (vertexCounts.isEmpty()) throw new IllegalArgumentException("Prepared draw group cannot be empty");
+        int maximum = 0;
+        for (int vertexCount : vertexCounts) {
+            if (vertexCount <= 0) throw new IllegalArgumentException("Prepared terrain mesh must contain vertices");
+            maximum = Math.max(maximum,
+                    PrismTerrainVanillaPassSnapshot.IndexBufferInput.indexCountForQuadVertexCount(vertexCount));
+        }
+        return maximum;
     }
 
     public ClientLevel level() { return level; }
