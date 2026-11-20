@@ -11,7 +11,7 @@ class ConfigMigratorTest {
   assertEquals("default",migrated.get("activeProfile").getAsString());
   assertTrue(migrated.get("featurePriorityOverrides").isJsonObject());
   assertTrue(migrated.get("performanceMonitoringEnabled").getAsBoolean());
-  assertTrue(migrated.get("eventCollectionEnabled").getAsBoolean());
+  assertFalse(migrated.get("eventCollectionEnabled").getAsBoolean());
   assertFalse(migrated.get("diagnosticsEnabled").getAsBoolean());
   assertFalse(migrated.get("shadersEnabled").getAsBoolean());
   assertEquals("",migrated.get("selectedShaderPack").getAsString());
