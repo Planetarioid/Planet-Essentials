@@ -79,10 +79,24 @@ public final class EssentialsScreen extends Screen {
                 infoY += 13;
             }
         }
+        var session = EssentialsRuntime.sessionStatistics().snapshot();
+        String sessionLabel = session.active() ? "SESSION" : "LAST SESSION";
+        graphics.drawCenteredString(font, sessionLabel + "  " + formatDuration(session.elapsedSeconds())
+                        + "     DISTANCE  " + String.format(java.util.Locale.ROOT, "%.1f blocks",
+                        session.distanceTravelled()),
+                center, infoY, 0xFF8FAFC8);
+        infoY += 13;
         graphics.drawCenteredString(font, "SETTINGS REGISTERED  " + SettingsRegistry.all().size(),
                 center, infoY, 0xFF71869D);
         graphics.drawCenteredString(font, "PLANET STUDIOS  •  CLIENT CONFIGURATION",
                 center, height - 14, 0xFF52677F);
+    }
+
+    private static String formatDuration(long totalSeconds) {
+        long hours = totalSeconds / 3600L;
+        long minutes = (totalSeconds % 3600L) / 60L;
+        long seconds = totalSeconds % 60L;
+        return String.format(java.util.Locale.ROOT, "%02d:%02d:%02d", hours, minutes, seconds);
     }
 
     private static String formatBytes(long bytes) {
