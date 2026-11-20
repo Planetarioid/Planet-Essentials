@@ -31,7 +31,8 @@ public final class FeaturePriorityScreen extends Screen {
   service.select(cap,candidates.get((at+1)%candidates.size()).featureId());
  }
  @Override public void render(GuiGraphics g,int mx,int my,float tick){
-  renderBackground(g,mx,my,tick);super.render(g,mx,my,tick);g.drawCenteredString(font,title,width/2,height/4,0xFFFFFF);
+  // The screen framework renders the background before this method; do not request another blur.
+  super.render(g,mx,my,tick);g.drawCenteredString(font,title,width/2,height/4,0xFFFFFF);
   if(!service.isAvailable())g.drawCenteredString(font,"Planet Lib is not installed.",width/2,height/2,0xAAAAAA);
   else if(resolutions.isEmpty())g.drawCenteredString(font,"No feature providers have registered yet.",width/2,height/2,0xAAAAAA);
   else{

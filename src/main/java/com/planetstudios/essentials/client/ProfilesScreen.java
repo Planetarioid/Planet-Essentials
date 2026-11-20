@@ -92,7 +92,8 @@ public final class ProfilesScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        // Screen.renderWithTooltipAndSubtitles renders the background before this method.
+        // Rendering it again here would request a second blur in the same frame.
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(font, title, width / 2, height / 4, 0xFFFFFF);
         graphics.drawCenteredString(font, "Selected: " + selected, width / 2, height / 4 + 164, 0xD8E8FF);
