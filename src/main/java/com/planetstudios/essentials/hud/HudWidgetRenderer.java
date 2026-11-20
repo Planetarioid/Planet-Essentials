@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.hud;
 
 import com.planetstudios.essentials.EssentialsRuntime;
+import com.planetstudios.essentials.client.InputTelemetry;
 import com.planetstudios.essentials.combat.ComboCounter;
 import com.planetstudios.essentials.config.HudWidgetPlacement;
 import net.minecraft.client.Minecraft;
@@ -34,6 +35,13 @@ public final class HudWidgetRenderer {
                     return value == 0 ? null : new Content("COMBO " + value,
                             value > 0 ? 0xFF70E090 : 0xFFFF7070);
                 });
+        register(new HudWidgetDefinition("planet_essentials:keystrokes",
+                HudAnchor.BOTTOM_LEFT, 6, -30, 80, true),
+                client -> new Content(InputTelemetry.keystrokes(client), 0xFFFFFFFF));
+        register(new HudWidgetDefinition("planet_essentials:cps",
+                HudAnchor.BOTTOM_RIGHT, -6, -30, 79, true),
+                client -> new Content("CPS  L " + InputTelemetry.leftCps()
+                        + "  R " + InputTelemetry.rightCps(), 0xFFFFFFFF));
     }
 
     private HudWidgetRenderer() {}
@@ -53,9 +61,6 @@ public final class HudWidgetRenderer {
         for (HudWidgetDefinition definition : HudWidgetRegistry.snapshot()) {
             Function<Minecraft, Content> provider = CONTENT.get(definition.id());
             if (provider == null) continue;
-            Content content = provider.apply(client);
-            if (content == null) continue;
-
             HudWidgetPlacement placement = EssentialsRuntime.config().hudWidgetPlacements.get(definition.id());
             if (placement == null) {
                 placement = new HudWidgetPlacement(definition.defaultAnchor(),
@@ -63,6 +68,8 @@ public final class HudWidgetRenderer {
                         definition.enabledByDefault());
             }
             if (!placement.enabled) continue;
+            Content content = provider.apply(client);
+            if (content == null) continue;
 
             int width = client.font.width(content.text());
             int height = client.font.lineHeight;
@@ -74,7 +81,6 @@ public final class HudWidgetRenderer {
         }
     }
 
-    /** Shared state entry point for confirmed combat event listeners. */
     public static ComboCounter comboCounter() {
         return COMBO_COUNTER;
     }

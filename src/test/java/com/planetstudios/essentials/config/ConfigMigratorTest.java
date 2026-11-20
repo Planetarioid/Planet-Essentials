@@ -17,13 +17,16 @@ class ConfigMigratorTest {
   assertEquals("",migrated.get("selectedShaderPack").getAsString());
   assertTrue(migrated.get("comboCounterEnabled").getAsBoolean());
   assertTrue(migrated.get("fpsHudEnabled").getAsBoolean());
+  assertTrue(migrated.get("automaticServerProfilesEnabled").getAsBoolean());
+  assertTrue(migrated.get("serverProfileMappings").isJsonObject());
  }
- @Test void migratesSchemaFiveToComboAndHudSettings()throws Exception{
+ @Test void migratesSchemaFiveToComboHudAndServerSettings()throws Exception{
   JsonObject old=new JsonObject();old.addProperty("schemaVersion",5);
   JsonObject migrated=ConfigMigrator.migrate(old);
-  assertEquals(7,migrated.get("schemaVersion").getAsInt());
+  assertEquals(8,migrated.get("schemaVersion").getAsInt());
   assertTrue(migrated.get("comboCounterEnabled").getAsBoolean());
   assertTrue(migrated.get("fpsHudEnabled").getAsBoolean());
+  assertTrue(migrated.get("automaticServerProfilesEnabled").getAsBoolean());
  }
  @Test void preservesExistingSettingsDuringMigration()throws Exception{
   JsonObject old=new JsonObject();old.addProperty("schemaVersion",6);

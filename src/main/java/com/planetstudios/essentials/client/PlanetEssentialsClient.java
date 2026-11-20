@@ -1,9 +1,9 @@
 package com.planetstudios.essentials.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
-import com.planetstudios.essentials.PlanetEssentials;
-import com.planetstudios.essentials.hud.HudWidgetRenderer;
 import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
+import com.planetstudios.essentials.hud.HudWidgetRenderer;
+import com.planetstudios.essentials.config.ServerProfileManager;
 import com.planetstudios.essentials.textures.TextureAssetCatalog;
 import com.planetstudios.essentials.textures.TextureDecodeLimits;
 import com.planetstudios.essentials.textures.TextureDecodeService;
@@ -58,6 +58,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             EssentialsRuntime.sessionStatistics().start();
             HudWidgetRenderer.comboCounter().reset();
+            ServerProfileManager.applyForCurrentServer(client);
             record(DiagnosticEventType.WORLD_JOINED);
         });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {

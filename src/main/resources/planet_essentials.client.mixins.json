@@ -5,6 +5,7 @@
   "client": [
     "MinecraftMixin",
     "GuiMixin",
+    "MouseHandlerMixin",
     "ClientPacketListenerMixin",
     "OptionsMixin"
   ],

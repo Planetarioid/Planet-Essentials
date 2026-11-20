@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
+import com.planetstudios.essentials.config.HudPresetCodec;
 import com.planetstudios.essentials.config.HudWidgetPlacement;
 import com.planetstudios.essentials.hud.HudAnchor;
 import com.planetstudios.essentials.hud.HudWidgetDefinition;
@@ -13,11 +14,12 @@ import net.minecraft.network.chat.Component;
 
 import java.util.List;
 
-/** Functional first-pass editor for registered Planet HUD widgets. */
+/** HUD editor with live layout preview and portable clipboard presets. */
 public final class HudEditorScreen extends Screen {
     private static final int ACCENT = 0xFF55C7FF;
     private final Screen parent;
     private List<HudWidgetDefinition> widgets = List.of();
+    private String presetStatus = "HUD presets are portable JSON. Copy, then share the clipboard text.";
 
     public HudEditorScreen(Screen parent) {
         super(Component.literal("HUD EDITOR"));
@@ -27,7 +29,7 @@ public final class HudEditorScreen extends Screen {
     @Override
     protected void init() {
         widgets = HudWidgetRegistry.snapshot();
-        int rowY = 58;
+        int rowY = 72;
         int left = Math.max(8, (width - 366) / 2);
         for (HudWidgetDefinition definition : widgets) {
             final String id = definition.id();
@@ -55,6 +57,23 @@ public final class HudEditorScreen extends Screen {
             }).bounds(left + 324, rowY, 42, 20).build());
             rowY += 27;
         }
+
+        addRenderableWidget(Button.builder(Component.literal("COPY HUD PRESET"), button -> {
+            minecraft.keyboardHandler.setClipboard(HudPresetCodec.encode(
+                    EssentialsRuntime.config().hudWidgetPlacements));
+            presetStatus = "HUD preset copied to clipboard.";
+        }).bounds(width / 2 - 200, height - 62, 130, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("PASTE HUD PRESET"), button -> {
+            try {
+                var imported = HudPresetCodec.decode(minecraft.keyboardHandler.getClipboard());
+                EssentialsRuntime.config().hudWidgetPlacements.putAll(imported);
+                EssentialsRuntime.save();
+                presetStatus = "Imported " + imported.size() + " HUD widget placements.";
+                refreshEditor();
+            } catch (RuntimeException exception) {
+                presetStatus = exception.getMessage();
+            }
+        }).bounds(width / 2 - 65, height - 62, 130, 20).build());
 
         addRenderableWidget(Button.builder(Component.literal("RESET ALL"), button -> {
             EssentialsRuntime.config().hudWidgetPlacements.clear();
@@ -121,6 +140,7 @@ public final class HudEditorScreen extends Screen {
         graphics.drawCenteredString(font, title, width / 2, 24, 0xFFF4FAFF);
         graphics.drawCenteredString(font, "Toggle widgets, cycle anchors, and move them in 5-pixel steps.",
                 width / 2, 39, 0xFF8FAFC8);
+        graphics.drawCenteredString(font, presetStatus, width / 2, 53, 0xFF8FAFC8);
 
         int previewWidth = Math.min(330, width - 32);
         int previewHeight = 92;

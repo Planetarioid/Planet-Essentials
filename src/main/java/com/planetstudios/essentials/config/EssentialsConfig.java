@@ -8,20 +8,16 @@ public final class EssentialsConfig {
  public int schemaVersion=ConfigMigrator.CURRENT_SCHEMA;
  public boolean diagnosticsEnabled=true, showPerformanceScreen=true;
  public boolean fpsHudEnabled=true;
- /** Toggle for the red crosshair when a player is a valid melee target. */
  public boolean crosshairTargetIndicator=true;
- /** Toggle for the signed positive/negative combat streak HUD widget. */
  public boolean comboCounterEnabled=true;
- /** Per-widget HUD visibility, anchor, and offsets. */
  public Map<String,HudWidgetPlacement> hudWidgetPlacements=new TreeMap<>();
- /** Event collection is opt-in to keep background diagnostic work out of normal play. */
  public boolean performanceMonitoringEnabled=false, eventCollectionEnabled=false;
- /** Prism remains opt-in and its experimental render hooks are not installed in this build. */
  public boolean shadersEnabled=false;
  public String selectedShaderPack="planet:default";
  public int diagnosticsHistorySize=120;
  public String activeProfile="default";
- /** Capability ID to explicitly preferred FeatureId (modId:featureId). */
+ public boolean automaticServerProfilesEnabled=true;
+ public Map<String,String> serverProfileMappings=new TreeMap<>();
  public Map<String,String> featurePriorityOverrides=new TreeMap<>();
  public void validate(){
   schemaVersion=ConfigMigrator.CURRENT_SCHEMA;
@@ -38,6 +34,13 @@ public final class EssentialsConfig {
    }
   });
   hudWidgetPlacements=validPlacements;
+  if(serverProfileMappings==null)serverProfileMappings=new TreeMap<>();
+  Map<String,String> validServerMappings=new TreeMap<>();
+  serverProfileMappings.forEach((server,profile)->{
+   if(server!=null&&server.length()<=255&&server.matches("[a-z0-9._:\\[\\]-]+")
+     &&profile!=null&&profile.matches("[a-z0-9_-]{1,32}")) validServerMappings.put(server,profile);
+  });
+  serverProfileMappings=validServerMappings;
   if(featurePriorityOverrides==null) featurePriorityOverrides=new TreeMap<>();
   Map<String,String> valid=new TreeMap<>();
   featurePriorityOverrides.forEach((cap,feature)->{
