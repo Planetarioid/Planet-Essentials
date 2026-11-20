@@ -8,7 +8,7 @@ import com.planetstudios.essentials.session.SessionStatistics;
 import net.fabricmc.loader.api.FabricLoader;
 /** Process-wide Essentials state shared by common and client entrypoints. */
 public final class EssentialsRuntime {
- private static EssentialsConfig config;
+ private static volatile EssentialsConfig config;
  private static PerformanceMonitor performanceMonitor;
  private static DiagnosticsEventCollector diagnosticsEventCollector;
  private static ProfileStore profileStore;
@@ -22,7 +22,7 @@ public final class EssentialsRuntime {
   sessionStatistics=new SessionStatistics();
   if(!profileStore.listProfiles().contains("default"))profileStore.save("default",config);
  }
- public static synchronized EssentialsConfig config(){ensureInitialized();return config;}
+ public static EssentialsConfig config(){ensureInitialized();return config;}
  public static synchronized PerformanceMonitor performance(){ensureInitialized();return performanceMonitor;}
  public static synchronized DiagnosticsEventCollector diagnosticEvents(){ensureInitialized();return diagnosticsEventCollector;}
  public static synchronized ProfileStore profiles(){ensureInitialized();return profileStore;}

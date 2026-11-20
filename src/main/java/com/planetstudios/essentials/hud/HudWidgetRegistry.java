@@ -11,6 +11,7 @@ import java.util.Optional;
 /** Process-wide registry for Planet-owned and explicitly integrated HUD widgets. */
 public final class HudWidgetRegistry {
     private static final Map<String, HudWidgetDefinition> WIDGETS = new LinkedHashMap<>();
+    private static volatile List<HudWidgetDefinition> orderedSnapshot = List.of();
 
     private HudWidgetRegistry() {}
 
@@ -19,6 +20,7 @@ public final class HudWidgetRegistry {
         if (WIDGETS.putIfAbsent(definition.id(), definition) != null) {
             throw new IllegalStateException("Duplicate HUD widget id: " + definition.id());
         }
+        refreshSnapshot();
     }
 
     public static synchronized Optional<HudWidgetDefinition> find(String id) {
@@ -26,11 +28,15 @@ public final class HudWidgetRegistry {
     }
 
     /** Returns an immutable snapshot ordered by descending priority, then stable id. */
-    public static synchronized List<HudWidgetDefinition> snapshot() {
+    public static List<HudWidgetDefinition> snapshot() {
+        return orderedSnapshot;
+    }
+
+    private static void refreshSnapshot() {
         List<HudWidgetDefinition> result = new ArrayList<>(WIDGETS.values());
         result.sort(Comparator.comparingInt(HudWidgetDefinition::priority).reversed()
                 .thenComparing(HudWidgetDefinition::id));
-        return List.copyOf(result);
+        orderedSnapshot = List.copyOf(result);
     }
 
     public static synchronized Collection<String> ids() {
@@ -40,5 +46,6 @@ public final class HudWidgetRegistry {
     /** Test-only isolation hook; production code should register widgets once at startup. */
     static synchronized void clearForTests() {
         WIDGETS.clear();
+        orderedSnapshot = List.of();
     }
 }

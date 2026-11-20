@@ -26,6 +26,8 @@ public final class ShaderPackRuntime {
     private static final MinecraftShaderBackend BACKEND = new MinecraftShaderBackend();
     private volatile static ResourceManager lastResourceManager;
     private static volatile String compiledPackId = "";
+    /** Fast-path publication flag; avoids allocating a pipeline snapshot from render/worker hooks. */
+    private static volatile boolean compiledProgramsAvailable;
     private static volatile PrismPostProcessGraph compiledPostProcessGraph;
 
     private ShaderPackRuntime() {}
@@ -57,6 +59,7 @@ public final class ShaderPackRuntime {
             if (published) {
                 compiledPackId = selectedId;
                 compiledPostProcessGraph = postProcessGraph;
+                compiledProgramsAvailable = !programs.isEmpty();
                 PrismTerrainVanillaPipelineCache.clear();
                 LOGGER.info("Prism compiled and published {} shader programs for pack '{}' (generation {}).",
                         PIPELINE.snapshot().programCount(), compiledPackId, PIPELINE.snapshot().generation());
@@ -78,9 +81,9 @@ public final class ShaderPackRuntime {
 
     public static boolean isEnabled() {
         var config = EssentialsRuntime.config();
-        return config.shadersEnabled && !config.selectedShaderPack.isBlank()
-                && config.selectedShaderPack.equals(compiledPackId)
-                && PIPELINE.snapshot().programCount() > 0;
+        return compiledProgramsAvailable && config.shadersEnabled
+                && !config.selectedShaderPack.isBlank()
+                && config.selectedShaderPack.equals(compiledPackId);
     }
 
     public static String selectedPackId() { return EssentialsRuntime.config().selectedShaderPack; }
@@ -125,6 +128,7 @@ public final class ShaderPackRuntime {
         CATALOG.clear();
         lastResourceManager = null;
         compiledPackId = "";
+        compiledProgramsAvailable = false;
         compiledPostProcessGraph = null;
         if (RenderSystem.isOnRenderThread()) {
             PrismTerrainVanillaPipelineCache.clear();
