@@ -19,30 +19,41 @@ The pack manifest declares these uniform buffers:
   metadata remain associated with the correct draw.
 - `Projection`: Minecraft's captured projection matrix.
 - `Fog`: Minecraft's captured fog color and distance parameters.
+- `Globals`: Minecraft's global block, including `UseRgss`. Camera block
+  position and fractional offset are not needed by this vertex shader because
+  PrismSection already carries the equivalent camera-relative section origin.
 
 The shader declares `Sampler0` for the block atlas and `Sampler2` for the
 lightmap. These are rebound from the captured vanilla pass. It consumes the
 Prism V1 36-byte vertex format: Position, UV0, RGBA color, packed light (UV2),
-overlay (UV1), normal, and one padding byte. The shader uses position, UV0,
-color, and packed light; the unused overlay and normal attributes remain in
-the stable vertex layout for future shader versions.
+overlay (UV1), normal, and one padding byte. Overlay and normal remain present
+for stable format compatibility; vanilla terrain's shader does not consume
+them.
 
-The vertex transform adds the camera-relative section origin to section-local
-positions, then applies the captured ChunkSection model-view matrix and
-Projection matrix. Fragment processing samples the atlas and lightmap, applies
-the captured chunk-visibility fade, then applies spherical environmental fog
-and cylindrical render-distance fog.
+## Minecraft 1.21.11 terrain shading
 
-Vanilla terrain pipelines supply different `ALPHA_CUTOUT` values for solid,
-cutout, translucent, and tripwire layers. The pipeline clone merges the exact
-vanilla shader defines with the selected Prism program before compiling each
-layer variant, preserving those thresholds instead of hard-coding one value.
+The vertex stage uses the camera-relative section origin plus section-local
+vertex position, then applies the original per-draw ModelViewMat and Projection
+matrix. It computes spherical and cylindrical fog distances from the same
+camera-relative position and applies the vanilla lightmap coordinate transform.
+
+The fragment stage reproduces Minecraft's atlas sampling path: nearest
+sampling with screen derivatives and the optional four-tap rotated-grid
+super-sampling path selected by the captured `Globals.UseRgss` value. It uses
+the captured atlas dimensions from `ChunkSection.TextureSize`, applies the
+vanilla chunk-visibility fade, preserves the exact per-layer
+`ALPHA_CUTOUT` define, and applies Minecraft's spherical/environmental and
+cylindrical/render-distance fog calculation.
+
+The Prism vertex format retains overlay and normal attributes even though the
+vanilla terrain shader does not consume them. This leaves the V1 mesh contract
+stable for future shader variants.
 
 A selected pack opts into replacement only by declaring the exact program ID
 `planet:terrain`. That program must be Terrain V1 and declare the required
-`PrismSection`, `ChunkSection`, and `Projection` blocks. It may use captured
-vanilla default blocks and the supported `Sampler0` and `Sampler2` samplers.
-Unknown or unavailable bindings fail closed.
+`PrismSection`, `ChunkSection`, and `Projection` blocks. The bundled pack
+also declares `Fog` and `Globals`, plus the supported `Sampler0` and
+`Sampler2` samplers. Unknown or unavailable bindings fail closed.
 
 ## Render-group behavior
 
@@ -58,22 +69,6 @@ has already started and then fails, vanilla is suppressed to avoid drawing the
 already-submitted terrain a second time. That failure is logged and must be
 treated as an incomplete frame requiring investigation.
 
-This is an opt-in execution path, not a claim of visual parity on all devices.
-The shader sources are bundled and compiled through the normal pack reload
-transaction, but actual GPU compilation, graphics-backend behavior, and
-in-world visual parity still require Minecraft runtime testing.
-
-## Current safety gate
-
-The replacement hook executes before vanilla creates its RenderPass. The
-viewport and scissor values are captured from the verified Minecraft 1.21.11
-pass-creation behavior: the OpenGL command encoder binds the target and sets
-the viewport to the color attachment dimensions, while each new GlRenderPass
-starts with scissoring disabled. Vanilla's terrain renderGroup does not alter
-that per-pass scissor state. The replacement pass is created through the same
-command-encoder API, so these defaults are reproduced rather than inferred from
-the previously active global GL state.
-
-This closes the viewport/scissor capture gap for the supported vanilla OpenGL
-backend. It does not establish visual parity by itself; in-game validation is
-still required.
+The shader source is matched to the Minecraft 1.21.11 terrain shader behavior,
+but actual GPU compilation and in-world visual parity still require testing in
+Minecraft on the target graphics backend.

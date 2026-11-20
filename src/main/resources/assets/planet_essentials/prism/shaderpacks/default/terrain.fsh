@@ -17,43 +17,108 @@ layout(std140) uniform Fog {
     float FogCloudsEnd;
 };
 
+layout(std140) uniform Globals {
+    ivec3 CameraBlockPos;
+    vec3 CameraOffset;
+    vec2 ScreenSize;
+    float GlintAlpha;
+    float GameTime;
+    int MenuBlurRadius;
+    int UseRgss;
+};
+
 uniform sampler2D Sampler0;
 
-in vec3 TerrainCameraPosition;
-in vec4 TerrainVertexColor;
-in vec2 TerrainAtlasUv;
+in float sphericalVertexDistance;
+in float cylindricalVertexDistance;
+in vec4 vertexColor;
+in vec2 texCoord0;
 
 out vec4 fragColor;
 
-float terrainLinearFog(float distanceValue, float fogStart, float fogEnd) {
-    if (distanceValue <= fogStart) return 0.0;
-    if (distanceValue >= fogEnd) return 1.0;
-    float span = max(fogEnd - fogStart, 0.0001);
-    return clamp((distanceValue - fogStart) / span, 0.0, 1.0);
+vec4 sampleNearest(sampler2D source, vec2 uv, vec2 pixelSize,
+        vec2 du, vec2 dv, vec2 texelScreenSize) {
+    vec2 uvTexelCoords = uv / pixelSize;
+    vec2 texelCenter = round(uvTexelCoords) - 0.5;
+    vec2 texelOffset = uvTexelCoords - texelCenter;
+    texelOffset = (texelOffset - 0.5) * pixelSize / texelScreenSize + 0.5;
+    texelOffset = clamp(texelOffset, 0.0, 1.0);
+    uv = (texelCenter + texelOffset) * pixelSize;
+    return textureGrad(source, uv, du, dv);
+}
+
+vec4 sampleNearest(sampler2D source, vec2 uv, vec2 pixelSize) {
+    vec2 du = dFdx(uv);
+    vec2 dv = dFdy(uv);
+    vec2 texelScreenSize = sqrt(du * du + dv * dv);
+    return sampleNearest(source, uv, pixelSize, du, dv, texelScreenSize);
+}
+
+// Minecraft 1.21.11's rotated-grid super-sampling path.
+vec4 sampleRGSS(sampler2D source, vec2 uv, vec2 pixelSize) {
+    vec2 du = dFdx(uv);
+    vec2 dv = dFdy(uv);
+    vec2 texelScreenSize = sqrt(du * du + dv * dv);
+    float maxTexelSize = max(texelScreenSize.x, texelScreenSize.y);
+    float minPixelSize = min(pixelSize.x, pixelSize.y);
+    float transitionStart = minPixelSize;
+    float transitionEnd = minPixelSize * 2.0;
+    float blendFactor = smoothstep(transitionStart, transitionEnd, maxTexelSize);
+
+    float duLength = length(du);
+    float dvLength = length(dv);
+    float minDerivative = min(duLength, dvLength);
+    float maxDerivative = max(duLength, dvLength);
+    float effectiveDerivative = sqrt(minDerivative * maxDerivative);
+    float mipLevelExact = max(0.0, log2(effectiveDerivative / minPixelSize));
+    float mipLevelLow = floor(mipLevelExact);
+    float mipLevelHigh = mipLevelLow + 1.0;
+    float mipBlend = fract(mipLevelExact);
+
+    const vec2 offsets[4] = vec2[](
+        vec2(0.125, 0.375),
+        vec2(-0.125, -0.375),
+        vec2(0.375, -0.125),
+        vec2(-0.375, 0.125)
+    );
+
+    vec4 rgssColorLow = vec4(0.0);
+    vec4 rgssColorHigh = vec4(0.0);
+    for (int i = 0; i < 4; ++i) {
+        vec2 sampleUV = uv + offsets[i] * pixelSize;
+        rgssColorLow += textureLod(source, sampleUV, mipLevelLow);
+        rgssColorHigh += textureLod(source, sampleUV, mipLevelHigh);
+    }
+    rgssColorLow *= 0.25;
+    rgssColorHigh *= 0.25;
+    vec4 rgssColor = mix(rgssColorLow, rgssColorHigh, mipBlend);
+    vec4 nearestColor = sampleNearest(source, uv, pixelSize, du, dv, texelScreenSize);
+    return mix(nearestColor, rgssColor, blendFactor);
+}
+
+float linearFogValue(float vertexDistance, float fogStart, float fogEnd) {
+    if (vertexDistance <= fogStart) return 0.0;
+    if (vertexDistance >= fogEnd) return 1.0;
+    return (vertexDistance - fogStart) / (fogEnd - fogStart);
+}
+
+vec4 applyMinecraftFog(vec4 inColor) {
+    float fogValue = max(
+        linearFogValue(sphericalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd),
+        linearFogValue(cylindricalVertexDistance, FogRenderDistanceStart, FogRenderDistanceEnd)
+    );
+    return vec4(mix(inColor.rgb, FogColor.rgb, fogValue * FogColor.a), inColor.a);
 }
 
 void main() {
-    vec4 atlasColor = texture(Sampler0, TerrainAtlasUv);
-    vec4 color = atlasColor * TerrainVertexColor;
-
-    // Minecraft supplies a per-layer alpha threshold as ALPHA_CUTOUT.
-    // The pipeline clone carries that exact vanilla define into this shader.
+    vec2 pixelSize = 1.0 / vec2(TextureSize);
+    vec4 atlasColor = UseRgss == 1
+        ? sampleRGSS(Sampler0, texCoord0, pixelSize)
+        : sampleNearest(Sampler0, texCoord0, pixelSize);
+    vec4 color = atlasColor * vertexColor;
+    color = mix(FogColor * vec4(1.0, 1.0, 1.0, color.a), color, ChunkVisibility);
 #ifdef ALPHA_CUTOUT
     if (color.a < ALPHA_CUTOUT) discard;
 #endif
-
-    color = mix(FogColor * vec4(1.0, 1.0, 1.0, color.a),
-                color, clamp(ChunkVisibility, 0.0, 1.0));
-
-    float sphericalDistance = length(TerrainCameraPosition);
-    float cylindricalDistance = max(length(TerrainCameraPosition.xz),
-                                     abs(TerrainCameraPosition.y));
-    float environmentalFog = terrainLinearFog(
-            sphericalDistance, FogEnvironmentalStart, FogEnvironmentalEnd);
-    float renderDistanceFog = terrainLinearFog(
-            cylindricalDistance, FogRenderDistanceStart, FogRenderDistanceEnd);
-    float fogAmount = max(environmentalFog, renderDistanceFog);
-
-    color.rgb = mix(color.rgb, FogColor.rgb, clamp(fogAmount * FogColor.a, 0.0, 1.0));
-    fragColor = color;
+    fragColor = applyMinecraftFog(color);
 }

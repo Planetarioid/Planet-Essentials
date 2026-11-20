@@ -1,11 +1,14 @@
 package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.planetstudios.essentials.rendering.shaders.ShaderPackLoader;
+import com.planetstudios.essentials.rendering.shaders.ShaderStage;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,13 +32,21 @@ class PrismTerrainShaderPackTest {
         var terrain = loaded.programs().getFirst();
         assertEquals("planet:terrain", terrain.id());
         assertTrue(terrain.bindings().uniformBuffers().containsAll(
-                java.util.List.of("PrismSection", "ChunkSection", "Projection", "Fog")));
-        assertEquals(java.util.Set.of("Sampler0", "Sampler2"),
-                java.util.Set.copyOf(terrain.bindings().samplers()));
-        assertTrue(terrain.source(com.planetstudios.essentials.rendering.shaders.ShaderStage.VERTEX)
-                .contains("SectionOrigin.xyz + Position"));
-        assertTrue(terrain.source(com.planetstudios.essentials.rendering.shaders.ShaderStage.FRAGMENT)
-                .contains("#ifdef ALPHA_CUTOUT"));
+                List.of("PrismSection", "ChunkSection", "Projection", "Fog", "Globals")));
+        assertEquals(Set.of("Sampler0", "Sampler2"), Set.copyOf(terrain.bindings().samplers()));
+
+        String vertex = terrain.source(ShaderStage.VERTEX);
+        String fragment = terrain.source(ShaderStage.FRAGMENT);
+        assertTrue(vertex.contains("Position + SectionOrigin.xyz"));
+        assertTrue(vertex.contains("minecraft_sample_lightmap"));
+        assertTrue(fragment.contains("UseRgss == 1"));
+        assertTrue(fragment.contains("sampleRGSS"));
+        assertTrue(fragment.contains("sampleNearest"));
+        assertTrue(fragment.contains("TextureSize"));
+        assertTrue(fragment.contains("ChunkVisibility"));
+        assertTrue(fragment.contains("#ifdef ALPHA_CUTOUT"));
+        assertTrue(fragment.contains("FogEnvironmentalStart"));
+        assertTrue(fragment.contains("FogRenderDistanceStart"));
     }
 
     private static String read(String path) throws IOException {

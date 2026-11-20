@@ -17,31 +17,25 @@ layout(std140) uniform Projection {
 
 uniform sampler2D Sampler2;
 
-in vec3 Position;
-in vec4 Color;
-in vec2 UV0;
-in ivec2 UV2;
-in vec3 Normal;
+out float sphericalVertexDistance;
+out float cylindricalVertexDistance;
+out vec4 vertexColor;
+out vec2 texCoord0;
 
-out vec3 TerrainCameraPosition;
-out vec4 TerrainVertexColor;
-out vec2 TerrainAtlasUv;
-
-vec4 sampleTerrainLightmap(sampler2D lightmap, ivec2 packedLightUv) {
-    vec2 uv = vec2(packedLightUv) / 256.0 + vec2(0.5 / 16.0);
-    uv = clamp(uv, vec2(0.5 / 16.0), vec2(15.5 / 16.0));
-    return texture(lightmap, uv);
+vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
+    return texture(lightMap, clamp((vec2(uv) / 256.0) + 0.5 / 16.0,
+            vec2(0.5 / 16.0), vec2(15.5 / 16.0)));
 }
 
 void main() {
-    // PrismSection is the section's world origin relative to the camera.
-    // The captured ChunkSection matrix supplies the same camera rotation used
-    // by Minecraft's terrain pipeline, without reintroducing world translation.
-    vec3 cameraRelativePosition = SectionOrigin.xyz + Position;
-    vec4 viewPosition = ModelViewMat * vec4(cameraRelativePosition, 1.0);
+    // SectionOrigin is already the section's world origin relative to the camera.
+    // This is equivalent to vanilla's Position + (ChunkPosition - CameraBlockPos)
+    // + CameraOffset, while avoiding a second source of camera-position state.
+    vec3 pos = Position + SectionOrigin.xyz;
+    gl_Position = ProjMat * ModelViewMat * vec4(pos, 1.0);
 
-    gl_Position = ProjMat * viewPosition;
-    TerrainCameraPosition = cameraRelativePosition;
-    TerrainVertexColor = Color * sampleTerrainLightmap(Sampler2, UV2);
-    TerrainAtlasUv = UV0;
+    sphericalVertexDistance = length(pos);
+    cylindricalVertexDistance = max(length(pos.xz), abs(pos.y));
+    vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
+    texCoord0 = UV0;
 }

@@ -14,7 +14,8 @@
         "PrismSection",
         "ChunkSection",
         "Projection",
-        "Fog"
+        "Fog",
+        "Globals"
       ],
       "samplers": [
         "Sampler0",
