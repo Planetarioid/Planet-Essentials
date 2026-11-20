@@ -24,22 +24,22 @@ public final class EssentialsScreen extends Screen {
         int buttonWidth = Math.min(320, width - 48);
         int left = center - buttonWidth / 2;
 
-        // Keep every original Minecraft option available from the Planet hub.
-        // This opens the real vanilla options tree, including all native child pages.
         addRenderableWidget(clientButton("Minecraft Settings", left, top + 46,
                 buttonWidth, () -> VanillaOptionsAccess.open(minecraft, this)));
-        addRenderableWidget(clientButton("Performance  /  Diagnostics", left, top + 73,
+        addRenderableWidget(clientButton("Planet Experience  /  HUD & Appearance", left, top + 73,
+                buttonWidth, () -> minecraft.setScreen(new ExperienceSettingsScreen(this))));
+        addRenderableWidget(clientButton("Performance  /  Diagnostics", left, top + 100,
                 buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "diagnostics"))));
-        addRenderableWidget(clientButton("System Controls", left, top + 100,
+        addRenderableWidget(clientButton("System Controls", left, top + 127,
                 buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "systems"))));
-        addRenderableWidget(clientButton("Prism  /  Shader Engine", left, top + 127,
+        addRenderableWidget(clientButton("Prism  /  Shader Engine", left, top + 154,
                 buttonWidth, () -> minecraft.setScreen(new ShaderSettingsScreen(this))));
-        addRenderableWidget(clientButton("Configuration Profiles", left, top + 154,
+        addRenderableWidget(clientButton("Configuration Profiles", left, top + 181,
                 buttonWidth, () -> minecraft.setScreen(new ProfilesScreen(this))));
-        addRenderableWidget(clientButton("Feature Priorities", left, top + 181,
+        addRenderableWidget(clientButton("Feature Priorities", left, top + 208,
                 buttonWidth, () -> minecraft.setScreen(new FeaturePriorityScreen(this))));
         addRenderableWidget(Button.builder(Component.literal("CLOSE"), button -> onClose())
-                .bounds(center - 70, top + 215, 140, 20).build());
+                .bounds(center - 70, top + 242, 140, 20).build());
     }
 
     private Button clientButton(String label, int x, int y, int width, Runnable action) {
@@ -49,27 +49,42 @@ public final class EssentialsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Screen.renderWithTooltipAndSubtitles renders the background before this method.
-        // Rendering it again attempts to enqueue a second blur pass in the same frame.
         int center = width / 2;
         int top = Math.max(72, height / 4 - 12);
         int panelWidth = Math.min(380, width - 24);
         int left = center - panelWidth / 2;
+        var experience = EssentialsRuntime.config().experience;
+        int accent = switch (experience.accent) {
+            case "violet" -> 0xFFB69CFF;
+            case "lime" -> 0xFF9BE36B;
+            case "amber" -> 0xFFFFC66D;
+            case "rose" -> 0xFFFF91B5;
+            default -> 0xFF55C7FF;
+        };
+        int base = switch (experience.theme) {
+            case "obsidian" -> 0xEE090B10;
+            case "light" -> 0xEEF0F3F7;
+            default -> 0xEE111B2B;
+        };
+        int textColor = "light".equals(experience.theme) ? 0xFF17202B : 0xFFF4FAFF;
+        int alpha = Math.round(experience.panelOpacity * 255.0f);
+        int panel = (alpha << 24) | (base & 0x00FFFFFF);
         graphics.fill(0, 0, width, height, 0xB5080D18);
-        graphics.fill(left, top - 26, left + panelWidth, top + 246, 0xEE111B2B);
-        graphics.fill(left, top - 26, left + panelWidth, top - 23, 0xFF55C7FF);
-        graphics.fill(left + 12, top + 28, left + panelWidth - 12, top + 29, 0x553F91B5);
-        graphics.drawCenteredString(font, title, center, top - 12, 0xFFF4FAFF);
-        graphics.drawCenteredString(font, "MINECRAFT  /  SYSTEMS  /  RENDERING", center, top + 8, 0xFF8FAFC8);
+        graphics.fill(left, top - 26, left + panelWidth, top + 272, panel);
+        graphics.fill(left, top - 26, left + panelWidth, top - 23, accent);
+        graphics.fill(left + 12, top + 28, left + panelWidth - 12, top + 29, accent & 0x55FFFFFF);
+        graphics.drawCenteredString(font, title, center, top - 12, textColor);
+        graphics.drawCenteredString(font, "MINECRAFT  /  SYSTEMS  /  RENDERING", center, top + 8,
+                "light".equals(experience.theme) ? 0xFF536579 : 0xFF8FAFC8);
         super.render(graphics, mouseX, mouseY, partialTick);
 
         var config = EssentialsRuntime.config();
-        int infoY = top + 254;
+        int infoY = top + 280;
         if (config.showPerformanceScreen && config.diagnosticsEnabled && config.performanceMonitoringEnabled) {
             PerformanceMonitor monitor = EssentialsRuntime.performance();
             graphics.drawCenteredString(font, "FPS  " + monitor.latestFps()
                     + "     AVG  " + String.format(java.util.Locale.ROOT, "%.1f", monitor.averageFps()),
-                    center, infoY, 0xFFD8E8FF);
+                    center, infoY, textColor);
             infoY += 13;
         }
         graphics.drawCenteredString(font, "SETTINGS REGISTERED  " + SettingsRegistry.all().size(),

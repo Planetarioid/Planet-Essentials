@@ -3,7 +3,7 @@ import com.google.gson.JsonObject;
 import java.io.IOException;
 /** Explicit, forward-only configuration schema migrations. */
 public final class ConfigMigrator {
- public static final int CURRENT_SCHEMA=5;
+ public static final int CURRENT_SCHEMA=6;
  private ConfigMigrator(){}
  public static JsonObject migrate(JsonObject json)throws IOException{
   JsonObject migrated=json.deepCopy(); int version;
@@ -21,7 +21,12 @@ public final class ConfigMigrator {
   if(version<5){
    if(!migrated.has("shadersEnabled"))migrated.addProperty("shadersEnabled",false);
    if(!migrated.has("selectedShaderPack")||migrated.get("selectedShaderPack").isJsonNull())migrated.addProperty("selectedShaderPack","");
-   migrated.addProperty("schemaVersion",5);
+   migrated.addProperty("schemaVersion",5);version=5;
+  }
+  if(version<6){
+   if(!migrated.has("experience")||migrated.get("experience").isJsonNull())
+    migrated.add("experience",new JsonObject());
+   migrated.addProperty("schemaVersion",6);
   }
   return migrated;
  }
