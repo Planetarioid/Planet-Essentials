@@ -3,7 +3,7 @@ package com.planetstudios.essentials.rendering.shaders.client;
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.PlanetEssentials;
 import com.planetstudios.essentials.rendering.shaders.PrismPostProcessGraph;
-import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVanillaPipelineCache;
+import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVanillaPipelineCache;\nimport com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainReplacementRuntime;
 import com.planetstudios.essentials.rendering.shaders.ShaderBindingLayout;
 import com.planetstudios.essentials.rendering.shaders.ShaderPackCatalog;
 import com.planetstudios.essentials.rendering.shaders.ShaderPackLoader;
