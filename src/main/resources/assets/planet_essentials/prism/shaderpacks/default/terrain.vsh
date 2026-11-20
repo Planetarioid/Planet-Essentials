@@ -1,5 +1,14 @@
 #version 330
 
+// Minecraft 1.21.11 RenderPipeline does not inject vertex attributes.
+// Declare every input used by the Terrain V1 shader explicitly.
+in vec3 Position;
+in vec4 Color;
+in vec2 UV0;
+in ivec2 UV2;
+in ivec2 UV1;
+in vec3 Normal;
+
 layout(std140) uniform PrismSection {
     vec4 SectionOrigin;
 };
