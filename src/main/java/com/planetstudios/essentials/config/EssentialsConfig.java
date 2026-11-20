@@ -19,6 +19,8 @@ public final class EssentialsConfig {
  public boolean automaticServerProfilesEnabled=true;
  public Map<String,String> serverProfileMappings=new TreeMap<>();
  public String performancePreset="balanced";
+ public Map<String,ResourcePackCategoryConfig> resourcePackCategoryOverrides=new TreeMap<>();
+ public boolean smartChunkSchedulerEnabled=true;
  public Map<String,String> featurePriorityOverrides=new TreeMap<>();
  public void validate(){
   schemaVersion=ConfigMigrator.CURRENT_SCHEMA;
@@ -43,6 +45,15 @@ public final class EssentialsConfig {
      &&profile!=null&&profile.matches("[a-z0-9_-]{1,32}")) validServerMappings.put(server,profile);
   });
   serverProfileMappings=validServerMappings;
+  if(resourcePackCategoryOverrides==null)resourcePackCategoryOverrides=new TreeMap<>();
+  Map<String,ResourcePackCategoryConfig> validPackOverrides=new TreeMap<>();
+  resourcePackCategoryOverrides.forEach((packId,categories)->{
+   if(packId!=null&&packId.length()<=255&&packId.matches("[A-Za-z0-9_.:/-]+")&&categories!=null){
+    categories.validate();
+    if(!categories.allEnabled()) validPackOverrides.put(packId,categories);
+   }
+  });
+  resourcePackCategoryOverrides=validPackOverrides;
   if(featurePriorityOverrides==null) featurePriorityOverrides=new TreeMap<>();
   Map<String,String> valid=new TreeMap<>();
   featurePriorityOverrides.forEach((cap,feature)->{

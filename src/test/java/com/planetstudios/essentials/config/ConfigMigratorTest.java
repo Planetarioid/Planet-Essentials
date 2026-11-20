@@ -20,15 +20,19 @@ class ConfigMigratorTest {
   assertTrue(migrated.get("automaticServerProfilesEnabled").getAsBoolean());
   assertTrue(migrated.get("serverProfileMappings").isJsonObject());
   assertEquals("balanced",migrated.get("performancePreset").getAsString());
+  assertTrue(migrated.get("resourcePackCategoryOverrides").isJsonObject());
+  assertTrue(migrated.get("smartChunkSchedulerEnabled").getAsBoolean());
  }
  @Test void migratesSchemaFiveToAllNewSettings()throws Exception{
   JsonObject old=new JsonObject();old.addProperty("schemaVersion",5);
   JsonObject migrated=ConfigMigrator.migrate(old);
-  assertEquals(9,migrated.get("schemaVersion").getAsInt());
+  assertEquals(11,migrated.get("schemaVersion").getAsInt());
   assertTrue(migrated.get("comboCounterEnabled").getAsBoolean());
   assertTrue(migrated.get("fpsHudEnabled").getAsBoolean());
   assertTrue(migrated.get("automaticServerProfilesEnabled").getAsBoolean());
   assertEquals("balanced",migrated.get("performancePreset").getAsString());
+  assertTrue(migrated.get("resourcePackCategoryOverrides").isJsonObject());
+  assertTrue(migrated.get("smartChunkSchedulerEnabled").getAsBoolean());
  }
  @Test void preservesExistingSettingsDuringMigration()throws Exception{
   JsonObject old=new JsonObject();old.addProperty("schemaVersion",6);

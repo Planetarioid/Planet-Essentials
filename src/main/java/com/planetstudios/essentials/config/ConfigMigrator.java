@@ -3,7 +3,7 @@ import com.google.gson.JsonObject;
 import java.io.IOException;
 /** Explicit, forward-only configuration schema migrations. */
 public final class ConfigMigrator {
- public static final int CURRENT_SCHEMA=9;
+ public static final int CURRENT_SCHEMA=11;
  private ConfigMigrator() {}
  public static JsonObject migrate(JsonObject json)throws IOException{
   JsonObject migrated=json.deepCopy(); int version;
@@ -39,7 +39,16 @@ public final class ConfigMigrator {
   }
   if(version<9){
    if(!migrated.has("performancePreset"))migrated.addProperty("performancePreset","balanced");
-   migrated.addProperty("schemaVersion",9);
+   migrated.addProperty("schemaVersion",9);version=9;
+  }
+  if(version<10){
+   if(!migrated.has("resourcePackCategoryOverrides")||migrated.get("resourcePackCategoryOverrides").isJsonNull())
+    migrated.add("resourcePackCategoryOverrides",new JsonObject());
+   migrated.addProperty("schemaVersion",10);version=10;
+  }
+  if(version<11){
+   if(!migrated.has("smartChunkSchedulerEnabled"))migrated.addProperty("smartChunkSchedulerEnabled",true);
+   migrated.addProperty("schemaVersion",11);
   }
   return migrated;
  }

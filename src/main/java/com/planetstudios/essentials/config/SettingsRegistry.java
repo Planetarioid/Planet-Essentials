@@ -25,13 +25,17 @@ public final class SettingsRegistry {
                 SettingDefinition.Kind.INTEGER, 120, value -> value != null && value >= 20 && value <= 1200,
                 config -> config.diagnosticsHistorySize, (config, value) -> config.diagnosticsHistorySize = value));
         register(new SettingDefinition<>("systems.performance_monitoring", "systems",
-                "FPS monitoring", "Independently enable or disable FPS sampling.",
+                "FPS monitoring", "Independently enable or disable FPS and frame-time sampling.",
                 SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
                 config -> config.performanceMonitoringEnabled, (config, value) -> config.performanceMonitoringEnabled = value));
         register(new SettingDefinition<>("systems.event_collection", "systems",
                 "Event collection", "Independently enable or disable local lifecycle and slow-tick event collection.",
                 SettingDefinition.Kind.BOOLEAN, false, value -> value != null,
                 config -> config.eventCollectionEnabled, (config, value) -> config.eventCollectionEnabled = value));
+        register(new SettingDefinition<>("systems.smart_chunk_scheduler", "systems",
+                "Smart chunk scheduler", "Prioritize nearby forward-facing chunk rebuilds while preserving vanilla recompile fairness.",
+                SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
+                config -> config.smartChunkSchedulerEnabled, (config, value) -> config.smartChunkSchedulerEnabled = value));
         register(new SettingDefinition<>("hud.fps", "hud",
                 "FPS HUD", "Show the live FPS widget during gameplay.",
                 SettingDefinition.Kind.BOOLEAN, true, value -> value != null,

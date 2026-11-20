@@ -6,6 +6,10 @@
     "MinecraftMixin",
     "GuiMixin",
     "MouseHandlerMixin",
+    "PackRepositoryMixin",
+    "CompileTaskDynamicQueueAccessor",
+    "CompileTaskAccessor",
+    "ChunkTaskQueueMixin",
     "ClientPacketListenerMixin",
     "OptionsMixin"
   ],

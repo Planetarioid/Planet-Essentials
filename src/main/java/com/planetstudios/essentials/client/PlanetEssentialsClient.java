@@ -4,6 +4,7 @@ import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
 import com.planetstudios.essentials.hud.HudWidgetRenderer;
 import com.planetstudios.essentials.config.ServerProfileManager;
+import com.planetstudios.essentials.rendering.ChunkSchedulingPolicy;
 import com.planetstudios.essentials.textures.TextureAssetCatalog;
 import com.planetstudios.essentials.textures.TextureDecodeLimits;
 import com.planetstudios.essentials.textures.TextureDecodeService;
@@ -86,6 +87,10 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
             }
 
             if (client.player != null && client.level != null) {
+                ChunkSchedulingPolicy.updateLook(
+                        client.player.getLookAngle().x,
+                        client.player.getLookAngle().y,
+                        client.player.getLookAngle().z);
                 EssentialsRuntime.sessionStatistics().recordPlayerTick(
                         client.player.getX(), client.player.getY(), client.player.getZ());
             }

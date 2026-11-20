@@ -34,7 +34,7 @@ public final class EssentialsScreen extends Screen {
                 () -> minecraft.setScreen(new HudEditorScreen(this)));
         addCard("KEYBINDS", "Find and manage controls", contentLeft, top + 62, cardWidth,
                 () -> minecraft.setScreen(new KeybindSearchScreen(this)));
-        addCard("PERFORMANCE", "Frame pacing, FPS graph and benchmarks", contentLeft + cardWidth + gap, top + 62, cardWidth,
+        addCard("PERFORMANCE", "Frame pacing, presets and benchmarks", contentLeft + cardWidth + gap, top + 62, cardWidth,
                 () -> minecraft.setScreen(new PerformanceScreen(this)));
         addCard("SYSTEMS", "Client-side optimizations", contentLeft, top + 124, cardWidth,
                 () -> minecraft.setScreen(new SettingsCategoryScreen(this, "systems")));
@@ -46,8 +46,9 @@ public final class EssentialsScreen extends Screen {
                 () -> minecraft.setScreen(new FeaturePriorityScreen(this)));
         addCard("COMBAT", "PvP interface features", contentLeft, top + 248, cardWidth,
                 () -> minecraft.setScreen(new SettingsCategoryScreen(this, "combat")));
-        addRenderableWidget(Button.builder(Component.literal("EXIT SPACE CLIENT"), button -> onClose())
-                .bounds(contentLeft + cardWidth + gap, top + 248, cardWidth, 42).build());
+        addCard("RESOURCE PACKS", "Classic order + advanced asset filters",
+                contentLeft + cardWidth + gap, top + 248, cardWidth,
+                () -> minecraft.setScreen(new ResourcePackSettingsScreen(this)));
     }
 
     private void addCard(String title, String subtitle, int x, int y, int cardWidth, Runnable action) {
