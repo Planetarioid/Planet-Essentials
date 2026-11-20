@@ -36,8 +36,10 @@ public final class EssentialsScreen extends Screen {
                 buttonWidth, () -> minecraft.setScreen(new ProfilesScreen(this))));
         addRenderableWidget(clientButton("Feature Priorities", left, top + 181,
                 buttonWidth, () -> minecraft.setScreen(new FeaturePriorityScreen(this))));
+        addRenderableWidget(clientButton("Combat Features", left, top + 208,
+                buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "combat"))));
         addRenderableWidget(Button.builder(Component.literal("CLOSE"), button -> onClose())
-                .bounds(center - 70, top + 215, 140, 20).build());
+                .bounds(center - 70, top + 237, 140, 20).build());
     }
 
     private Button clientButton(String label, int x, int y, int width, Runnable action) {

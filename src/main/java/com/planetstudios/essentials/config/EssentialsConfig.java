@@ -5,6 +5,8 @@ import java.util.TreeMap;
 public final class EssentialsConfig {
  public int schemaVersion=ConfigMigrator.CURRENT_SCHEMA;
  public boolean diagnosticsEnabled=true, showPerformanceScreen=true;
+ /** Toggle for the red crosshair when a player is a valid melee target. */
+ public boolean crosshairTargetIndicator=true;
  /** Independent switches for active diagnostics subsystems; diagnosticsEnabled is the master switch. */
  public boolean performanceMonitoringEnabled=true, eventCollectionEnabled=true;
  /** Prism remains opt-in; the bundled pack is preselected but shadersEnabled stays false. */

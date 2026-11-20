@@ -16,7 +16,7 @@ public final class SettingsCategoryScreen extends Screen {
  private final Screen parent;private final String category;
  private String exportStatus="Export creates a local file only when requested.";
  public SettingsCategoryScreen(Screen parent,String category){
-  super(Component.literal("systems".equals(category)?"System Controls":"Performance & Diagnostics"));
+  super(Component.literal("systems".equals(category)?"System Controls":("combat".equals(category)?"Combat Features":"Performance & Diagnostics")));
   this.parent=parent;this.category=category;
  }
  @Override protected void init(){
@@ -56,6 +56,9 @@ public final class SettingsCategoryScreen extends Screen {
   if("systems".equals(category)){
    g.drawCenteredString(font,"Each subsystem switch is independent; Diagnostics remains the master switch.",width/2,y,0xAAAAAA);
    g.drawCenteredString(font,"Disabled systems stop collecting new data. Existing history is preserved.",width/2,y+16,0xAAAAAA);
+  }else if("combat".equals(category)){
+   g.drawCenteredString(font,"Visual only. This feature never attacks automatically.",width/2,y,0xAAAAAA);
+   g.drawCenteredString(font,"Uses the current crosshair target and vanilla melee range.",width/2,y+16,0xAAAAAA);
   }else{
    if(EssentialsRuntime.config().diagnosticsEnabled&&EssentialsRuntime.config().eventCollectionEnabled){
     var collector=EssentialsRuntime.diagnosticEvents();DiagnosticEvent latest=collector.latest();

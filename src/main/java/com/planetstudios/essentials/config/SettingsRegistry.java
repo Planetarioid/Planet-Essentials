@@ -32,6 +32,10 @@ public final class SettingsRegistry {
                 "Event collection", "Independently enable or disable local lifecycle and slow-tick event collection.",
                 SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
                 config -> config.eventCollectionEnabled, (config, value) -> config.eventCollectionEnabled = value));
+        register(new SettingDefinition<>("combat.crosshair_target_indicator", "combat",
+                "Player hit indicator", "Turn the crosshair red when a player is directly targeted and inside melee attack range.",
+                SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
+                config -> config.crosshairTargetIndicator, (config, value) -> config.crosshairTargetIndicator = value));
         register(new SettingDefinition<>("shaders.enabled", "shaders",
                 "Enable Prism shaders", "Enable the selected Prism shader pack. Turning this off immediately bypasses Prism effects.",
                 SettingDefinition.Kind.BOOLEAN, false, value -> value != null,

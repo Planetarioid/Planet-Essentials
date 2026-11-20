@@ -7,10 +7,12 @@ class SettingsRegistryTest {
   assertTrue(SettingsRegistry.find("systems.performance_monitoring").isPresent());
   assertTrue(SettingsRegistry.find("systems.event_collection").isPresent());
   assertTrue(SettingsRegistry.find("shaders.enabled").isPresent());
-  assertEquals(6,SettingsRegistry.all().size());
+  assertTrue(SettingsRegistry.find("combat.crosshair_target_indicator").isPresent());
+  assertEquals(7,SettingsRegistry.all().size());
   assertEquals(3,SettingsRegistry.inCategory("diagnostics").size());
   assertEquals(2,SettingsRegistry.inCategory("systems").size());
   assertEquals(1,SettingsRegistry.inCategory("shaders").size());
+  assertEquals(1,SettingsRegistry.inCategory("combat").size());
  }
  @Test void settingWritesAreTypeAndRangeChecked(){
   EssentialsConfig config=new EssentialsConfig();
@@ -27,6 +29,14 @@ class SettingsRegistryTest {
   SettingsRegistry.find("systems.event_collection").orElseThrow().set(config,false);
   assertFalse(config.performanceMonitoringEnabled);
   assertFalse(config.eventCollectionEnabled);
+ }
+ @Test void playerHitIndicatorIsEnabledByDefaultAndToggleable(){
+  EssentialsConfig config=new EssentialsConfig();
+  assertTrue(config.crosshairTargetIndicator);
+  SettingsRegistry.find("combat.crosshair_target_indicator").orElseThrow().set(config,false);
+  assertFalse(config.crosshairTargetIndicator);
+  SettingsRegistry.find("combat.crosshair_target_indicator").orElseThrow().set(config,true);
+  assertTrue(config.crosshairTargetIndicator);
  }
  @Test void shaderSwitchIsOptInAndIndependentFromDiagnostics(){
   EssentialsConfig config=new EssentialsConfig();
