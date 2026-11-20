@@ -71,6 +71,12 @@ public final class EssentialsScreen extends Screen {
                     + "     AVG  " + String.format(java.util.Locale.ROOT, "%.1f", monitor.averageFps()),
                     center, infoY, textColor);
             infoY += 13;
+            var latestSample = monitor.snapshot().isEmpty() ? null : monitor.snapshot().get(monitor.snapshot().size() - 1);
+            if (latestSample != null) {
+                graphics.drawCenteredString(font, "JAVA HEAP  " + formatBytes(latestSample.usedHeapBytes())
+                        + " / " + formatBytes(latestSample.maxHeapBytes()), center, infoY, 0xFF8FAFC8);
+                infoY += 13;
+            }
         }
         graphics.drawCenteredString(font, "SETTINGS REGISTERED  " + SettingsRegistry.all().size(),
                 center, infoY, 0xFF71869D);

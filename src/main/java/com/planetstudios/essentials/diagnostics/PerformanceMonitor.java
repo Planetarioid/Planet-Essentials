@@ -24,7 +24,10 @@ public final class PerformanceMonitor {
 
     public synchronized void recordFps(int fps) {
         if (samples.size() == capacity) samples.removeFirst();
-        samples.addLast(new PerformanceSample(Instant.now(), fps));
+        Runtime runtime = Runtime.getRuntime();
+        long usedHeap = runtime.totalMemory() - runtime.freeMemory();
+        long maxHeap = runtime.maxMemory();
+        samples.addLast(new PerformanceSample(Instant.now(), fps, usedHeap, maxHeap));
     }
 
     public synchronized List<PerformanceSample> snapshot() {

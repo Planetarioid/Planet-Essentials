@@ -41,6 +41,8 @@ public final class DiagnosticsExporter {
                 JsonObject item = new JsonObject();
                 item.addProperty("timestamp", sample.timestamp().toString());
                 item.addProperty("framesPerSecond", sample.framesPerSecond());
+                item.addProperty("usedHeapBytes", sample.usedHeapBytes());
+                item.addProperty("maxHeapBytes", sample.maxHeapBytes());
                 performance.add(item);
             }
             root.add("performanceSamples", performance);

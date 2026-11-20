@@ -13,6 +13,10 @@ class PerformanceMonitorTest {
         assertEquals(20, monitor.sampleCount());
         assertEquals(25, monitor.latestFps());
         assertEquals(15.5, monitor.averageFps(), 0.0001);
+        var latest = monitor.snapshot().getLast();
+        assertTrue(latest.usedHeapBytes() >= 0);
+        assertTrue(latest.maxHeapBytes() >= latest.usedHeapBytes());
+        assertTrue(latest.heapUsageRatio() >= 0.0 && latest.heapUsageRatio() <= 1.0);
     }
 
     @Test

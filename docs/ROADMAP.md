@@ -108,7 +108,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 ### Hardware and performance HUD
 - [ ] CPU utilization and temperature where supported by the operating system/hardware
 - [ ] GPU utilization and temperature where supported by the driver/platform
-- [ ] System RAM and Minecraft Java heap usage
+- [x] Minecraft Java heap usage sampled with FPS and included in explicit local diagnostics exports\n- [ ] System RAM usage
 - [ ] Optional live performance graphs for FPS, frame time, CPU/GPU, memory, and network latency
 - [ ] Clear unavailable-sensor states; never invent or imply unsupported sensor readings
 - [ ] HUD widget visibility, positioning, scale, opacity, colors, formatting, and compact/graph modes
