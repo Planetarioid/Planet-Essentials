@@ -2,6 +2,9 @@ package com.planetstudios.essentials.rendering;
 
 /** Camera-aware scoring for pending chunk rebuilds; look direction is published on the client tick. */
 public final class ChunkSchedulingPolicy {
+    /** Keep the per-poll scan bounded so prioritization cannot become an O(queue-size) hot path. */
+    private static final int MAX_TASKS_PER_POLL = 32;
+
     public record Look(double x, double y, double z) {}
     private static volatile Look look = new Look(0.0, 0.0, 1.0);
 
@@ -15,6 +18,11 @@ public final class ChunkSchedulingPolicy {
 
     public static Look look() {
         return look;
+    }
+
+    /** Returns the maximum number of queue entries that may be inspected during one poll. */
+    static int maxTasksToInspect(int pendingTasks) {
+        return Math.max(0, Math.min(pendingTasks, MAX_TASKS_PER_POLL));
     }
 
     /**

@@ -7,14 +7,13 @@ import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-/** Adds camera-facing priority to vanilla's existing distance and recompile-quota scheduler. */
+/** Adds bounded camera-facing priority to vanilla's existing distance and recompile-quota scheduler. */
 @Mixin(CompileTaskDynamicQueue.class)
 public abstract class ChunkTaskQueueMixin {
     @Inject(method = "poll", at = @At("HEAD"), cancellable = true)
@@ -26,13 +25,18 @@ public abstract class ChunkTaskQueueMixin {
         List<SectionRenderDispatcher.RenderSection.CompileTask> tasks = queue.spaceClient$getTasks();
         ChunkSchedulingPolicy.Look look = ChunkSchedulingPolicy.look();
 
+        int scanLimit = ChunkSchedulingPolicy.maxTasksToInspect(tasks.size());
+        int inspected = 0;
         int normalIndex = -1;
         int recompileIndex = -1;
         double normalScore = Double.MAX_VALUE;
         double recompileScore = Double.MAX_VALUE;
 
-        for (int i = 0; i < tasks.size();) {
+        // Vanilla already orders this dynamic queue. Only refine its front window,
+        // rather than scanning every queued task on every poll.
+        for (int i = 0; i < tasks.size() && inspected < scanLimit;) {
             SectionRenderDispatcher.RenderSection.CompileTask task = tasks.get(i);
+            inspected++;
             if (((CompileTaskAccessor) (Object) task).spaceClient$isCancelled().get()) {
                 tasks.remove(i);
                 continue;
@@ -58,7 +62,7 @@ public abstract class ChunkTaskQueueMixin {
         boolean hasRecompile = recompileIndex >= 0;
         boolean hasNormal = normalIndex >= 0;
         if (!hasRecompile && !hasNormal) {
-            callback.setReturnValue(null);
+            // Let vanilla handle an empty inspected window or any remaining queue entries.
             return;
         }
 

@@ -23,4 +23,10 @@ class ChunkSchedulingPolicyTest {
         ChunkSchedulingPolicy.updateLook(0, 0, 4);
         assertEquals(1.0, ChunkSchedulingPolicy.look().z(), 0.00001);
     }
+
+    @Test void boundsQueueInspectionPerPoll() {
+        assertEquals(0, ChunkSchedulingPolicy.maxTasksToInspect(0));
+        assertEquals(12, ChunkSchedulingPolicy.maxTasksToInspect(12));
+        assertEquals(32, ChunkSchedulingPolicy.maxTasksToInspect(10_000));
+    }
 }
