@@ -15,15 +15,17 @@ class BottleneckAnalyzerTest {
     }
 
     @Test void detectsHighHeapPressure() {
-        var sample = new PerformanceSample(Instant.now(), 60, 900, 1000);
+        List<PerformanceSample> samples = new ArrayList<>();
+        for (int i = 0; i < 5; i++) samples.add(new PerformanceSample(Instant.now(), 60, 900, 1000));
         assertEquals(BottleneckAnalyzer.Finding.MEMORY_PRESSURE,
-                BottleneckAnalyzer.analyze(List.of(sample), List.of(), List.of()));
+                BottleneckAnalyzer.analyze(samples, List.of(), List.of()));
     }
 
     @Test void detectsUnevenFramePacing() {
         List<FrameTimeSample> frames = new ArrayList<>();
-        for (int i = 0; i < 29; i++) frames.add(new FrameTimeSample(Instant.now(), 16_000_000));
+        for (int i = 0; i < 28; i++) frames.add(new FrameTimeSample(Instant.now(), 16_000_000));
         frames.add(new FrameTimeSample(Instant.now(), 80_000_000));
+        frames.add(new FrameTimeSample(Instant.now(), 90_000_000));
         assertEquals(BottleneckAnalyzer.Finding.FRAME_PACING,
                 BottleneckAnalyzer.analyze(List.of(), frames, List.of()));
     }
