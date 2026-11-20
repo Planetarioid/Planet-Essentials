@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "id": "planet:default",
+  "name": "Planet Default",
+  "version": "1.0.0",
+  "description": "Planet's built-in Minecraft 1.21.11 Terrain V1 shader.",
+  "author": "Planet Studios",
+  "programs": [
+    {
+      "id": "planet:terrain",
+      "vertex": "planet_essentials:prism/shaderpacks/default/terrain.vsh",
+      "fragment": "planet_essentials:prism/shaderpacks/default/terrain.fsh",
+      "uniformBuffers": [
+        "PrismSection",
+        "ChunkSection",
+        "Projection",
+        "Fog"
+      ],
+      "samplers": [
+        "Sampler0",
+        "Sampler2"
+      ]
+    }
+  ]
+}

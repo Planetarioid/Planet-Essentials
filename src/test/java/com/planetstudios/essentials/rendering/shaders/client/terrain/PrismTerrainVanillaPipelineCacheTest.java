@@ -6,6 +6,7 @@ import com.mojang.blaze3d.platform.PolygonMode;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.client.renderer.ShaderDefines;
 import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
@@ -73,5 +74,24 @@ class PrismTerrainVanillaPipelineCacheTest {
 
         assertSame(PrismTerrainVertexLayout.minecraftVertexFormat(), clone.getVertexFormat());
         assertNotSame(DefaultVertexFormat.BLOCK, clone.getVertexFormat());
+    }
+
+    @Test
+    void clonedPipelinePreservesVanillaAlphaCutoutDefines() {
+        RenderPipeline shader = pipeline("test/prism-defines", PrismTerrainVertexLayout.minecraftVertexFormat(),
+                DepthTestFunction.LEQUAL_DEPTH_TEST, PolygonMode.FILL, true, true, true, true);
+        RenderPipeline vanilla = RenderPipeline.builder(new RenderPipeline.Snippet[0])
+                .withLocation(Identifier.fromNamespaceAndPath("planet_essentials", "test/vanilla-cutout"))
+                .withVertexShader(Identifier.fromNamespaceAndPath("planet_essentials", "test/vanilla-cutout.vsh"))
+                .withFragmentShader(Identifier.fromNamespaceAndPath("planet_essentials", "test/vanilla-cutout.fsh"))
+                .withShaderDefine("ALPHA_CUTOUT", 0.5f)
+                .withVertexFormat(DefaultVertexFormat.BLOCK, VertexFormat.Mode.QUADS)
+                .build();
+
+        RenderPipeline clone = PrismTerrainVanillaPipelineCache.buildForVanillaState(
+                shader, PrismTerrainVanillaPassSnapshot.PipelineState.capture(vanilla),
+                vanilla.getShaderDefines());
+
+        assertEquals("0.5", clone.getShaderDefines().values().get("ALPHA_CUTOUT"));
     }
 }

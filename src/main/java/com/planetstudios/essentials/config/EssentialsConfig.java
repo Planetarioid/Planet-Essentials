@@ -7,9 +7,9 @@ public final class EssentialsConfig {
  public boolean diagnosticsEnabled=true, showPerformanceScreen=true;
  /** Independent switches for active diagnostics subsystems; diagnosticsEnabled is the master switch. */
  public boolean performanceMonitoringEnabled=true, eventCollectionEnabled=true;
- /** Prism is opt-in: vanilla rendering remains active until the user enables a selected pack. */
+ /** Prism remains opt-in; the bundled pack is preselected but shadersEnabled stays false. */
  public boolean shadersEnabled=false;
- public String selectedShaderPack="";
+ public String selectedShaderPack="planet:default";
  public int diagnosticsHistorySize=120;
  public String activeProfile="default";
  /** Capability ID to explicitly preferred FeatureId (modId:featureId). */

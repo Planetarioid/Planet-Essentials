@@ -8,7 +8,6 @@ import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrai
 import com.planetstudios.essentials.rendering.shaders.ShaderBindingLayout;
 import com.planetstudios.essentials.rendering.shaders.ShaderPackCatalog;
 import com.planetstudios.essentials.rendering.shaders.ShaderPackLoader;
-import com.planetstudios.essentials.rendering.shaders.ShaderProgramSpec;
 import com.planetstudios.essentials.rendering.shaders.ShaderPipeline;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -17,7 +16,7 @@ import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /** Client-side Prism shader pack discovery and transactional GPU compilation lifecycle. */
 public final class ShaderPackRuntime {
@@ -25,11 +24,9 @@ public final class ShaderPackRuntime {
     private static final ShaderPackCatalog CATALOG = new ShaderPackCatalog();
     private static final ShaderPipeline PIPELINE = new ShaderPipeline();
     private static final MinecraftShaderBackend BACKEND = new MinecraftShaderBackend();
-    private static final Map<String, TerrainProgramEntry> TERRAIN_PROGRAMS = new ConcurrentHashMap<>();
-    private static volatile ResourceManager lastResourceManager;
+    private volatile static ResourceManager lastResourceManager;
     private static volatile String compiledPackId = "";
     private static volatile PrismPostProcessGraph compiledPostProcessGraph;
-    private static volatile Map<String, ShaderProgramSpec> selectedProgramSpecs = Map.of();
 
     private ShaderPackRuntime() {}
 
@@ -44,7 +41,8 @@ public final class ShaderPackRuntime {
         ShaderPackLoader.LoadedPack selectedPack = packs.stream()
                 .filter(pack -> pack.manifest().id().equals(selectedId))
                 .findFirst().orElse(null);
-        List<ShaderProgramSpec> programs = selectedPack == null ? List.of() : selectedPack.programs();
+        List<com.planetstudios.essentials.rendering.shaders.ShaderProgramSpec> programs =
+                selectedPack == null ? List.of() : selectedPack.programs();
         PrismPostProcessGraph postProcessGraph = selectedPack == null
                 ? null : selectedPack.manifest().resolvedWorldPostProcessGraph();
 
@@ -59,9 +57,6 @@ public final class ShaderPackRuntime {
             if (published) {
                 compiledPackId = selectedId;
                 compiledPostProcessGraph = postProcessGraph;
-                selectedProgramSpecs = programs.stream().collect(
-                        java.util.stream.Collectors.toUnmodifiableMap(ShaderProgramSpec::id, spec -> spec));
-                TERRAIN_PROGRAMS.clear();
                 PrismTerrainVanillaPipelineCache.clear();
                 LOGGER.info("Prism compiled and published {} shader programs for pack '{}' (generation {}).",
                         PIPELINE.snapshot().programCount(), compiledPackId, PIPELINE.snapshot().generation());
@@ -94,25 +89,14 @@ public final class ShaderPackRuntime {
         return isEnabled() ? compiledPostProcessGraph : null;
     }
 
-    /** Compiles and caches a selected-pack program using Prism's full terrain V1 vertex format. */
+    /** Returns the selected pack's already-compiled Terrain V1 program, if it declares one. */
     public static MinecraftShaderBackend.MinecraftCompiledProgram terrainProgram(String programId) {
         RenderSystem.assertOnRenderThread();
-        if (!isEnabled() || programId == null) return null;
-        ShaderProgramSpec spec = selectedProgramSpecs.get(programId);
-        if (spec == null) return null;
-        long generation = PIPELINE.snapshot().generation();
-        TerrainProgramEntry cached = TERRAIN_PROGRAMS.get(programId);
-        if (cached != null && cached.generation == generation
-                && cached.sourceHash.equals(spec.contentHash())) return cached.program;
-        try {
-            var compiled = BACKEND.compileTerrain(spec);
-            TERRAIN_PROGRAMS.put(programId, new TerrainProgramEntry(generation, spec.contentHash(), compiled));
-            return compiled;
-        } catch (Exception failure) {
-            TERRAIN_PROGRAMS.remove(programId);
-            LOGGER.error("Prism terrain program '{}' failed V1 compilation", programId, failure);
-            return null;
-        }
+        if (!isEnabled() || !MinecraftShaderBackend.TERRAIN_V1_PROGRAM_ID.equals(programId)) return null;
+        var program = PIPELINE.program(programId);
+        if (program instanceof MinecraftShaderBackend.MinecraftCompiledProgram minecraftProgram
+                && minecraftProgram.supportsTerrainV1()) return minecraftProgram;
+        return null;
     }
 
     public static ShaderBindingLayout programBindings(String programId) {
@@ -142,8 +126,6 @@ public final class ShaderPackRuntime {
         lastResourceManager = null;
         compiledPackId = "";
         compiledPostProcessGraph = null;
-        selectedProgramSpecs = Map.of();
-        TERRAIN_PROGRAMS.clear();
         if (RenderSystem.isOnRenderThread()) {
             PrismTerrainVanillaPipelineCache.clear();
             PIPELINE.close();
@@ -154,7 +136,4 @@ public final class ShaderPackRuntime {
             });
         }
     }
-
-    private record TerrainProgramEntry(long generation, String sourceHash,
-            MinecraftShaderBackend.MinecraftCompiledProgram program) {}
 }

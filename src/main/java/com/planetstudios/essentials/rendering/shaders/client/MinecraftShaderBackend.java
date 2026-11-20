@@ -24,6 +24,8 @@ import java.util.Set;
 
 /** Minecraft 1.21.11 GPU pipeline compiler. */
 public final class MinecraftShaderBackend implements ShaderBackend {
+    public static final String TERRAIN_V1_PROGRAM_ID = "planet:terrain";
+
     @Override public String name() { return RenderSystem.getBackendDescription(); }
 
     @Override
@@ -46,6 +48,9 @@ public final class MinecraftShaderBackend implements ShaderBackend {
 
     @Override
     public CompiledProgram compile(ShaderProgramSpec spec) throws ShaderCompileException {
+        // Terrain V1 is a distinct vertex contract. Compiling it through POSITION
+        // would omit Color, UV0, UV1, UV2, and Normal from the pipeline layout.
+        if (TERRAIN_V1_PROGRAM_ID.equals(spec.id())) return compileTerrain(spec);
         return compileWithFormat(spec, DefaultVertexFormat.POSITION, false);
     }
 
@@ -120,7 +125,7 @@ public final class MinecraftShaderBackend implements ShaderBackend {
                 if (type == ShaderType.FRAGMENT && program.fragmentShaderId.equals(id)) return program.fragmentSource;
                 return null;
             });
-            if (compiled == null) throw new IllegalStateException("Minecraft returned no compiled pipeline variant");
+            if (compiled == null) throw new IllegalStateException("Minecraft returned no compiled render pipeline variant");
             program.rememberVariant(variant, compiled);
         } catch (RuntimeException failure) {
             throw new ShaderCompileException(program.programId(),

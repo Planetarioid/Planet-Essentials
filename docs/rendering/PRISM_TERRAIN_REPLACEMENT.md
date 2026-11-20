@@ -1,15 +1,50 @@
 # Prism vanilla terrain replacement
 
-A shader pack opts into vanilla terrain replacement by declaring a shader program
-with the exact identifier `planet:terrain`. The program must compile through Prism's Terrain V1 path and declare the
-required `PrismSection`, `ChunkSection`, and `Projection` uniform buffers.
-Prism V1 vertices are section-local; `PrismSection` supplies the camera-relative
-section origin, while the original per-draw `ChunkSection` uploader is replayed
-to preserve that section's model-view matrix, visibility, atlas dimensions, and
-block-space origin. A program may also declare captured vanilla default
-uniforms (`Fog`, `Globals`, or `Lighting`) and the supported `Sampler0`
-block-atlas and `Sampler2` lightmap bindings. Unsupported or unavailable
-bindings fail closed.
+The bundled **Planet Default** shader pack declares the Terrain V1 program
+`planet:terrain` at
+`assets/planet_essentials/prism/shaderpacks/default/prism.json`. It is
+discovered through Minecraft's active ResourceManager like other Prism packs.
+New configurations preselect `planet:default`, but shader execution remains
+opt-in because `shadersEnabled` defaults to false.
+
+## Terrain V1 shader contract
+
+The pack manifest declares these uniform buffers:
+
+- `PrismSection`: one std140 vec4. XYZ is the section's world origin relative
+  to the camera; W is reserved and currently 1.
+- `ChunkSection`: Minecraft 1.21.11's original per-draw block containing
+  `ModelViewMat`, `ChunkVisibility`, `TextureSize`, and `ChunkPosition`.
+  Prism replays the original per-draw uploader, so the matrix and section
+  metadata remain associated with the correct draw.
+- `Projection`: Minecraft's captured projection matrix.
+- `Fog`: Minecraft's captured fog color and distance parameters.
+
+The shader declares `Sampler0` for the block atlas and `Sampler2` for the
+lightmap. These are rebound from the captured vanilla pass. It consumes the
+Prism V1 36-byte vertex format: Position, UV0, RGBA color, packed light (UV2),
+overlay (UV1), normal, and one padding byte. The shader uses position, UV0,
+color, and packed light; the unused overlay and normal attributes remain in
+the stable vertex layout for future shader versions.
+
+The vertex transform adds the camera-relative section origin to section-local
+positions, then applies the captured ChunkSection model-view matrix and
+Projection matrix. Fragment processing samples the atlas and lightmap, applies
+the captured chunk-visibility fade, then applies spherical environmental fog
+and cylindrical render-distance fog.
+
+Vanilla terrain pipelines supply different `ALPHA_CUTOUT` values for solid,
+cutout, translucent, and tripwire layers. The pipeline clone merges the exact
+vanilla shader defines with the selected Prism program before compiling each
+layer variant, preserving those thresholds instead of hard-coding one value.
+
+A selected pack opts into replacement only by declaring the exact program ID
+`planet:terrain`. That program must be Terrain V1 and declare the required
+`PrismSection`, `ChunkSection`, and `Projection` blocks. It may use captured
+vanilla default blocks and the supported `Sampler0` and `Sampler2` samplers.
+Unknown or unavailable bindings fail closed.
+
+## Render-group behavior
 
 The replacement bridge runs at the HEAD of Minecraft 1.21.11's
 `ChunkSectionsToRender.renderGroup`. It prepares every non-empty layer in the
@@ -23,10 +58,10 @@ has already started and then fails, vanilla is suppressed to avoid drawing the
 already-submitted terrain a second time. That failure is logged and must be
 treated as an incomplete frame requiring investigation.
 
-This integration is an opt-in execution path, not a claim of visual parity on
-all devices. Runtime validation is still required for each supported graphics
-backend and terrain layer.
-
+This is an opt-in execution path, not a claim of visual parity on all devices.
+The shader sources are bundled and compiled through the normal pack reload
+transaction, but actual GPU compilation, graphics-backend behavior, and
+in-world visual parity still require Minecraft runtime testing.
 
 ## Current safety gate
 
@@ -40,5 +75,5 @@ command-encoder API, so these defaults are reproduced rather than inferred from
 the previously active global GL state.
 
 This closes the viewport/scissor capture gap for the supported vanilla OpenGL
-backend. It does not establish visual parity by itself; the remaining shader,
-pipeline-state, and in-game validation gates below still apply.
+backend. It does not establish visual parity by itself; in-game validation is
+still required.
