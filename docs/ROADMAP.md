@@ -93,7 +93,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 ## 6. Unified feature and third-party integration experience
 - [ ] Unified feature directory organized by capability/function, not by originating mod
 - [ ] Native, deep, and compatibility integration levels with truthful per-version status
-- [ ] Unified HUD editor for Planet widgets and supported third-party HUD providers
+- [~] First-pass Planet HUD editor: toggle registered widgets, cycle nine anchors, adjust X/Y offsets, reset individual/all placements, persist settings, and preview layout; third-party provider integration remains planned
 - [ ] Unified settings pages for exposed Planet and third-party settings
 - [ ] Unified keybind manager for supported providers
 - [ ] Unified profile support for Planet-owned and explicitly supported integration settings
@@ -111,7 +111,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [x] Minecraft Java heap usage sampled with FPS and included in explicit local diagnostics exports\n- [ ] System RAM usage
 - [ ] Optional live performance graphs for FPS, frame time, CPU/GPU, memory, and network latency
 - [ ] Clear unavailable-sensor states; never invent or imply unsupported sensor readings
-- [ ] HUD widget visibility, positioning, scale, opacity, colors, formatting, and compact/graph modes
+- [~] HUD widget visibility and positioning controls (anchor and X/Y offsets); scale, opacity, colors, formatting, and compact/graph modes remain planned
 
 ### Skin management and main-menu integration
 - [ ] Full skin management: upload/import, preview, Classic/Slim model selection, saved skins, apply/change, and export

@@ -2,6 +2,7 @@ package com.planetstudios.essentials.hud;
 
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.combat.ComboCounter;
+import com.planetstudios.essentials.config.HudWidgetPlacement;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -55,11 +56,19 @@ public final class HudWidgetRenderer {
             Content content = provider.apply(client);
             if (content == null) continue;
 
+            HudWidgetPlacement placement = EssentialsRuntime.config().hudWidgetPlacements.get(definition.id());
+            if (placement == null) {
+                placement = new HudWidgetPlacement(definition.defaultAnchor(),
+                        definition.defaultOffsetX(), definition.defaultOffsetY(),
+                        definition.enabledByDefault());
+            }
+            if (!placement.enabled) continue;
+
             int width = client.font.width(content.text());
             int height = client.font.lineHeight;
             HudWidgetLayout.Position position = HudWidgetLayout.resolve(
-                    definition.defaultAnchor(), screenWidth, screenHeight,
-                    width, height, definition.defaultOffsetX(), definition.defaultOffsetY());
+                    placement.anchor, screenWidth, screenHeight,
+                    width, height, placement.offsetX, placement.offsetY);
             graphics.drawString(client.font, content.text(), position.x(), position.y(),
                     content.color(), true);
         }

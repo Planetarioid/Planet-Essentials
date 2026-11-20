@@ -1,6 +1,8 @@
 package com.planetstudios.essentials.config;
+
 import java.util.Map;
 import java.util.TreeMap;
+
 /** User-owned Planet Essentials settings. */
 public final class EssentialsConfig {
  public int schemaVersion=ConfigMigrator.CURRENT_SCHEMA;
@@ -10,6 +12,8 @@ public final class EssentialsConfig {
  public boolean crosshairTargetIndicator=true;
  /** Toggle for the signed positive/negative combat streak HUD widget. */
  public boolean comboCounterEnabled=true;
+ /** Per-widget HUD visibility, anchor, and offsets. */
+ public Map<String,HudWidgetPlacement> hudWidgetPlacements=new TreeMap<>();
  /** Independent switches for active diagnostics subsystems; diagnosticsEnabled is the master switch. */
  public boolean performanceMonitoringEnabled=true, eventCollectionEnabled=true;
  /** Prism remains opt-in; the bundled pack is preselected but shadersEnabled stays false. */
@@ -26,6 +30,14 @@ public final class EssentialsConfig {
     ||(!selectedShaderPack.isEmpty()&&!selectedShaderPack.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"))
     ||selectedShaderPack.contains("..")||selectedShaderPack.contains("//")) selectedShaderPack="";
   diagnosticsHistorySize=Math.max(20,Math.min(1200,diagnosticsHistorySize));
+  if(hudWidgetPlacements==null)hudWidgetPlacements=new TreeMap<>();
+  Map<String,HudWidgetPlacement> validPlacements=new TreeMap<>();
+  hudWidgetPlacements.forEach((id,placement)->{
+   if(id!=null&&id.matches("[a-z0-9_.-]+:[a-z0-9_.-]+")&&placement!=null){
+    placement.validate();validPlacements.put(id,placement);
+   }
+  });
+  hudWidgetPlacements=validPlacements;
   if(featurePriorityOverrides==null) featurePriorityOverrides=new TreeMap<>();
   Map<String,String> valid=new TreeMap<>();
   featurePriorityOverrides.forEach((cap,feature)->{

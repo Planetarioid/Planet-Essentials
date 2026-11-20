@@ -26,20 +26,22 @@ public final class EssentialsScreen extends Screen {
 
         addRenderableWidget(clientButton("Minecraft Settings", left, top + 46,
                 buttonWidth, () -> VanillaOptionsAccess.open(minecraft, this)));
-        addRenderableWidget(clientButton("Performance  /  Diagnostics", left, top + 73,
+        addRenderableWidget(clientButton("HUD Editor", left, top + 73,
+                buttonWidth, () -> minecraft.setScreen(new HudEditorScreen(this))));
+        addRenderableWidget(clientButton("Performance  /  Diagnostics", left, top + 100,
                 buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "diagnostics"))));
-        addRenderableWidget(clientButton("System Controls", left, top + 100,
+        addRenderableWidget(clientButton("System Controls", left, top + 127,
                 buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "systems"))));
-        addRenderableWidget(clientButton("Prism  /  Shader Engine", left, top + 127,
+        addRenderableWidget(clientButton("Prism  /  Shader Engine", left, top + 154,
                 buttonWidth, () -> minecraft.setScreen(new ShaderSettingsScreen(this))));
-        addRenderableWidget(clientButton("Configuration Profiles", left, top + 154,
+        addRenderableWidget(clientButton("Configuration Profiles", left, top + 181,
                 buttonWidth, () -> minecraft.setScreen(new ProfilesScreen(this))));
-        addRenderableWidget(clientButton("Feature Priorities", left, top + 181,
+        addRenderableWidget(clientButton("Feature Priorities", left, top + 208,
                 buttonWidth, () -> minecraft.setScreen(new FeaturePriorityScreen(this))));
-        addRenderableWidget(clientButton("Combat Features", left, top + 208,
+        addRenderableWidget(clientButton("Combat Features", left, top + 235,
                 buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "combat"))));
         addRenderableWidget(Button.builder(Component.literal("CLOSE"), button -> onClose())
-                .bounds(center - 70, top + 237, 140, 20).build());
+                .bounds(center - 70, top + 264, 140, 20).build());
     }
 
     private Button clientButton(String label, int x, int y, int width, Runnable action) {
@@ -57,7 +59,7 @@ public final class EssentialsScreen extends Screen {
         int textColor = 0xFFF4FAFF;
         int panel = 0xEE111B2B;
         graphics.fill(0, 0, width, height, 0xB5080D18);
-        graphics.fill(left, top - 26, left + panelWidth, top + 272, panel);
+        graphics.fill(left, top - 26, left + panelWidth, top + 299, panel);
         graphics.fill(left, top - 26, left + panelWidth, top - 23, accent);
         graphics.fill(left + 12, top + 28, left + panelWidth - 12, top + 29, accent & 0x55FFFFFF);
         graphics.drawCenteredString(font, title, center, top - 12, textColor);
@@ -66,7 +68,7 @@ public final class EssentialsScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         var config = EssentialsRuntime.config();
-        int infoY = top + 280;
+        int infoY = top + 306;
         if (config.showPerformanceScreen && config.diagnosticsEnabled && config.performanceMonitoringEnabled) {
             PerformanceMonitor monitor = EssentialsRuntime.performance();
             graphics.drawCenteredString(font, "FPS  " + monitor.latestFps()
