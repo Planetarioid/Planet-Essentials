@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -267,6 +268,74 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
         } catch (RuntimeException failure) {
             PlanetEssentials.LOGGER.warn(
                     "Prism could not resolve shared sequential index capacity for the complete terrain group; vanilla remains in control",
+                    failure);
+            return java.util.Optional.empty();
+        }
+    }
+
+    /**
+     * Prepares a complete captured render-group batch in vanilla layer order.
+     * All plans must be supplied before the shared sequential index buffer is
+     * resolved, ensuring no later layer can invalidate an earlier allocation.
+     * Any failed layer closes all already-prepared groups and returns empty.
+     */
+    public java.util.Optional<PrismTerrainPreparedRenderBatch> prepareDrawBatch(
+            ClientLevel level,
+            PrismTerrainRenderGroupBoundary.Snapshot snapshot,
+            Map<ChunkSectionLayer, PrismTerrainReplacementPlan.Plan> plans,
+            Map<ChunkSectionLayer, String> programIds) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        Objects.requireNonNull(plans, "plans");
+        Objects.requireNonNull(programIds, "programIds");
+        RenderSystem.assertOnRenderThread();
+        ensureOpen();
+        if (level == null || Minecraft.getInstance().level != level) {
+            return java.util.Optional.empty();
+        }
+
+        ArrayList<ChunkSectionLayer> expectedLayers = new ArrayList<>();
+        ArrayList<PrismTerrainReplacementPlan.Plan> orderedPlans = new ArrayList<>();
+        for (ChunkSectionLayer layer : snapshot.group().layers()) {
+            var input = snapshot.passInputs().layers().get(layer);
+            if (input == null || !input.pipelineApplied() || input.orderedDraws().isEmpty()) continue;
+            var plan = plans.get(layer);
+            if (plan == null || !plan.mayReplace() || !programIds.containsKey(layer)
+                    || programIds.get(layer) == null || programIds.get(layer).isBlank()) {
+                return java.util.Optional.empty();
+            }
+            expectedLayers.add(layer);
+            orderedPlans.add(plan);
+        }
+        if (expectedLayers.isEmpty() || plans.size() != expectedLayers.size()) {
+            return java.util.Optional.empty();
+        }
+
+        var sharedIndexBuffer = prepareSequentialIndexBuffer(level, snapshot, orderedPlans);
+        if (sharedIndexBuffer.isEmpty()) return java.util.Optional.empty();
+
+        ArrayList<PrismTerrainPreparedRenderGroup> preparedLayers =
+                new ArrayList<>(expectedLayers.size());
+        try {
+            for (int i = 0; i < expectedLayers.size(); i++) {
+                ChunkSectionLayer layer = expectedLayers.get(i);
+                var prepared = prepareDrawResources(level, snapshot, orderedPlans.get(i),
+                        layer, programIds.get(layer), sharedIndexBuffer.get());
+                if (prepared.isEmpty()) {
+                    throw new IllegalStateException("Terrain layer preflight failed for " + layer.label());
+                }
+                preparedLayers.add(prepared.get());
+            }
+            return java.util.Optional.of(new PrismTerrainPreparedRenderBatch(level, snapshot, preparedLayers));
+        } catch (RuntimeException | Error failure) {
+            for (PrismTerrainPreparedRenderGroup prepared : preparedLayers) {
+                try {
+                    prepared.close();
+                } catch (RuntimeException closeFailure) {
+                    failure.addSuppressed(closeFailure);
+                }
+            }
+            PlanetEssentials.LOGGER.warn(
+                    "Prism could not prepare the complete terrain render-group batch; vanilla remains in control",
                     failure);
             return java.util.Optional.empty();
         }
