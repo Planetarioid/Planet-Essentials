@@ -14,7 +14,7 @@ class EssentialsConfigTest {
   assertEquals(1,c.featurePriorityOverrides.size());assertEquals("planet_alpha:renderer",c.featurePriorityOverrides.get("planet:rendering/entity"));
  }
  @Test void shadersAreOffByDefaultAndInvalidPackIdsAreCleared(){
-  EssentialsConfig c=new EssentialsConfig();c.validate();assertFalse(c.shadersEnabled);assertEquals("",c.selectedShaderPack);
+  EssentialsConfig c=new EssentialsConfig();c.validate();assertFalse(c.shadersEnabled);assertEquals("planet:default",c.selectedShaderPack);
   c.shadersEnabled=true;c.selectedShaderPack="../unsafe";c.validate();assertTrue(c.shadersEnabled);assertEquals("",c.selectedShaderPack);
  }
 }
