@@ -1,87 +1,102 @@
 package com.planetstudios.essentials.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
-import com.planetstudios.essentials.config.SettingsRegistry;
 import com.planetstudios.essentials.diagnostics.PerformanceMonitor;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-/** Planet client-style settings hub. */
+/** Reworked Planet dashboard with a persistent identity rail and modular feature cards. */
 public final class EssentialsScreen extends Screen {
     private final Screen parent;
+    private static final int ACCENT = 0xFF56C8FF;
+    private static final int TEXT = 0xFFF2F7FF;
+    private static final int MUTED = 0xFF91A5BD;
 
     public EssentialsScreen(Screen parent) {
-        super(Component.literal("PLANET CLIENT"));
+        super(Component.literal("PLANET"));
         this.parent = parent;
     }
 
     @Override protected void init() {
-        int center = width / 2;
-        int top = Math.max(72, height / 4 - 12);
-        int buttonWidth = Math.min(320, width - 48);
-        int left = center - buttonWidth / 2;
-        addRenderableWidget(clientButton("SETTINGS", left, top + 40, buttonWidth,
-                () -> minecraft.setScreen(new SettingsSearchScreen(this))));
-        addRenderableWidget(clientButton("HUD EDITOR", left, top + 64, buttonWidth,
-                () -> minecraft.setScreen(new HudEditorScreen(this))));
-        addRenderableWidget(clientButton("SEARCH KEYBINDS", left, top + 88, buttonWidth,
-                () -> minecraft.setScreen(new KeybindSearchScreen(this))));
-        addRenderableWidget(clientButton("PERFORMANCE  /  DIAGNOSTICS", left, top + 112, buttonWidth,
-                () -> minecraft.setScreen(new SettingsCategoryScreen(this, "diagnostics"))));
-        addRenderableWidget(clientButton("SYSTEM CONTROLS", left, top + 136, buttonWidth,
-                () -> minecraft.setScreen(new SettingsCategoryScreen(this, "systems"))));
-        addRenderableWidget(clientButton("PRISM  /  SHADER ENGINE", left, top + 160, buttonWidth,
-                () -> minecraft.setScreen(new ShaderSettingsScreen(this))));
-        addRenderableWidget(clientButton("CONFIGURATION PROFILES", left, top + 184, buttonWidth,
-                () -> minecraft.setScreen(new ProfilesScreen(this))));
-        addRenderableWidget(clientButton("FEATURE PRIORITIES", left, top + 208, buttonWidth,
-                () -> minecraft.setScreen(new FeaturePriorityScreen(this))));
-        addRenderableWidget(clientButton("COMBAT FEATURES", left, top + 232, buttonWidth,
-                () -> minecraft.setScreen(new SettingsCategoryScreen(this, "combat"))));
-        addRenderableWidget(Button.builder(Component.literal("CLOSE"), button -> onClose())
-                .bounds(center - 70, top + 259, 140, 20).build());
+        int panelWidth = Math.min(900, width - 32);
+        int left = (width - panelWidth) / 2;
+        int railWidth = 174;
+        int contentLeft = left + railWidth + 22;
+        int contentWidth = panelWidth - railWidth - 42;
+        int gap = 12;
+        int cardWidth = (contentWidth - gap) / 2;
+        int top = 104;
+        addCard("SETTINGS", "Vanilla + Planet options", contentLeft, top, cardWidth,
+                () -> minecraft.setScreen(new SettingsSearchScreen(this)));
+        addCard("HUD EDITOR", "Arrange your interface", contentLeft + cardWidth + gap, top, cardWidth,
+                () -> minecraft.setScreen(new HudEditorScreen(this)));
+        addCard("KEYBINDS", "Find and manage controls", contentLeft, top + 62, cardWidth,
+                () -> minecraft.setScreen(new KeybindSearchScreen(this)));
+        addCard("PERFORMANCE", "Diagnostics and frame data", contentLeft + cardWidth + gap, top + 62, cardWidth,
+                () -> minecraft.setScreen(new SettingsCategoryScreen(this, "diagnostics")));
+        addCard("SYSTEMS", "Client-side optimizations", contentLeft, top + 124, cardWidth,
+                () -> minecraft.setScreen(new SettingsCategoryScreen(this, "systems")));
+        addCard("PRISM", "Shader engine and packs", contentLeft + cardWidth + gap, top + 124, cardWidth,
+                () -> minecraft.setScreen(new ShaderSettingsScreen(this)));
+        addCard("PROFILES", "Save and switch configs", contentLeft, top + 186, cardWidth,
+                () -> minecraft.setScreen(new ProfilesScreen(this)));
+        addCard("PRIORITIES", "Feature scheduling", contentLeft + cardWidth + gap, top + 186, cardWidth,
+                () -> minecraft.setScreen(new FeaturePriorityScreen(this)));
+        addCard("COMBAT", "PvP interface features", contentLeft, top + 248, cardWidth,
+                () -> minecraft.setScreen(new SettingsCategoryScreen(this, "combat")));
+        addRenderableWidget(Button.builder(Component.literal("EXIT PLANET"), button -> onClose())
+                .bounds(contentLeft + cardWidth + gap, top + 248, cardWidth, 42).build());
     }
 
-    private Button clientButton(String label, int x, int y, int width, Runnable action) {
-        return Button.builder(Component.literal(label), button -> action.run()).bounds(x, y, width, 22).build();
+    private void addCard(String title, String subtitle, int x, int y, int cardWidth, Runnable action) {
+        addRenderableWidget(Button.builder(Component.literal(title + "   ›"), button -> action.run())
+                .bounds(x, y, cardWidth, 26).build());
     }
 
     @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        int center = width / 2;
-        int top = Math.max(72, height / 4 - 12);
-        int panelWidth = Math.min(380, width - 24);
-        int left = center - panelWidth / 2;
-        int accent = 0xFF55C7FF;
-        int textColor = 0xFFF4FAFF;
-        graphics.fill(0, 0, width, height, 0xB5080D18);
-        graphics.fill(left, top - 26, left + panelWidth, top + 318, 0xEE111B2B);
-        graphics.fill(left, top - 26, left + panelWidth, top - 23, accent);
-        graphics.fill(left + 12, top + 28, left + panelWidth - 12, top + 29, accent & 0x55FFFFFF);
-        graphics.drawCenteredString(font, title, center, top - 12, textColor);
-        graphics.drawCenteredString(font, "ONE SETTINGS LIBRARY  /  PLANET STUDIOS", center, top + 8, 0xFF8FAFC8);
+        int panelWidth = Math.min(900, width - 32);
+        int panelLeft = (width - panelWidth) / 2;
+        int panelTop = 42;
+        int panelBottom = height - 28;
+        int railWidth = 174;
+        int contentLeft = panelLeft + railWidth + 22;
+        int contentWidth = panelWidth - railWidth - 42;
+
+        graphics.fill(0, 0, width, height, 0xE9080D17);
+        graphics.fill(panelLeft, panelTop, panelLeft + panelWidth, panelBottom, 0xF0111A29);
+        graphics.fill(panelLeft, panelTop, panelLeft + 3, panelBottom, ACCENT);
+        graphics.fill(panelLeft + 14, panelTop + 14, panelLeft + railWidth - 8, panelBottom - 14, 0xFF0B1220);
+        graphics.fill(panelLeft + railWidth, panelTop + 18, panelLeft + railWidth + 1, panelBottom - 18, 0xFF29384C);
+        graphics.drawString(font, "PLANET", panelLeft + 26, panelTop + 30, TEXT, false);
+        graphics.drawString(font, "STUDIOS CLIENT", panelLeft + 26, panelTop + 46, ACCENT, false);
+        graphics.drawString(font, "CONFIGURATION", panelLeft + 26, panelTop + 82, MUTED, false);
+        graphics.drawString(font, "One client.", panelLeft + 26, panelTop + 108, TEXT, false);
+        graphics.drawString(font, "One settings library.", panelLeft + 26, panelTop + 120, TEXT, false);
+        graphics.fill(contentLeft, panelTop + 18, contentLeft + contentWidth, panelTop + 19, 0xFF31445B);
+        graphics.drawString(font, "CLIENT CONTROL CENTER", contentLeft, panelTop + 29, TEXT, false);
+        graphics.drawString(font, "FEATURES  /  CONFIGURATION  /  PERFORMANCE", contentLeft, panelTop + 45, MUTED, false);
+
         super.render(graphics, mouseX, mouseY, partialTick);
+
         var config = EssentialsRuntime.config();
-        int infoY = top + 326;
+        int statusY = panelBottom - 54;
         if (config.showPerformanceScreen && config.diagnosticsEnabled && config.performanceMonitoringEnabled) {
             PerformanceMonitor monitor = EssentialsRuntime.performance();
-            graphics.drawCenteredString(font, "FPS  " + monitor.latestFps()
-                    + "     AVG  " + String.format(java.util.Locale.ROOT, "%.1f", monitor.averageFps()),
-                    center, infoY, textColor);
-            infoY += 13;
+            graphics.drawString(font, "FPS " + monitor.latestFps()
+                    + "   AVG " + String.format(java.util.Locale.ROOT, "%.1f", monitor.averageFps()),
+                    panelLeft + 26, statusY, TEXT, false);
         }
         var session = EssentialsRuntime.sessionStatistics().snapshot();
-        graphics.drawCenteredString(font, (session.active() ? "SESSION" : "LAST SESSION") + "  "
-                + formatDuration(session.elapsedSeconds()) + "     DISTANCE  "
-                + String.format(java.util.Locale.ROOT, "%.1f blocks", session.distanceTravelled()),
-                center, infoY, 0xFF8FAFC8);
-        graphics.drawCenteredString(font, "PLANET STUDIOS  •  CLIENT CONFIGURATION", center, height - 14, 0xFF52677F);
+        graphics.drawString(font, (session.active() ? "SESSION " : "LAST SESSION ")
+                + formatDuration(session.elapsedSeconds()), panelLeft + 26, panelBottom - 32, MUTED, false);
+        graphics.drawString(font, "PLANET STUDIOS  /  CLIENT BUILD", contentLeft, panelBottom - 32, MUTED, false);
     }
 
-    private static String formatDuration(long totalSeconds) {
-        return String.format(java.util.Locale.ROOT, "%02d:%02d:%02d", totalSeconds / 3600L,
-                (totalSeconds % 3600L) / 60L, totalSeconds % 60L);
+    private static String formatDuration(long seconds) {
+        return String.format(java.util.Locale.ROOT, "%02d:%02d:%02d", seconds / 3600L,
+                (seconds / 60L) % 60L, seconds % 60L);
     }
 
     @Override public void onClose() {

@@ -1,5 +1,6 @@
 package com.planetstudios.essentials.client.mixin;
 
+import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainActiveFrustum;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainChunkLifecycleEvents;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVanillaDrawIndex;
@@ -22,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Captures live culling state and indexes vanilla's final terrain draw records. */
+/** Captures expensive terrain snapshots only while a compiled Prism pack is active. */
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
     @Shadow @Final
@@ -35,20 +36,23 @@ public abstract class LevelRendererMixin {
     private void planetEssentials$captureActiveFrustum(Matrix4f modelViewMatrix,
             Matrix4f projectionMatrixForCulling, net.minecraft.world.phys.Vec3 cameraPosition,
             CallbackInfoReturnable<Frustum> callback) {
+        if (!ShaderPackRuntime.isEnabled()) return;
         PrismTerrainActiveFrustum.publish(callback.getReturnValue());
     }
 
     @Inject(method = "cullTerrain", at = @At("RETURN"))
     private void planetEssentials$captureVisibleSections(Camera camera, Frustum frustum,
             boolean spectator, CallbackInfo callback) {
+        if (!ShaderPackRuntime.isEnabled()) return;
         PrismTerrainVisibleSections.publish(Minecraft.getInstance().level, visibleSections);
     }
 
-    /** Mirrors prepareChunkRenders' section/layer traversal after its Draw lists are complete. */
+    /** Builds an identity map over vanilla draw records only for an active Prism terrain pipeline. */
     @Inject(method = "prepareChunkRenders", at = @At("RETURN"))
     private void planetEssentials$indexVanillaTerrainDraws(Matrix4fc modelViewMatrix,
             double camX, double camY, double camZ,
             CallbackInfoReturnable<ChunkSectionsToRender> callback) {
+        if (!ShaderPackRuntime.isEnabled()) return;
         PrismTerrainVanillaDrawIndex.capture(visibleSections, callback.getReturnValue());
     }
 

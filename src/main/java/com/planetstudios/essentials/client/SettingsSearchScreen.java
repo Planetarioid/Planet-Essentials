@@ -3,7 +3,6 @@ package com.planetstudios.essentials.client;
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.config.SettingDefinition;
 import com.planetstudios.essentials.config.SettingsRegistry;
-import net.minecraft.client.OptionInstance;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
@@ -16,7 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-/** Unified Planet settings index. Minecraft options use their real OptionInstance controls inside this screen. */
+/** Unified, searchable Planet settings library with category-labelled option cards. */
 public final class SettingsSearchScreen extends Screen {
     private sealed interface Result permits PlanetResult, MinecraftResult {
         String category();
@@ -40,27 +39,29 @@ public final class SettingsSearchScreen extends Screen {
     private static final int PAGE_SIZE = 6;
     private List<Result> matches = List.of();
     private final List<AbstractWidget> resultWidgets = new ArrayList<>();
+    private static final int ACCENT = 0xFF56C8FF;
 
     public SettingsSearchScreen(Screen parent) {
-        super(Component.literal("PLANET SETTINGS"));
+        super(Component.literal("SETTINGS LIBRARY"));
         this.parent = parent;
     }
 
     @Override protected void init() {
-        search = new EditBox(font, width / 2 - 150, 42, 300, 20, Component.literal("Search settings"));
-        search.setHint(Component.literal("Search names, categories, tags, or keywords..."));
+        int center = width / 2;
+        search = new EditBox(font, center - 184, 48, 330, 22, Component.literal("Search settings"));
+        search.setHint(Component.literal("Search settings, categories, tags..."));
         search.setMaxLength(100);
         search.setResponder(value -> { page = 0; rebuildResults(); });
         addRenderableWidget(search);
         addRenderableWidget(Button.builder(Component.literal("CLEAR"), b -> search.setValue(""))
-                .bounds(width / 2 + 156, 42, 54, 20).build());
+                .bounds(center + 152, 48, 64, 22).build());
         rebuildResults();
-        addRenderableWidget(Button.builder(Component.literal("PREVIOUS"), b -> { page=Math.max(0,page-1); rebuildResults(); })
-                .bounds(width/2-110,height-32,100,20).build());
-        addRenderableWidget(Button.builder(Component.literal("NEXT"), b -> { if((page+1)*PAGE_SIZE<matches.size())page++; rebuildResults(); })
-                .bounds(width/2+10,height-32,100,20).build());
+        addRenderableWidget(Button.builder(Component.literal("‹ PREVIOUS"), b -> { page=Math.max(0,page-1); rebuildResults(); })
+                .bounds(center - 180, height - 38, 108, 22).build());
+        addRenderableWidget(Button.builder(Component.literal("NEXT ›"), b -> { if((page+1)*PAGE_SIZE<matches.size())page++; rebuildResults(); })
+                .bounds(center + 72, height - 38, 108, 22).build());
         addRenderableWidget(Button.builder(Component.literal("BACK"), b -> minecraft.setScreen(parent))
-                .bounds(width/2-50,height-58,100,20).build());
+                .bounds(center - 48, height - 38, 96, 22).build());
     }
 
     private void rebuildResults() {
@@ -74,21 +75,20 @@ public final class SettingsSearchScreen extends Screen {
         resultWidgets.clear();
         int start = page * PAGE_SIZE;
         int end = Math.min(matches.size(), start + PAGE_SIZE);
-        int y = 84;
+        int y = 104;
         for (int i=start;i<end;i++) {
             Result result = matches.get(i);
+            AbstractWidget control;
             if (result instanceof MinecraftResult vanilla) {
-                AbstractWidget control = vanilla.entry().option().createButton(minecraft.options, width/2-165, y, 330);
-                resultWidgets.add(control);
-                addRenderableWidget(control);
-            } else if (result instanceof PlanetResult planet) {
-                SettingDefinition<?> setting = planet.setting();
-                Button control = Button.builder(Component.literal(result.category().toUpperCase(Locale.ROOT)+"  /  "+result.name()+"  ["+setting.get(EssentialsRuntime.config())+"]"),
-                        ignored -> change(setting)).bounds(width/2-165,y,330,20).build();
-                resultWidgets.add(control);
-                addRenderableWidget(control);
+                control = vanilla.entry().option().createButton(minecraft.options, width/2-170, y, 340);
+            } else {
+                SettingDefinition<?> setting = ((PlanetResult) result).setting();
+                control = Button.builder(Component.literal(result.name()+"   ·   "+setting.get(EssentialsRuntime.config())),
+                        ignored -> change(setting)).bounds(width/2-170,y,340,22).build();
             }
-            y += 34;
+            resultWidgets.add(control);
+            addRenderableWidget(control);
+            y += 43;
         }
     }
 
@@ -127,21 +127,27 @@ public final class SettingsSearchScreen extends Screen {
     }
 
     @Override public void render(GuiGraphics graphics,int mouseX,int mouseY,float partialTick) {
-        super.render(graphics,mouseX,mouseY,partialTick);
-        graphics.drawCenteredString(font,title,width/2,20,0xFFF4FAFF);
-        graphics.drawCenteredString(font,matches.size()+" unified settings  •  Planet + Minecraft",
-                width/2,66,0xFF8FAFC8);
+        graphics.fill(0, 0, width, height, 0xE9080D17);
+        int panelWidth = Math.min(620, width - 28);
+        int left = (width - panelWidth) / 2;
+        graphics.fill(left, 22, left + panelWidth, height - 18, 0xF0111A29);
+        graphics.fill(left, 22, left + panelWidth, 25, ACCENT);
+        graphics.drawString(font, "PLANET  /  SETTINGS LIBRARY", left + 18, 34, 0xFFF2F7FF, false);
+        graphics.drawString(font, matches.size()+" SETTINGS  ·  PLANET + MINECRAFT", left + 18, 78, 0xFF91A5BD, false);
         int first = page * PAGE_SIZE;
-        int rowY = 73;
+        int rowY = 94;
         for (int i = first; i < Math.min(matches.size(), first + PAGE_SIZE); i++) {
             Result result = matches.get(i);
+            graphics.fill(width/2-180, rowY, width/2+180, rowY+36, 0xFF192638);
+            graphics.fill(width/2-180, rowY, width/2-177, rowY+36, ACCENT);
             String category = result.category().replace('_', ' ').toUpperCase(Locale.ROOT);
-            graphics.drawString(font, category, width / 2 - 165, rowY, 0xFF55C7FF, false);
-            rowY += 34;
+            graphics.drawString(font, category, width/2-168, rowY+2, ACCENT, false);
+            rowY += 43;
         }
+        super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(font,matches.isEmpty()?"No settings found. Try another keyword.":
-                "Page "+(page+1)+" / "+Math.max(1,(matches.size()+PAGE_SIZE-1)/PAGE_SIZE),
-                width/2,height-43,0xFF8FAFC8);
+                "PAGE "+(page+1)+" / "+Math.max(1,(matches.size()+PAGE_SIZE-1)/PAGE_SIZE),
+                width/2,height-53,0xFF91A5BD);
     }
 
     @Override public void onClose(){minecraft.setScreen(parent);}

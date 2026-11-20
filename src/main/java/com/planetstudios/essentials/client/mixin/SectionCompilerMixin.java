@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.client.mixin;
 
 import com.mojang.blaze3d.vertex.VertexSorting;
+import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismVanillaSectionRebuildEvents;
 import net.minecraft.client.renderer.SectionBufferBuilderPack;
 import net.minecraft.client.renderer.chunk.RenderSectionRegion;
@@ -11,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Captures immutable CPU copies of vanilla section geometry without altering vanilla output. */
+/** Captures vanilla section geometry only while an active Prism pack needs it. */
 @Mixin(SectionCompiler.class)
 public abstract class SectionCompilerMixin {
     @Inject(method = "compile", at = @At("HEAD"))
@@ -19,6 +20,7 @@ public abstract class SectionCompilerMixin {
             RenderSectionRegion region, VertexSorting vertexSorting,
             SectionBufferBuilderPack buffers,
             CallbackInfoReturnable<SectionCompiler.Results> callback) {
+        if (!ShaderPackRuntime.isEnabled()) return;
         PrismVanillaSectionRebuildEvents.onVanillaCompile(sectionPos, region);
     }
 
@@ -27,6 +29,7 @@ public abstract class SectionCompilerMixin {
             RenderSectionRegion region, VertexSorting vertexSorting,
             SectionBufferBuilderPack buffers,
             CallbackInfoReturnable<SectionCompiler.Results> callback) {
+        if (!ShaderPackRuntime.isEnabled()) return;
         PrismVanillaSectionRebuildEvents.onVanillaCompileComplete(callback.getReturnValue());
     }
 }
