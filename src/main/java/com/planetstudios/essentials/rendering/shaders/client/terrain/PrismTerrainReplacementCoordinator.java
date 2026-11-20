@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -464,7 +465,7 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
                     sharedIndexBuffer, samplerBindings, capturedUniforms, draws);
             allocated.clear(); // Ownership transferred to the prepared group.
             return java.util.Optional.of(prepared);
-        } catch (Exception failure) {
+        } catch (RuntimeException | Error failure) {
             for (PrismTerrainSectionUniformAllocation uniform : allocated) {
                 try { uniform.close(); } catch (RuntimeException closeFailure) {
                     failure.addSuppressed(closeFailure);
