@@ -18,9 +18,9 @@ import java.util.Arrays;
  * Extends both vanilla chunk-distance controls to the same inclusive range.
  * The server's view-distance limit can still cap effective multiplayer rendering.
  *
- * OptionInstance.ValueSet is package-private in Minecraft 1.21.11, so the
- * implementation locates its two private final fields by their runtime types
- * rather than referring to that inaccessible nested interface in source.
+ * OptionInstance.ValueSet is package-private in Minecraft 1.21.11. Resolve its
+ * backing field by checking which interface accepts the replacement IntRange,
+ * not by its simple class name: production remapping can change that name.
  */
 @Mixin(Options.class)
 public abstract class OptionsMixin {
@@ -42,9 +42,10 @@ public abstract class OptionsMixin {
                 PLANET_ESSENTIALS$MIN_DISTANCE, PLANET_ESSENTIALS$MAX_DISTANCE);
         try {
             Field valuesField = Arrays.stream(OptionInstance.class.getDeclaredFields())
-                    .filter(field -> field.getType().getSimpleName().equals("ValueSet"))
+                    .filter(field -> field.getType().isInterface())
+                    .filter(field -> field.getType().isInstance(range))
                     .findFirst()
-                    .orElseThrow(() -> new NoSuchFieldException("OptionInstance.ValueSet field"));
+                    .orElseThrow(() -> new NoSuchFieldException("OptionInstance value-set field"));
             Field codecField = Arrays.stream(OptionInstance.class.getDeclaredFields())
                     .filter(field -> Codec.class.isAssignableFrom(field.getType()))
                     .findFirst()
