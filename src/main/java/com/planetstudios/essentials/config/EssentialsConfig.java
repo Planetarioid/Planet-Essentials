@@ -5,6 +5,7 @@ import java.util.TreeMap;
 public final class EssentialsConfig {
  public int schemaVersion=ConfigMigrator.CURRENT_SCHEMA;
  public boolean diagnosticsEnabled=true, showPerformanceScreen=true;
+ public boolean fpsHudEnabled=true;
  /** Toggle for the red crosshair when a player is a valid melee target. */
  public boolean crosshairTargetIndicator=true;
  /** Toggle for the signed positive/negative combat streak HUD widget. */

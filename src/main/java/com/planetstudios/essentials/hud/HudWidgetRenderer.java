@@ -23,7 +23,7 @@ public final class HudWidgetRenderer {
     static {
         register(new HudWidgetDefinition("planet_essentials:performance_fps",
                 HudAnchor.TOP_LEFT, 6, 6, 100, true),
-                client -> EssentialsRuntime.config().showPerformanceScreen
+                client -> EssentialsRuntime.config().fpsHudEnabled
                         ? new Content("FPS: " + client.getFps(), 0xFFFFFFFF) : null);
         register(new HudWidgetDefinition("planet_essentials:combo_counter",
                 HudAnchor.BOTTOM_CENTER, 0, -40, 90, true),
