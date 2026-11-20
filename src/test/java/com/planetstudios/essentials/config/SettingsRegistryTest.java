@@ -10,13 +10,14 @@ class SettingsRegistryTest {
         assertTrue(SettingsRegistry.find("diagnostics.enabled").isPresent());
         assertTrue(SettingsRegistry.find("systems.performance_monitoring").isPresent());
         assertTrue(SettingsRegistry.find("systems.event_collection").isPresent());
+        assertTrue(SettingsRegistry.find("systems.smart_chunk_scheduler").isPresent());
         assertTrue(SettingsRegistry.find("shaders.enabled").isPresent());
         assertTrue(SettingsRegistry.find("combat.crosshair_target_indicator").isPresent());
         assertTrue(SettingsRegistry.find("hud.fps").isPresent());
         assertTrue(SettingsRegistry.find("combat.combo_counter").isPresent());
-        assertEquals(9, SettingsRegistry.all().size());
+        assertEquals(10, SettingsRegistry.all().size());
         assertEquals(3, SettingsRegistry.inCategory("diagnostics").size());
-        assertEquals(2, SettingsRegistry.inCategory("systems").size());
+        assertEquals(3, SettingsRegistry.inCategory("systems").size());
         assertEquals(1, SettingsRegistry.inCategory("shaders").size());
         assertEquals(2, SettingsRegistry.inCategory("combat").size());
         assertEquals(1, SettingsRegistry.inCategory("hud").size());
