@@ -100,6 +100,32 @@ public record PrismTerrainVanillaPassSnapshot(
     }
 
     /**
+     * Resolves the exact per-draw ChunkSection UBO slice from vanilla's uploader.
+     * This runs during preflight, before any replacement pass is opened.
+     */
+    @SuppressWarnings("unchecked")
+    public static GpuBufferSlice chunkSectionUniformFor(Object vanillaDraw, GpuBufferSlice[] chunkSectionInfos) {
+        Objects.requireNonNull(chunkSectionInfos, "chunkSectionInfos");
+        if (!(vanillaDraw instanceof RenderPass.Draw<?> rawDraw)) {
+            throw new IllegalArgumentException("Captured terrain entry is not a vanilla RenderPass.Draw");
+        }
+        RenderPass.Draw<GpuBufferSlice[]> draw = (RenderPass.Draw<GpuBufferSlice[]>) rawDraw;
+        var uploader = draw.uniformUploaderConsumer();
+        if (uploader == null) throw new IllegalStateException("Vanilla terrain draw has no ChunkSection uniform uploader");
+        GpuBufferSlice[] captured = new GpuBufferSlice[1];
+        String[] name = new String[1];
+        uploader.accept(chunkSectionInfos, (binding, buffer) -> {
+            if (captured[0] != null) throw new IllegalStateException("Multiple dynamic uniforms on terrain draw");
+            name[0] = binding;
+            captured[0] = buffer;
+        });
+        if (!"ChunkSection".equals(name[0]) || captured[0] == null) {
+            throw new IllegalStateException("Vanilla draw did not resolve its ChunkSection uniform slice");
+        }
+        return captured[0];
+    }
+
+    /**
      * Opens a new pass against the exact captured vanilla attachments and clear
      * options. The caller owns and must close the returned pass.
      */

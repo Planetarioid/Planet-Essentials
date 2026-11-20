@@ -455,8 +455,10 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
                         cameraPosition.x, cameraPosition.y, cameraPosition.z);
                 var uniform = PrismTerrainSectionUniformAllocation.upload(RenderSystem.getDevice(), transform);
                 allocated.add(uniform);
+                var chunkSectionUniform = PrismTerrainVanillaPassSnapshot.chunkSectionUniformFor(
+                        entry.vanillaDraw(), snapshot.chunkSectionInfos());
                 draws.add(new PrismTerrainPreparedRenderGroup.Draw(
-                        entry.vanillaDraw(), descriptor, mesh, uniform));
+                        entry.vanillaDraw(), descriptor, mesh, uniform, chunkSectionUniform));
             }
 
             if (draws.size() != plan.requiredDraws()

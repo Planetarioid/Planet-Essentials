@@ -98,7 +98,7 @@ public final class PrismTerrainPreparedRenderBatch implements AutoCloseable {
             submissionState.begin();
             try {
                 for (PrismTerrainPreparedRenderGroup layer : layers) {
-                    layer.submitDrawsInBatch(pass, snapshot.chunkSectionInfos(), submissionState);
+                    layer.submitDrawsInBatch(pass, submissionState);
                 }
                 submissionState.complete();
             } catch (RuntimeException | Error failure) {
