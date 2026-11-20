@@ -44,7 +44,7 @@ public final class DiagnosticsExporter {
         try {
             Files.createDirectories(exportDirectory);
             JsonObject root = new JsonObject();
-            root.addProperty("schemaVersion", 2);
+            root.addProperty("schemaVersion", 3);
             root.addProperty("exportType", "space-client-benchmark");
             root.addProperty("exportedAt", Instant.now().toString());
 
@@ -59,6 +59,7 @@ public final class DiagnosticsExporter {
                 item.addProperty("framesPerSecond", sample.framesPerSecond());
                 item.addProperty("usedHeapBytes", sample.usedHeapBytes());
                 item.addProperty("maxHeapBytes", sample.maxHeapBytes());
+                item.addProperty("heapUsageRatio", sample.heapUsageRatio());
                 performance.add(item);
             }
             root.add("performanceSamples", performance);
@@ -66,7 +67,7 @@ public final class DiagnosticsExporter {
             JsonArray frameData = new JsonArray();
             for (FrameTimeSample sample : List.copyOf(frameTimes)) {
                 JsonObject item = new JsonObject();
-                item.addProperty("timestamp", sample.timestamp().toString());
+                item.addProperty("frameIndex", sample.frameIndex());
                 item.addProperty("frameTimeNanos", sample.frameTimeNanos());
                 item.addProperty("frameTimeMillis", sample.milliseconds());
                 item.addProperty("estimatedFps", sample.estimatedFps());

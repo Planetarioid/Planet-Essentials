@@ -1,12 +1,9 @@
 package com.planetstudios.essentials.diagnostics;
 
-import java.time.Instant;
-import java.util.Objects;
-
 /** One render-frame duration captured locally for frame-pacing analysis. */
-public record FrameTimeSample(Instant timestamp, long frameTimeNanos) {
+public record FrameTimeSample(long frameIndex, long frameTimeNanos) {
     public FrameTimeSample {
-        Objects.requireNonNull(timestamp, "timestamp");
+        if (frameIndex < 0) throw new IllegalArgumentException("frameIndex cannot be negative");
         if (frameTimeNanos <= 0) throw new IllegalArgumentException("frameTimeNanos must be positive");
     }
 

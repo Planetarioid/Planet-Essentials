@@ -20,14 +20,27 @@ class PerformanceMonitorTest {
     }
 
     @Test
-    void clearRemovesAllSamples() {
+    void retainsLongerFrameHistoryWithoutWallClockTimestamps() {
+        PerformanceMonitor monitor = new PerformanceMonitor(20);
+        for (int i = 0; i < 700; i++) monitor.recordFrameTime(10_000_000L + i);
+        assertEquals(600, monitor.frameSampleCount());
+        assertEquals(100L, monitor.frameTimeSnapshot().getFirst().frameIndex());
+        assertTrue(monitor.frameTimePercentileMillis(0.95) >= 10.0);
+    }
+
+    @Test
+    void clearRemovesAllSamplesAndResetsFrameSequence() {
         PerformanceMonitor monitor = new PerformanceMonitor(20);
         monitor.recordFps(144);
+        monitor.recordFrameTime(16_000_000);
         monitor.clear();
 
         assertEquals(0, monitor.sampleCount());
         assertEquals(0, monitor.latestFps());
         assertEquals(0.0, monitor.averageFps());
+        assertEquals(0, monitor.frameSampleCount());
+        monitor.recordFrameTime(16_000_000);
+        assertEquals(0, monitor.frameTimeSnapshot().getFirst().frameIndex());
     }
 
     @Test

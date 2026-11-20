@@ -23,9 +23,9 @@ class BottleneckAnalyzerTest {
 
     @Test void detectsUnevenFramePacing() {
         List<FrameTimeSample> frames = new ArrayList<>();
-        for (int i = 0; i < 28; i++) frames.add(new FrameTimeSample(Instant.now(), 16_000_000));
-        frames.add(new FrameTimeSample(Instant.now(), 80_000_000));
-        frames.add(new FrameTimeSample(Instant.now(), 90_000_000));
+        for (int i = 0; i < 28; i++) frames.add(new FrameTimeSample(i, 16_000_000));
+        frames.add(new FrameTimeSample(28, 80_000_000));
+        frames.add(new FrameTimeSample(29, 90_000_000));
         assertEquals(BottleneckAnalyzer.Finding.FRAME_PACING,
                 BottleneckAnalyzer.analyze(List.of(), frames, List.of()));
     }
