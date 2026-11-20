@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Comparable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -114,10 +112,7 @@ public final class SpaceRendererMeshBuildScheduler<T> implements AutoCloseable {
     public void close() {
         if (!closed.compareAndSet(false, true)) return;
         List<Runnable> neverStarted = executor.shutdownNow();
-        int released = 0;
-        for (Runnable runnable : neverStarted) {
-            if (runnable instanceof BuildTask task && task.releaseOnce()) released++;
-        }
+        int released = neverStarted.size();
         // Completed results are no longer consumable after close.
         int completed = completions.size();
         completions.clear();
@@ -145,7 +140,6 @@ public final class SpaceRendererMeshBuildScheduler<T> implements AutoCloseable {
         private final double priority;
         private final long order;
         private final Callable<T> build;
-        private final AtomicBoolean released = new AtomicBoolean();
 
         private BuildTask(SpaceRendererSectionManager.BuildToken token,
                 double priority, long order, Callable<T> build) {
@@ -167,8 +161,7 @@ public final class SpaceRendererMeshBuildScheduler<T> implements AutoCloseable {
             try {
                 T value = Objects.requireNonNull(build.call(), "Mesh build returned null");
                 result = new BuildResult<>(token, value, null);
-            } catch (Throwable failure) {
-                if (failure instanceof ThreadDeath death) throw death;
+            } catch (Exception failure) {
                 result = new BuildResult<>(token, null, failure);
             }
             // The completion queue has the same bound as all in-flight work,
@@ -178,8 +171,5 @@ public final class SpaceRendererMeshBuildScheduler<T> implements AutoCloseable {
             }
         }
 
-        private boolean releaseOnce() {
-            return released.compareAndSet(false, true);
-        }
     }
 }
