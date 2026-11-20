@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.rendering.space;
 
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -15,6 +16,7 @@ public final class SpaceRendererGpuRegionManager {
     private final SpaceRendererRegionAllocator allocator;
     private final Map<SpaceRendererSectionManager.SectionKey, SpaceRendererRegionAllocator.Allocation> sections =
             new HashMap<>();
+    private final Map<Replacement, Boolean> pending = new IdentityHashMap<>();
 
     public SpaceRendererGpuRegionManager(SpaceRendererRegionAllocator allocator) {
         this.allocator = Objects.requireNonNull(allocator, "allocator");
@@ -30,7 +32,9 @@ public final class SpaceRendererGpuRegionManager {
         SpaceRendererRegionAllocator.Allocation previous = sections.get(key);
         SpaceRendererRegionAllocator.Allocation replacement = allocator.allocate(requestedBytes);
         if (replacement == null) return null;
-        return new Replacement(key, previous, replacement);
+        Replacement reservation = new Replacement(key, previous, replacement);
+        pending.put(reservation, Boolean.TRUE);
+        return reservation;
     }
 
     /**
@@ -39,10 +43,14 @@ public final class SpaceRendererGpuRegionManager {
      */
     public synchronized void commitReplacement(Replacement replacement) {
         Objects.requireNonNull(replacement, "replacement");
+        if (!pending.containsKey(replacement)) {
+            throw new IllegalStateException("Replacement reservation is unknown or already resolved");
+        }
         SpaceRendererRegionAllocator.Allocation current = sections.get(replacement.key());
         if (!Objects.equals(current, replacement.previous())) {
             throw new IllegalStateException("Section GPU allocation changed before replacement commit");
         }
+        pending.remove(replacement);
         sections.put(replacement.key(), replacement.next());
         if (replacement.previous() != null) allocator.release(replacement.previous());
     }
@@ -50,9 +58,8 @@ public final class SpaceRendererGpuRegionManager {
     /** Releases a replacement reservation when its upload fails or is cancelled. */
     public synchronized void rollbackReplacement(Replacement replacement) {
         Objects.requireNonNull(replacement, "replacement");
-        SpaceRendererRegionAllocator.Allocation current = sections.get(replacement.key());
-        if (!Objects.equals(current, replacement.previous())) {
-            throw new IllegalStateException("Section GPU allocation changed before replacement rollback");
+        if (pending.remove(replacement) == null) {
+            throw new IllegalStateException("Replacement reservation is unknown or already resolved");
         }
         allocator.release(replacement.next());
     }
