@@ -4,8 +4,10 @@ import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -47,12 +49,27 @@ public final class PrismTerrainGpuCache implements AutoCloseable {
         }
         Key key=Key.of(data);
         PrismTerrainGpuMesh previous=entries.remove(key);
-        if(previous!=null){currentBytes-=previous.gpuBytes();previous.close();}
+        if(previous!=null){
+            currentBytes-=previous.gpuBytes();
+            try {
+                previous.close();
+            } catch (RuntimeException | Error failure) {
+                closeAfterFailure(replacement, failure);
+                throw failure;
+            }
+        }
         while(currentBytes>maxBytes-replacement.gpuBytes()){
             Iterator<Map.Entry<Key,PrismTerrainGpuMesh>> it=entries.entrySet().iterator();
             if(!it.hasNext())break;
             PrismTerrainGpuMesh eldest=it.next().getValue();
-            currentBytes-=eldest.gpuBytes(); it.remove(); eldest.close();
+            currentBytes-=eldest.gpuBytes();
+            it.remove();
+            try {
+                eldest.close();
+            } catch (RuntimeException | Error failure) {
+                closeAfterFailure(replacement, failure);
+                throw failure;
+            }
         }
         entries.put(key,replacement);
         currentBytes+=replacement.gpuBytes();
@@ -67,51 +84,92 @@ public final class PrismTerrainGpuCache implements AutoCloseable {
 
     public int invalidateSection(int x,int y,int z){
         RenderSystem.assertOnRenderThread(); ensureOpen();
-        int removed=0;
+        List<PrismTerrainGpuMesh> removed = new ArrayList<>();
         Iterator<Map.Entry<Key,PrismTerrainGpuMesh>> it=entries.entrySet().iterator();
         while(it.hasNext()){
             Map.Entry<Key,PrismTerrainGpuMesh> entry=it.next();
             Key key=entry.getKey();
             if(key.x==x&&key.y==y&&key.z==z){
-                currentBytes-=entry.getValue().gpuBytes(); it.remove(); entry.getValue().close(); removed++;
+                PrismTerrainGpuMesh mesh=entry.getValue();
+                currentBytes-=mesh.gpuBytes();
+                it.remove();
+                removed.add(mesh);
             }
         }
-        return removed;
+        closeAll(removed);
+        return removed.size();
     }
 
     /** Invalidates all vertical section allocations for one chunk. */
     public int invalidateChunk(int chunkX, int chunkZ) {
         RenderSystem.assertOnRenderThread(); ensureOpen();
-        int removed = 0;
+        List<PrismTerrainGpuMesh> removed = new ArrayList<>();
         Iterator<Map.Entry<Key,PrismTerrainGpuMesh>> it = entries.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<Key,PrismTerrainGpuMesh> entry = it.next();
             Key key = entry.getKey();
             if (key.x == chunkX && key.z == chunkZ) {
-                currentBytes -= entry.getValue().gpuBytes();
+                PrismTerrainGpuMesh mesh=entry.getValue();
+                currentBytes -= mesh.gpuBytes();
                 it.remove();
-                entry.getValue().close();
-                removed++;
+                removed.add(mesh);
             }
         }
-        return removed;
+        closeAll(removed);
+        return removed.size();
     }
 
     public void clear(){
         RenderSystem.assertOnRenderThread();
         if(closed)return;
-        for(PrismTerrainGpuMesh mesh:entries.values())mesh.close();
-        entries.clear();currentBytes=0;
+        releaseAll();
     }
+
     public int size(){RenderSystem.assertOnRenderThread();ensureOpen();return entries.size();}
     public long currentBytes(){RenderSystem.assertOnRenderThread();ensureOpen();return currentBytes;}
     public long maxBytes(){return maxBytes;}
     private void ensureOpen(){if(closed)throw new IllegalStateException("Prism terrain GPU cache is closed");}
+
+    private void releaseAll() {
+        List<PrismTerrainGpuMesh> removed = new ArrayList<>(entries.values());
+        entries.clear();
+        currentBytes = 0;
+        closeAll(removed);
+    }
+
+    private static void closeAll(Iterable<PrismTerrainGpuMesh> meshes) {
+        Throwable failure = null;
+        for (PrismTerrainGpuMesh mesh : meshes) {
+            try {
+                mesh.close();
+            } catch (RuntimeException | Error closeFailure) {
+                if (failure == null) failure = closeFailure;
+                else failure.addSuppressed(closeFailure);
+            }
+        }
+        rethrow(failure);
+    }
+
+    private static void closeAfterFailure(PrismTerrainGpuMesh mesh, Throwable failure) {
+        try {
+            mesh.close();
+        } catch (RuntimeException | Error closeFailure) {
+            failure.addSuppressed(closeFailure);
+        }
+    }
+
+    private static void rethrow(Throwable failure) {
+        if (failure instanceof Error error) throw error;
+        if (failure instanceof RuntimeException runtimeFailure) throw runtimeFailure;
+    }
+
     @Override public void close(){
         RenderSystem.assertOnRenderThread();
         if(closed)return;
-        clear();closed=true;
+        closed=true;
+        releaseAll();
     }
+
     private record Key(int x,int y,int z,String material,PrismFrameStage stage){
         static Key of(PrismTerrainVertexData data){
             return new Key(data.sectionX(),data.sectionY(),data.sectionZ(),data.materialId(),data.stage());
