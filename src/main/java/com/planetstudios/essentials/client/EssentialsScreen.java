@@ -45,7 +45,8 @@ public final class EssentialsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        // Screen.renderWithTooltipAndSubtitles renders the background before this method.
+        // Rendering it again attempts to enqueue a second blur pass in the same frame.
         int center = width / 2;
         int top = Math.max(72, height / 4 - 12);
         int panelWidth = Math.min(380, width - 24);

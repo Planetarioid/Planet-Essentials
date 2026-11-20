@@ -58,9 +58,14 @@ class PrismTerrainVertexDataTest {
         assertEquals(80,data.vertexCount());
         assertEquals(80*36,data.byteSize());
     }
-    @Test void rejectsNonFiniteUvAndOutOfSectionPosition() {
+    @Test void preservesFiniteGeometryThatExtendsBeyondSectionBounds() {
+        assertEquals(-0.25f, v(-0.25f, 0, 0, 0, 0).x());
+        assertEquals(16.25f, v(16.25f, 0, 0, 0, 0).x());
+        assertEquals(17.0f, v(0, 0, 17, 0, 0).z());
+    }
+    @Test void rejectsNonFinitePositionsAndUvCoordinates() {
         assertThrows(IllegalArgumentException.class,()->v(Float.NaN,0,0,0,0));
-        assertThrows(IllegalArgumentException.class,()->v(0,0,17,0,0));
+        assertThrows(IllegalArgumentException.class,()->v(0,Float.POSITIVE_INFINITY,0,0,0));
         assertThrows(IllegalArgumentException.class,()->v(0,0,0,Float.POSITIVE_INFINITY,0));
     }
     @Test void rejectsEmptyPayloadAndUnsupportedStage() {
