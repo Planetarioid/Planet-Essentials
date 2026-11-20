@@ -91,10 +91,6 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
      * not roll back draw commands already submitted by this method.</p>
      */
     public void submitDraws(RenderPass pass) {
-        submitDraws(pass, null);
-    }
-
-    private void submitDraws(RenderPass pass, GpuBufferSlice[] chunkSectionInfos) {
         RenderSystem.assertOnRenderThread();
         ensureOpen();
         Objects.requireNonNull(pass, "pass");
