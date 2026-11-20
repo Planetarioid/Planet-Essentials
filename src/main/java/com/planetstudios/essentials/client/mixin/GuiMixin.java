@@ -1,38 +1,33 @@
 package com.planetstudios.essentials.client.mixin;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.planetstudios.essentials.client.CrosshairTargetIndicator;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Tints only the vanilla crosshair render pass when a valid player target is under aim. */
+/** Draws a compact red overlay when the vanilla crosshair targets an attackable player. */
 @Mixin(Gui.class)
 public abstract class GuiMixin {
-    @Unique private float[] planetEssentials$previousShaderColor;
-
-    @Inject(method = "renderCrosshair", at = @At("HEAD"))
-    private void planetEssentials$beginTargetTint(GuiGraphics graphics, DeltaTracker deltaTracker,
-                                                   CallbackInfo callback) {
-        planetEssentials$previousShaderColor = null;
-        if (!CrosshairTargetIndicator.shouldHighlight()) return;
-        float[] previous = RenderSystem.getShaderColor();
-        planetEssentials$previousShaderColor = previous.clone();
-        RenderSystem.setShaderColor(previous[0], previous[1] * 0.12F,
-                previous[2] * 0.12F, previous[3]);
-    }
-
     @Inject(method = "renderCrosshair", at = @At("RETURN"))
-    private void planetEssentials$endTargetTint(GuiGraphics graphics, DeltaTracker deltaTracker,
-                                                 CallbackInfo callback) {
-        if (planetEssentials$previousShaderColor == null) return;
-        float[] previous = planetEssentials$previousShaderColor;
-        RenderSystem.setShaderColor(previous[0], previous[1], previous[2], previous[3]);
-        planetEssentials$previousShaderColor = null;
+    private void planetEssentials$drawTargetIndicator(GuiGraphics graphics, DeltaTracker deltaTracker,
+                                                       CallbackInfo callback) {
+        if (!CrosshairTargetIndicator.shouldHighlight()) return;
+
+        Minecraft client = Minecraft.getInstance();
+        int centerX = client.getWindow().getGuiScaledWidth() / 2;
+        int centerY = client.getWindow().getGuiScaledHeight() / 2;
+        int red = 0xFFFF3030;
+        int shadow = 0xFF401010;
+
+        // Dark one-pixel outline keeps the indicator readable over bright and dark scenes.
+        graphics.fill(centerX - 1, centerY - 6, centerX + 2, centerY + 6, shadow);
+        graphics.fill(centerX - 6, centerY - 1, centerX + 6, centerY + 2, shadow);
+        graphics.fill(centerX, centerY - 5, centerX + 1, centerY + 5, red);
+        graphics.fill(centerX - 5, centerY, centerX + 5, centerY + 1, red);
     }
 }
