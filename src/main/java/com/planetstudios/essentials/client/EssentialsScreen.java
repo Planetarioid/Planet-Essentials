@@ -20,28 +20,32 @@ public final class EssentialsScreen extends Screen {
     @Override
     protected void init() {
         int center = width / 2;
-        int top = Math.max(54, height / 4 - 12);
+        int top = Math.max(72, height / 4 - 12);
         int buttonWidth = Math.min(320, width - 48);
         int left = center - buttonWidth / 2;
 
-        addRenderableWidget(clientButton("Minecraft Settings", left, top + 46,
+        addRenderableWidget(clientButton("Minecraft Settings", left, top + 40,
                 buttonWidth, () -> VanillaOptionsAccess.open(minecraft, this)));
-        addRenderableWidget(clientButton("HUD Editor", left, top + 73,
+        addRenderableWidget(clientButton("HUD Editor", left, top + 64,
                 buttonWidth, () -> minecraft.setScreen(new HudEditorScreen(this))));
-        addRenderableWidget(clientButton("Performance  /  Diagnostics", left, top + 100,
+        addRenderableWidget(clientButton("Search Settings", left, top + 88,
+                buttonWidth, () -> minecraft.setScreen(new SettingsSearchScreen(this))));
+        addRenderableWidget(clientButton("Search Keybinds", left, top + 112,
+                buttonWidth, () -> minecraft.setScreen(new KeybindSearchScreen(this))));
+        addRenderableWidget(clientButton("Performance  /  Diagnostics", left, top + 136,
                 buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "diagnostics"))));
-        addRenderableWidget(clientButton("System Controls", left, top + 127,
+        addRenderableWidget(clientButton("System Controls", left, top + 160,
                 buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "systems"))));
-        addRenderableWidget(clientButton("Prism  /  Shader Engine", left, top + 154,
+        addRenderableWidget(clientButton("Prism  /  Shader Engine", left, top + 184,
                 buttonWidth, () -> minecraft.setScreen(new ShaderSettingsScreen(this))));
-        addRenderableWidget(clientButton("Configuration Profiles", left, top + 181,
+        addRenderableWidget(clientButton("Configuration Profiles", left, top + 208,
                 buttonWidth, () -> minecraft.setScreen(new ProfilesScreen(this))));
-        addRenderableWidget(clientButton("Feature Priorities", left, top + 208,
+        addRenderableWidget(clientButton("Feature Priorities", left, top + 232,
                 buttonWidth, () -> minecraft.setScreen(new FeaturePriorityScreen(this))));
-        addRenderableWidget(clientButton("Combat Features", left, top + 235,
+        addRenderableWidget(clientButton("Combat Features", left, top + 256,
                 buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "combat"))));
         addRenderableWidget(Button.builder(Component.literal("CLOSE"), button -> onClose())
-                .bounds(center - 70, top + 264, 140, 20).build());
+                .bounds(center - 70, top + 283, 140, 20).build());
     }
 
     private Button clientButton(String label, int x, int y, int width, Runnable action) {

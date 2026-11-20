@@ -8,21 +8,25 @@ Its custom rendering initiative is named the **Planet Prism Rendering Engine (PP
 
 ## Development status
 
-The repository is in active development. Implemented foundations include typed configuration and profiles, bounded local diagnostics, explicit diagnostics export, mod discovery through Planet Lib, feature-priority controls, and a route from Minecraft's normal Options entry point to the Essentials settings hub.
+The repository is in active development. The latest CI build and test workflow passed for commit `7c1e554204b20e585e8befe3d324c4927f706c15`: 238 automated tests, 0 failures, 0 ignored tests, plus distributable JAR verification. This is automated verification only; Minecraft runtime, GPU behavior, multiplayer behavior, and third-party compatibility remain unverified until tested.
+
+Implemented foundations include typed configuration and profiles, bounded local diagnostics, explicit diagnostics export, mod discovery through Planet Lib, feature-priority controls, searchable settings and keybind screens, a HUD editor, and a route from Minecraft's normal Options entry point to the Essentials settings hub.
 
 - [x] Repository and Fabric build foundation
 - [x] Configuration, migrations, profiles, and persistence tests
 - [x] Planet Lib API bridge and loaded-mod/capability discovery
 - [x] Feature-priority settings and provider lifecycle integration
 - [x] Local diagnostics collection and explicit JSON export
+- [x] Searchable Planet settings and keybind screens (automated build verified; runtime test pending)
+- [x] HUD editor foundation (automated build verified; runtime test pending)
 - [~] Diagnostics runtime-overhead verification
-- [~] Planet Essentials settings hub replaces vanilla Options entry point
-- [~] Prism texture pipeline source implementation and CI verification; client runtime and consumer integration pending
-- [ ] Prism shader and rendering backend
-- [ ] Full settings navigation and per-mod panels
-- [ ] Client and dedicated-server validation
+- [~] Planet Essentials settings hub and vanilla Options integration
+- [~] Prism shader and texture pipelines: source implementation and CI verification; client runtime and consumer integration pending
+- [ ] Prism terrain takeover and visual parity validation
+- [ ] Client and dedicated-server launch validation
+- [ ] Third-party coexistence validation
 
-See [the development roadmap](docs/ROADMAP.md), [Prism architecture](docs/rendering/PRISM_RENDERING_ENGINE.md), [baseline profiling protocol](docs/performance/BASELINE_PROFILING.md), [benchmark and correctness protocol](docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md), and [compatibility test matrix](docs/COMPATIBILITY_TEST_MATRIX.md) for tracked work and verification requirements.
+See [the development roadmap](docs/ROADMAP.md), [first testing pass](docs/TESTING_GUIDE.md), [compatibility test matrix](docs/COMPATIBILITY_TEST_MATRIX.md), [Prism architecture](docs/rendering/PRISM_RENDERING_ENGINE.md), [baseline profiling protocol](docs/performance/BASELINE_PROFILING.md), and [benchmark and correctness protocol](docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md) for tracked work and verification requirements.
 
 ## Planned responsibilities
 
@@ -50,10 +54,10 @@ See [the development roadmap](docs/ROADMAP.md), [Prism architecture](docs/render
 ## Development environment
 
 - Minecraft: 1.21.11
-- Mod loader: Fabric
 - Fabric Loader: 0.18.1
+- Fabric API: 0.141.6+1.21.11
 - Java: 21
-- Build: Gradle with Fabric Loom
+- Build: Gradle 9.2.0 with Fabric Loom
 
 Build with `gradle clean build` and run tests with `gradle test`.
 
