@@ -3,6 +3,7 @@ package com.planetstudios.essentials.rendering.shaders.client;
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.PlanetEssentials;
 import com.planetstudios.essentials.rendering.shaders.PrismPostProcessGraph;
+import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVanillaPipelineCache;
 import com.planetstudios.essentials.rendering.shaders.ShaderBindingLayout;
 import com.planetstudios.essentials.rendering.shaders.ShaderPackCatalog;
 import com.planetstudios.essentials.rendering.shaders.ShaderPackLoader;
@@ -60,6 +61,7 @@ public final class ShaderPackRuntime {
                 selectedProgramSpecs = programs.stream().collect(
                         java.util.stream.Collectors.toUnmodifiableMap(ShaderProgramSpec::id, spec -> spec));
                 TERRAIN_PROGRAMS.clear();
+                PrismTerrainVanillaPipelineCache.clear();
                 LOGGER.info("Prism compiled and published {} shader programs for pack '{}' (generation {}).",
                         PIPELINE.snapshot().programCount(), compiledPackId, PIPELINE.snapshot().generation());
             } else {
@@ -140,8 +142,15 @@ public final class ShaderPackRuntime {
         compiledPostProcessGraph = null;
         selectedProgramSpecs = Map.of();
         TERRAIN_PROGRAMS.clear();
-        if (RenderSystem.isOnRenderThread()) PIPELINE.close();
-        else RenderSystem.queueFencedTask(PIPELINE::close);
+        if (RenderSystem.isOnRenderThread()) {
+            PrismTerrainVanillaPipelineCache.clear();
+            PIPELINE.close();
+        } else {
+            RenderSystem.queueFencedTask(() -> {
+                PrismTerrainVanillaPipelineCache.clear();
+                PIPELINE.close();
+            });
+        }
     }
 
     private record TerrainProgramEntry(long generation, String sourceHash,
