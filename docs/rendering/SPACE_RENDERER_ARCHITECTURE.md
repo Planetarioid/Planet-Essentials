@@ -36,10 +36,10 @@ These are standalone foundations. They are not yet connected to Minecraft's comp
 
 | Stage | Deliverable | Status |
 |---|---|---|
-| 1 | Section identity and revision manager | Implemented, CI pending |
-| 2 | Bounded asynchronous mesh-build scheduler | Implemented, CI pending |
-| 3 | Conservative visibility graph | Implemented, CI pending |
-| 4 | Aligned GPU-region allocator and ownership manager | Implemented, CI pending |
+| 1 | Section identity and revision manager | Implemented, awaiting CI verification |
+| 2 | Bounded asynchronous mesh-build scheduler | Implemented, awaiting CI verification |
+| 3 | Conservative visibility graph | Implemented, awaiting CI verification |
+| 4 | Aligned GPU-region allocator and ownership manager | Implemented, awaiting CI verification |
 | 5 | Minecraft chunk lifecycle and mesh-builder integration | Not started |
 | 6 | Shared GPU buffers and render-thread upload pipeline | Not started |
 | 7 | Layered render lists and batched draw submission | Partial foundations |
