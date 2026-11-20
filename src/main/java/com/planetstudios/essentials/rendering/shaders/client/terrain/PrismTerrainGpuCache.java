@@ -37,9 +37,14 @@ public final class PrismTerrainGpuCache implements AutoCloseable {
     public boolean put(GpuDevice device,PrismTerrainVertexData data){
         RenderSystem.assertOnRenderThread(); ensureOpen();
         Objects.requireNonNull(data,"data");
-        long bytes=data.estimatedCpuBytes();
-        if(bytes>maxBytes)return false;
+        // The GPU budget accounts only for the uploaded vertex allocation.
+        // estimatedCpuBytes() also includes optional CPU-side translucent sort
+        // centers, which are not uploaded and must not reject a valid mesh.
         PrismTerrainGpuMesh replacement=PrismTerrainGpuMesh.upload(device,data);
+        if (replacement.gpuBytes() > maxBytes) {
+            replacement.close();
+            return false;
+        }
         Key key=Key.of(data);
         PrismTerrainGpuMesh previous=entries.remove(key);
         if(previous!=null){currentBytes-=previous.gpuBytes();previous.close();}
