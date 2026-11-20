@@ -37,7 +37,7 @@ public final class SettingsSearchScreen extends Screen {
     private final Screen parent;
     private EditBox search;
     private int page;
-    private static final int PAGE_SIZE = 7;
+    private static final int PAGE_SIZE = 6;
     private List<Result> matches = List.of();
     private final List<AbstractWidget> resultWidgets = new ArrayList<>();
 
@@ -74,7 +74,7 @@ public final class SettingsSearchScreen extends Screen {
         resultWidgets.clear();
         int start = page * PAGE_SIZE;
         int end = Math.min(matches.size(), start + PAGE_SIZE);
-        int y = 75;
+        int y = 84;
         for (int i=start;i<end;i++) {
             Result result = matches.get(i);
             if (result instanceof MinecraftResult vanilla) {
@@ -88,7 +88,7 @@ public final class SettingsSearchScreen extends Screen {
                 resultWidgets.add(control);
                 addRenderableWidget(control);
             }
-            y += 27;
+            y += 34;
         }
     }
 
@@ -131,6 +131,14 @@ public final class SettingsSearchScreen extends Screen {
         graphics.drawCenteredString(font,title,width/2,20,0xFFF4FAFF);
         graphics.drawCenteredString(font,matches.size()+" unified settings  •  Planet + Minecraft",
                 width/2,66,0xFF8FAFC8);
+        int first = page * PAGE_SIZE;
+        int rowY = 73;
+        for (int i = first; i < Math.min(matches.size(), first + PAGE_SIZE); i++) {
+            Result result = matches.get(i);
+            String category = result.category().replace('_', ' ').toUpperCase(Locale.ROOT);
+            graphics.drawString(font, category, width / 2 - 165, rowY, 0xFF55C7FF, false);
+            rowY += 34;
+        }
         graphics.drawCenteredString(font,matches.isEmpty()?"No settings found. Try another keyword.":
                 "Page "+(page+1)+" / "+Math.max(1,(matches.size()+PAGE_SIZE-1)/PAGE_SIZE),
                 width/2,height-43,0xFF8FAFC8);
