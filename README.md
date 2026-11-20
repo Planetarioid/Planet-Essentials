@@ -1,10 +1,10 @@
-# Planet Essentials
+# Space Client
 
-**The central hub for the Planet Studios Minecraft mod ecosystem.**
+**The unified Minecraft client experience by Planet Studios.**
 
-Planet Essentials is a Fabric mod for Minecraft Java Edition **1.21.11**, targeting Java 21. It is designed to become the main in-game settings hub, integration coordinator, diagnostics center, and client optimization suite for Planet Studios projects.
+Space Client is a Fabric mod for Minecraft Java Edition **1.21.11**, targeting Java 21. It brings settings, integrations, diagnostics, HUD tools, and client optimization systems into one cohesive in-game experience.
 
-Its custom rendering initiative is named the **Planet Prism Rendering Engine (PPRE)**. Prism is the umbrella architecture for texture processing, GPU resource management, shader systems, rendering capabilities, and compatibility. It is an active development project, not a claim of completed renderer functionality.
+Its custom rendering initiative is named the **Prism Rendering Engine (PPRE)**. Prism is the umbrella architecture for texture processing, GPU resource management, shader systems, rendering capabilities, and compatibility. It is an active development project, not a claim of completed renderer functionality.
 
 ## Development status
 
@@ -17,10 +17,10 @@ Implemented foundations include typed configuration and profiles, bounded local 
 - [x] Planet Lib API bridge and loaded-mod/capability discovery
 - [x] Feature-priority settings and provider lifecycle integration
 - [x] Local diagnostics collection and explicit JSON export
-- [x] Searchable Planet settings and keybind screens (automated build verified; runtime test pending)
+- [x] Searchable Space Client settings and keybind screens (automated build verified; runtime test pending)
 - [x] HUD editor foundation (automated build verified; runtime test pending)
 - [~] Diagnostics runtime-overhead verification
-- [~] Planet Essentials settings hub and vanilla Options integration
+- [~] Space Client settings hub and vanilla Options integration
 - [~] Prism shader and texture pipelines: source implementation and CI verification; client runtime and consumer integration pending
 - [ ] Prism terrain takeover and visual parity validation
 - [ ] Client and dedicated-server launch validation
@@ -37,7 +37,7 @@ See [the development roadmap](docs/ROADMAP.md), [first testing pass](docs/TESTIN
 - Per-feature implementation priority controls
 - Diagnostics and performance visibility
 - CPU, GPU, memory, rendering, audio, particle, and animation optimization systems
-- **Planet Prism Rendering Engine (PPRE)** for texture processing, shader management, GPU resource lifecycle, and rendering optimizations
+- **Prism Rendering Engine (PPRE)** for texture processing, shader management, GPU resource lifecycle, and rendering optimizations
 
 ## Design principles
 
@@ -47,7 +47,7 @@ See [the development roadmap](docs/ROADMAP.md), [first testing pass](docs/TESTIN
 - Avoid unnecessary work on tick and render paths.
 - Do not silently rewrite third-party configuration or behavior.
 - Optional Planet mods must remain optional.
-- When Planet Essentials is absent, other Planet mods retain their standalone defaults.
+- When Space Client is absent, other Planet mods retain their standalone defaults.
 - Settings and feature-priority choices must be reversible.
 - Never replace vanilla rendering paths until the optimized path has correctness, fallback, and compatibility coverage.
 
@@ -63,6 +63,6 @@ Build with `gradle clean build` and run tests with `gradle test`.
 
 ## Dependency note
 
-Planet Essentials builds against a pinned Planet Lib Git submodule as a sibling Gradle project. Planet Lib is compile-time only in Essentials and remains optional at runtime.
+Space Client builds against a pinned Planet Lib Git submodule as a sibling Gradle project. Planet Lib is compile-time only in Essentials and remains optional at runtime.
 
 No license has been selected yet. Do not assume permission to redistribute or reuse this project.

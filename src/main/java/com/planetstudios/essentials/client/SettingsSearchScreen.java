@@ -15,7 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-/** Unified, searchable Planet settings library with category-labelled option cards. */
+/** Unified, searchable Space Client settings library with category-labelled option cards. */
 public final class SettingsSearchScreen extends Screen {
     private sealed interface Result permits PlanetResult, MinecraftResult {
         String category();
@@ -132,7 +132,7 @@ public final class SettingsSearchScreen extends Screen {
         int left = (width - panelWidth) / 2;
         graphics.fill(left, 22, left + panelWidth, height - 18, 0xF0111A29);
         graphics.fill(left, 22, left + panelWidth, 25, ACCENT);
-        graphics.drawString(font, "PLANET  /  SETTINGS LIBRARY", left + 18, 34, 0xFFF2F7FF, false);
+        graphics.drawString(font, "SPACE CLIENT  /  SETTINGS LIBRARY", left + 18, 34, 0xFFF2F7FF, false);
         graphics.drawString(font, matches.size()+" SETTINGS  ·  PLANET + MINECRAFT", left + 18, 78, 0xFF91A5BD, false);
         int first = page * PAGE_SIZE;
         int rowY = 94;

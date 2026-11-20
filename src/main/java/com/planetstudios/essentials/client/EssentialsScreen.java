@@ -7,7 +7,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-/** Reworked Planet dashboard with a persistent identity rail and modular feature cards. */
+/** Reworked Space Client dashboard with a persistent identity rail and modular feature cards. */
 public final class EssentialsScreen extends Screen {
     private final Screen parent;
     private static final int ACCENT = 0xFF56C8FF;
@@ -15,7 +15,7 @@ public final class EssentialsScreen extends Screen {
     private static final int MUTED = 0xFF91A5BD;
 
     public EssentialsScreen(Screen parent) {
-        super(Component.literal("PLANET"));
+        super(Component.literal("SPACE CLIENT"));
         this.parent = parent;
     }
 
@@ -46,7 +46,7 @@ public final class EssentialsScreen extends Screen {
                 () -> minecraft.setScreen(new FeaturePriorityScreen(this)));
         addCard("COMBAT", "PvP interface features", contentLeft, top + 248, cardWidth,
                 () -> minecraft.setScreen(new SettingsCategoryScreen(this, "combat")));
-        addRenderableWidget(Button.builder(Component.literal("EXIT PLANET"), button -> onClose())
+        addRenderableWidget(Button.builder(Component.literal("EXIT SPACE CLIENT"), button -> onClose())
                 .bounds(contentLeft + cardWidth + gap, top + 248, cardWidth, 42).build());
     }
 
@@ -69,8 +69,8 @@ public final class EssentialsScreen extends Screen {
         graphics.fill(panelLeft, panelTop, panelLeft + 3, panelBottom, ACCENT);
         graphics.fill(panelLeft + 14, panelTop + 14, panelLeft + railWidth - 8, panelBottom - 14, 0xFF0B1220);
         graphics.fill(panelLeft + railWidth, panelTop + 18, panelLeft + railWidth + 1, panelBottom - 18, 0xFF29384C);
-        graphics.drawString(font, "PLANET", panelLeft + 26, panelTop + 30, TEXT, false);
-        graphics.drawString(font, "STUDIOS CLIENT", panelLeft + 26, panelTop + 46, ACCENT, false);
+        graphics.drawString(font, "SPACE CLIENT", panelLeft + 26, panelTop + 30, TEXT, false);
+        graphics.drawString(font, "BY PLANET STUDIOS", panelLeft + 26, panelTop + 46, ACCENT, false);
         graphics.drawString(font, "CONFIGURATION", panelLeft + 26, panelTop + 82, MUTED, false);
         graphics.drawString(font, "One client.", panelLeft + 26, panelTop + 108, TEXT, false);
         graphics.drawString(font, "One settings library.", panelLeft + 26, panelTop + 120, TEXT, false);
@@ -91,7 +91,7 @@ public final class EssentialsScreen extends Screen {
         var session = EssentialsRuntime.sessionStatistics().snapshot();
         graphics.drawString(font, (session.active() ? "SESSION " : "LAST SESSION ")
                 + formatDuration(session.elapsedSeconds()), panelLeft + 26, panelBottom - 32, MUTED, false);
-        graphics.drawString(font, "PLANET STUDIOS  /  CLIENT BUILD", contentLeft, panelBottom - 32, MUTED, false);
+        graphics.drawString(font, "SPACE CLIENT  /  BY PLANET STUDIOS", contentLeft, panelBottom - 32, MUTED, false);
     }
 
     private static String formatDuration(long seconds) {

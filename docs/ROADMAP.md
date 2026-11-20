@@ -1,4 +1,4 @@
-# Planet Essentials Development Roadmap
+# Space Client Development Roadmap
 
 Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] implemented and verified at the stated level.
 
@@ -14,7 +14,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [~] FPS/runtime overhead, JFR/GPU profiling, and benchmark verification
 - [ ] Unified feature/provider registry organized by player-facing function rather than source mod
 - [ ] Unified settings, HUD-widget, keybind, lifecycle, and configuration adapter contracts
-- [ ] Versioned full-client profiles covering Planet settings and supported integration settings without silently rewriting provider-owned files
+- [ ] Versioned full-client profiles covering Space Client settings and supported integration settings without silently rewriting provider-owned files
 - [ ] Deterministic provider selection and duplicate-feature handling across native and integrated providers
 - [ ] Optional dependency detection, graceful degradation, and actionable compatibility diagnostics
 
@@ -81,13 +81,13 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 ## 5. Planet client experience and settings
 - [~] Main settings hub and Prism shader panel
 - [x] In-game Planet hub shortcut registered to default key 0, gated to active gameplay with no open screen
-- [x] Dedicated Planet Client entry in the pause menu, returning to the pause menu when closed
+- [x] Dedicated Space Client entry in the pause menu, returning to the pause menu when closed
 - [ ] Runtime-test keybind behavior across world states, pause/resume, inventory, trading, chat, and container screens
-- [ ] Migrate every supported vanilla settings category into Planet-owned pages while preserving native Minecraft option behavior and persistence
-- [ ] Redesign every incorporated vanilla setting control using reusable Planet UI components; no final vanilla-looking controls in the finished experience
+- [ ] Migrate every supported vanilla settings category into Space Client-owned pages while preserving native Minecraft option behavior and persistence
+- [ ] Redesign every incorporated vanilla setting control using reusable Space Client UI components; no final vanilla-looking controls in the finished experience
 - [ ] Keep vanilla settings screens as a recovery route until complete parity and in-game validation
 - [ ] Registry-driven settings pages, search/filter, reset flows, accessibility, and localization
-- [ ] Fixed, cohesive Planet visual system across Planet-owned screens, deferred until underlying features stabilize
+- [ ] Fixed, cohesive Space Client visual system across Space Client-owned screens, deferred until underlying features stabilize
 - [ ] Optional FancyMenu coexistence for user-customized Minecraft main menus; no competing Planet main-menu editor or hard dependency
 
 ## 6. Unified feature and third-party integration experience
@@ -96,7 +96,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [~] First-pass Planet HUD editor: toggle registered widgets, cycle nine anchors, adjust X/Y offsets, reset individual/all placements, persist settings, and preview layout; third-party provider integration remains planned
 - [ ] Unified settings pages for exposed Planet and third-party settings
 - [ ] Unified keybind manager for supported providers
-- [ ] Unified profile support for Planet-owned and explicitly supported integration settings
+- [ ] Unified profile support for Space Client-owned and explicitly supported integration settings
 - [ ] Optional dependency detection and graceful behavior when integrations are absent, outdated, or incompatible
 - [ ] Flashback and compatible add-on integration; Planet does not build a competing replay/recording system
 - [ ] Simple Voice Chat integration and unified voice interface, subject to its supported API
@@ -118,8 +118,8 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [ ] Account-authenticated skin changes through supported Minecraft services; never collect or store Microsoft passwords/tokens in Planet
 - [ ] Additional cosmetics only where supported by Minecraft services or an explicitly compatible provider
 - [ ] FancyMenu optional compatibility for Minecraft main-menu layouts/backgrounds (no bundled FancyMenu code, no hard dependency)
-- [ ] Verify FancyMenu coexistence with Planet-owned screens and buttons on Fabric 1.21.11
-- [ ] Keep Planet UI appearance fixed and consistent; do not build player-facing theme, font, color, scale, opacity, animation, or home-screen layout editors
+- [ ] Verify FancyMenu coexistence with Space Client-owned screens and buttons on Fabric 1.21.11
+- [ ] Keep Space Client UI appearance fixed and consistent; do not build player-facing theme, font, color, scale, opacity, animation, or home-screen layout editors
 - [ ] Keep functional customization such as HUD widget placement/visibility and feature settings
 
 ### Server discovery and multiplayer
@@ -173,7 +173,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [ ] Performance, memory, resource-lifecycle, accessibility, localization, and failure/fallback testing
 - [ ] Resolve duplicate ownership and verify that absent/incompatible optional mods never prevent normal startup
 - [ ] Freeze feature behavior and interaction contracts before final UI design
-- [ ] Complete the fixed Planet visual/UI system across Planet settings, HUD editor, skin manager, server browser, voice interface, and utility screens; rely on optional FancyMenu for user-authored main-menu layouts
+- [ ] Complete the fixed Space Client visual/UI system across Space Client settings, HUD editor, skin manager, server browser, voice interface, and utility screens; rely on optional FancyMenu for user-authored main-menu layouts
 - [ ] Regression-test the finished UI and all navigation/persistence after the overhaul
 - [ ] Select and verify project license and third-party notices/attributions; confirm redistribution permissions for every bundled component
 - [ ] Prepare changelog, versioning, documentation, support/issue process, and release artifacts

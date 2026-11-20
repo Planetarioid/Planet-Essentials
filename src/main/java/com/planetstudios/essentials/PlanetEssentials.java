@@ -7,23 +7,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Main entry point for Planet Essentials.
+ * Main entry point for Space Client.
  *
  * <p>Initialization stays deliberately small. Planet Lib is an optional
  * runtime integration; its API is accessed only when the mod is present.</p>
  */
 public final class PlanetEssentials implements ModInitializer {
     public static final String MOD_ID = "planet_essentials";
-    public static final Logger LOGGER = LoggerFactory.getLogger("Planet Essentials");
+    public static final Logger LOGGER = LoggerFactory.getLogger("Space Client");
 
     @Override
     public void onInitialize() {
         if (FabricLoader.getInstance().isModLoaded("planet_lib")) {
             var snapshot = new ModDiscoveryService().refresh();
-            LOGGER.info("Planet Essentials initialized with Planet Lib: {} Planet mods and {} declared capabilities discovered.",
+            LOGGER.info("Space Client initialized with Planet Lib: {} Planet mods and {} declared capabilities discovered.",
                     snapshot.planetMods().size(), snapshot.capabilities().size());
         } else {
-            LOGGER.info("Planet Essentials initialized in standalone mode; Planet Lib is not installed.");
+            LOGGER.info("Space Client initialized in standalone mode; Planet Lib is not installed.");
         }
     }
 }

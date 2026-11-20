@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "planet_essentials",
   "version": "${version}",
-  "name": "Planet Essentials",
-  "description": "The central configuration, diagnostics, and optimization hub for Planet Studios mods.",
+  "name": "Space Client",
+  "description": "A unified Minecraft client experience by Planet Studios, combining settings, HUD tools, diagnostics, and performance systems.",
   "authors": [
     "Planet Studios"
   ],
