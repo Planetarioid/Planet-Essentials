@@ -5,20 +5,20 @@ This guide is for the first manual runtime pass of the exact build artifact link
 ## Build under test
 
 - Minecraft Java: 1.21.11
-- Fabric Loader: 0.18.1
+- Fabric Loader: 0.18.1 or newer compatible 0.20.x release
 - Java runtime: 21
 - Fabric API: 0.141.6+1.21.11
 - Planet Essentials: 0.1.0-alpha.1
-- Source commit: 7c1e554204b20e585e8befe3d324c4927f706c15
+- Source commit: latest successful build linked from the project Actions page
 - Planet Lib: optional at runtime; the CI build verifies the pinned submodule checkout.
 
-The CI run for this commit completed successfully. Its test report contains 238 tests, 0 failures, and 0 ignored tests. CI also verified the distributable JAR contains fabric.mod.json and the main mod entrypoint. CI does not launch Minecraft or prove graphics-driver, multiplayer, or third-party-mod behavior.
+The CI test report contains 238 tests, 0 failures, and 0 ignored tests. CI also verifies the distributable JAR contains fabric.mod.json and the main mod entrypoint. CI does not launch Minecraft or prove graphics-driver, multiplayer, or third-party-mod behavior.
 
 ## Install an isolated test profile
 
-1. Create a separate Minecraft launcher installation/profile for Minecraft 1.21.11 and Fabric Loader 0.18.1.
+1. Create a separate Minecraft launcher installation/profile for Minecraft 1.21.11 and a supported Fabric Loader version.
 2. Use Java 21 for that profile.
-3. Install the matching Fabric API build.
+3. Install Fabric API 0.141.6+1.21.11.
 4. Put the Planet Essentials JAR in that profile's mods folder.
 5. First launch with Essentials and Fabric API only. Do not add other mods, shaders, or resource packs in the first pass.
 6. Keep your normal instance and worlds untouched. Use a new disposable test world for gameplay checks.
@@ -31,10 +31,12 @@ Planet Lib is optional at runtime. The first pass should test Essentials without
 - [ ] Client reaches the title screen without a crash.
 - [ ] Open Options from the title screen and verify the Planet settings route.
 - [ ] Open and close the Planet hub repeatedly.
-- [ ] Open the hub from the pause menu and confirm closing returns to the pause menu.
+- [ ] Open the hub using its configured gameplay keybind.
 - [ ] Enter vanilla Minecraft settings from the hub, then return.
 - [ ] Open every hub page and verify Back/Close returns to the correct parent screen.
 - [ ] Test at the normal resolution and one smaller window size. Check for clipped buttons or inaccessible controls.
+
+Note: the pause-menu Planet button is temporarily disabled in this hotfix because its mixin caused the startup crash. Use the configured keybind to open the hub. The pause-menu entry point will be restored after it is implemented against the correct 1.21.11 target.
 
 ## Pass B: menu shortcut
 
@@ -110,11 +112,11 @@ For each issue, record:
 - Minecraft, Loader, Fabric API, Java, Essentials, and Planet Lib versions.
 - Other mods and versions, if any.
 - Exact reproduction steps and expected versus observed behavior.
-- Latest relevant section of `logs/latest.log` or the crash report.
+- Latest relevant section of logs/latest.log or the crash report.
 - Screenshot or short capture for visual/layout problems.
 
 Before sharing logs, remove usernames, local file paths, world names, server addresses, and other private information. Keep the failing profile intact until the issue is understood.
 
 ## Current acceptance boundary
 
-A clean CI build and passing unit tests make this artifact suitable for the first manual test pass. They do not mean the features above have passed in-game. Mark each checkbox only after observing it on the exact environment listed above.
+A clean CI build and passing unit tests make an artifact suitable for manual testing. They do not mean the features above have passed in-game. Mark each checkbox only after observing it on the exact environment listed above.

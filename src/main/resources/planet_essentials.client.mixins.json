@@ -6,7 +6,6 @@
     "MinecraftMixin",
     "GuiMixin",
     "ClientPacketListenerMixin",
-    "PauseScreenMixin",
     "OptionsMixin",
     "SectionCompilerMixin",
     "RenderSectionRegionAccessor",
