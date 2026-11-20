@@ -71,7 +71,8 @@ public final class ShaderSettingsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        // Screen.renderWithTooltipAndSubtitles renders the background before this method.
+        // Avoid scheduling a second blur in the same frame.
         int center = width / 2;
         int top = Math.max(76, height / 4);
         int panelWidth = Math.min(380, width - 24);
