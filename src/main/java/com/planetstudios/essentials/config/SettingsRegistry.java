@@ -30,7 +30,7 @@ public final class SettingsRegistry {
                 config -> config.performanceMonitoringEnabled, (config, value) -> config.performanceMonitoringEnabled = value));
         register(new SettingDefinition<>("systems.event_collection", "systems",
                 "Event collection", "Independently enable or disable local lifecycle and slow-tick event collection.",
-                SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
+                SettingDefinition.Kind.BOOLEAN, false, value -> value != null,
                 config -> config.eventCollectionEnabled, (config, value) -> config.eventCollectionEnabled = value));
         register(new SettingDefinition<>("hud.fps", "hud",
                 "FPS HUD", "Show the live FPS widget during gameplay.",

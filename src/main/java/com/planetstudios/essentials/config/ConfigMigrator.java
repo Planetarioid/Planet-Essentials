@@ -15,7 +15,7 @@ public final class ConfigMigrator {
   if(version<3){if(!migrated.has("featurePriorityOverrides")||migrated.get("featurePriorityOverrides").isJsonNull())migrated.add("featurePriorityOverrides",new JsonObject());migrated.addProperty("schemaVersion",3);version=3;}
   if(version<4){
    if(!migrated.has("performanceMonitoringEnabled"))migrated.addProperty("performanceMonitoringEnabled",true);
-   if(!migrated.has("eventCollectionEnabled"))migrated.addProperty("eventCollectionEnabled",true);
+   if(!migrated.has("eventCollectionEnabled"))migrated.addProperty("eventCollectionEnabled",false);
    migrated.addProperty("schemaVersion",4);version=4;
   }
   if(version<5){

@@ -37,7 +37,7 @@ class SettingsRegistryTest {
         EssentialsConfig config = new EssentialsConfig();
         SettingsRegistry.find("systems.performance_monitoring").orElseThrow().set(config, false);
         assertFalse(config.performanceMonitoringEnabled);
-        assertTrue(config.eventCollectionEnabled);
+        assertFalse(config.eventCollectionEnabled);
         SettingsRegistry.find("systems.event_collection").orElseThrow().set(config, false);
         assertFalse(config.performanceMonitoringEnabled);
         assertFalse(config.eventCollectionEnabled);
