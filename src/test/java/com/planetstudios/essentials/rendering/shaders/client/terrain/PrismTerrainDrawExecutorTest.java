@@ -35,4 +35,17 @@ class PrismTerrainDrawExecutorTest {
         assertFalse(PrismTerrainDrawExecutor.indexRangeFits(64,
                 VertexFormat.IndexType.INT, Integer.MAX_VALUE, Integer.MAX_VALUE));
     }
+    @Test
+    void quadIndexCountUsesLongArithmeticAndRejectsOverflow() {
+        assertEquals(6, PrismTerrainDrawExecutor.indexCountForVertexCount(4));
+        assertEquals(1_500_000_000,
+                PrismTerrainDrawExecutor.indexCountForVertexCount(1_000_000_000));
+        assertThrows(IllegalArgumentException.class,
+                () -> PrismTerrainDrawExecutor.indexCountForVertexCount(1_431_655_768));
+        assertThrows(IllegalArgumentException.class,
+                () -> PrismTerrainDrawExecutor.indexCountForVertexCount(6));
+        assertThrows(IllegalArgumentException.class,
+                () -> PrismTerrainDrawExecutor.indexCountForVertexCount(0));
+    }
+
 }

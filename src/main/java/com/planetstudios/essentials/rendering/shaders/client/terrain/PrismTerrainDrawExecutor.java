@@ -151,6 +151,18 @@ public final class PrismTerrainDrawExecutor {
                 indexBuffer, VertexFormat.IndexType.SHORT, firstIndex);
     }
 
+    /** Computes QUADS index count without allowing integer overflow. */
+    static int indexCountForVertexCount(int vertexCount) {
+        if (vertexCount <= 0 || vertexCount % 4 != 0) {
+            throw new IllegalArgumentException("Terrain vertex count must be a positive multiple of four");
+        }
+        long indexCount = (long) (vertexCount / 4) * 6L;
+        if (indexCount > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Terrain index count exceeds the supported integer range");
+        }
+        return (int) indexCount;
+    }
+
     /**
      * Checks an indexed draw range against a prepared GPU index buffer without
      * mutating RenderPass state. firstIndex and indexCount are measured in
@@ -200,7 +212,7 @@ public final class PrismTerrainDrawExecutor {
         if (mesh.vertexCount() <= 0 || mesh.vertexCount() % 4 != 0) {
             throw new IllegalArgumentException("Prism terrain mesh must contain complete quads");
         }
-        int indexCount = (mesh.vertexCount() / 4) * 6;
+        int indexCount = indexCountForVertexCount(mesh.vertexCount());
         // Validate the explicit index range before any binding or RenderPass
         // mutation. A rejected prepared buffer must leave the caller's pass
         // untouched so the caller can safely choose its preflight fallback.
