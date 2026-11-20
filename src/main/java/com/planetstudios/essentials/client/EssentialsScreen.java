@@ -71,7 +71,8 @@ public final class EssentialsScreen extends Screen {
                     + "     AVG  " + String.format(java.util.Locale.ROOT, "%.1f", monitor.averageFps()),
                     center, infoY, textColor);
             infoY += 13;
-            var latestSample = monitor.snapshot().isEmpty() ? null : monitor.snapshot().get(monitor.snapshot().size() - 1);
+            var samples = monitor.snapshot();
+            var latestSample = samples.isEmpty() ? null : samples.get(samples.size() - 1);
             if (latestSample != null) {
                 graphics.drawCenteredString(font, "JAVA HEAP  " + formatBytes(latestSample.usedHeapBytes())
                         + " / " + formatBytes(latestSample.maxHeapBytes()), center, infoY, 0xFF8FAFC8);
@@ -82,6 +83,21 @@ public final class EssentialsScreen extends Screen {
                 center, infoY, 0xFF71869D);
         graphics.drawCenteredString(font, "PLANET STUDIOS  •  CLIENT CONFIGURATION",
                 center, height - 14, 0xFF52677F);
+    }
+
+    private static String formatBytes(long bytes) {
+        if (bytes < 1024L) {
+            return bytes + " B";
+        }
+        double kib = bytes / 1024.0;
+        if (kib < 1024.0) {
+            return String.format(java.util.Locale.ROOT, "%.1f KiB", kib);
+        }
+        double mib = kib / 1024.0;
+        if (mib < 1024.0) {
+            return String.format(java.util.Locale.ROOT, "%.1f MiB", mib);
+        }
+        return String.format(java.util.Locale.ROOT, "%.2f GiB", mib / 1024.0);
     }
 
     @Override
