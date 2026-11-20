@@ -15,6 +15,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Gui.class)
 public abstract class GuiMixin {
     private static final int VANILLA_CROSSHAIR_SIZE = 15;
+    private static final int CROSSHAIR_ARM_LENGTH = 6;
+    private static final int CROSSHAIR_STROKE = 1;
+    private static final int TARGET_CROSSHAIR_COLOR = 0xFFFF3030;
 
     @Inject(method = "render", at = @At("RETURN"))
     private void spaceClient$renderHudWidgets(GuiGraphics graphics, DeltaTracker deltaTracker,
@@ -27,29 +30,23 @@ public abstract class GuiMixin {
                                                   CallbackInfo callback) {
         if (!CrosshairTargetIndicator.shouldHighlight()) return;
 
-        Minecraft client = Minecraft.getInstance();
-        // Match Gui.renderCrosshair exactly: (guiSize - 15) / 2, with a 15x15
-        // footprint. Using guiWidth/Height also preserves vanilla GUI scaling.
-        int left = (client.getWindow().getGuiScaledWidth() - VANILLA_CROSSHAIR_SIZE) / 2;
-        int top = (client.getWindow().getGuiScaledHeight() - VANILLA_CROSSHAIR_SIZE) / 2;
-        int centerX = left + 7;
-        int centerY = top + 7;
-        int right = left + VANILLA_CROSSHAIR_SIZE;
-        int bottom = top + VANILLA_CROSSHAIR_SIZE;
+        // Use GuiGraphics dimensions, exactly as vanilla does for its 15x15 sprite.
+        // Window dimensions can differ from the active GUI coordinate space.
+        int left = (graphics.guiWidth() - VANILLA_CROSSHAIR_SIZE) / 2;
+        int top = (graphics.guiHeight() - VANILLA_CROSSHAIR_SIZE) / 2;
+        int centerX = left + VANILLA_CROSSHAIR_SIZE / 2;
+        int centerY = top + VANILLA_CROSSHAIR_SIZE / 2;
+        int armEnd = CROSSHAIR_ARM_LENGTH;
 
-        int shadow = 0xFF401010;
-        int red = 0xFFFF3030;
-
-        // Recreate the vanilla 15x15 crosshair silhouette: one-pixel red arms,
-        // a three-pixel center opening, and a one-pixel dark outline.
-        graphics.fill(left, centerY - 1, centerX - 1, centerY + 2, shadow);
-        graphics.fill(centerX + 1, centerY - 1, right, centerY + 2, shadow);
-        graphics.fill(centerX - 1, top, centerX + 2, centerY - 1, shadow);
-        graphics.fill(centerX - 1, centerY + 1, centerX + 2, bottom, shadow);
-
-        graphics.fill(left + 1, centerY, centerX - 1, centerY + 1, red);
-        graphics.fill(centerX + 1, centerY, right - 1, centerY + 1, red);
-        graphics.fill(centerX, top + 1, centerX + 1, centerY - 1, red);
-        graphics.fill(centerX, centerY + 1, centerX + 1, bottom - 1, red);
+        // Match the vanilla sprite's 15x15 footprint: four one-pixel arms,
+        // each six pixels long, with a three-pixel opening at the center.
+        graphics.fill(left, centerY, left + armEnd, centerY + CROSSHAIR_STROKE,
+                TARGET_CROSSHAIR_COLOR);
+        graphics.fill(centerX + 2, centerY, centerX + 2 + armEnd, centerY + CROSSHAIR_STROKE,
+                TARGET_CROSSHAIR_COLOR);
+        graphics.fill(centerX, top, centerX + CROSSHAIR_STROKE, top + armEnd,
+                TARGET_CROSSHAIR_COLOR);
+        graphics.fill(centerX, centerY + 2, centerX + CROSSHAIR_STROKE, centerY + 2 + armEnd,
+                TARGET_CROSSHAIR_COLOR);
     }
 }
