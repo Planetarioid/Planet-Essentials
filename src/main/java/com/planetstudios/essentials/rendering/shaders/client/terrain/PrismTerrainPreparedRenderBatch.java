@@ -17,8 +17,9 @@ import java.util.Set;
  * group. Every layer is submitted into one shared pass, preserving the
  * attachment clear semantics of vanilla's single renderGroup pass.
  *
- * <p>This class is not wired into vanilla cancellation. Callers must retain
- * vanilla rendering until runtime parity and failure handling are proven.</p>
+ * <p>The client mixin invokes the replacement runtime before vanilla opens
+ * its pass. This batch owns the complete preflighted group and reports whether
+ * vanilla fallback remains safe if submission fails.</p>
  */
 public final class PrismTerrainPreparedRenderBatch implements AutoCloseable {
     private final ClientLevel level;

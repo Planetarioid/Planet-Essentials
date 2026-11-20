@@ -22,8 +22,9 @@ import java.util.Set;
  * Render-thread coordinator for preparing all-or-nothing vanilla terrain
  * replacement plans. CPU and GPU state is isolated by ClientLevel identity.
  *
- * <p>This class prepares plans only. It deliberately does not intercept
- * vanilla rendering or suppress a vanilla draw group.</p>
+ * <p>This coordinator prepares plans and draw resources only. The separate
+ * render-group runtime owns the vanilla interception decision and submits a
+ * fully prepared batch before the vanilla pass is opened.</p>
  */
 public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
     private final Map<ClientLevel, WorldState> worlds = new IdentityHashMap<>();

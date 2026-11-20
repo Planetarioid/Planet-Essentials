@@ -1,10 +1,13 @@
 # Prism vanilla terrain replacement
 
 A shader pack opts into vanilla terrain replacement by declaring a shader program
-with the exact identifier `planet:terrain`. The program must compile through
-Prism's Terrain V1 path and declare the required `PrismSection` and
-`DynamicTransforms` uniform buffers. It may use the captured vanilla
-`Sampler0` block atlas and `Sampler2` lightmap bindings.
+with the exact identifier `planet:terrain`. The program must compile through Prism's Terrain V1 path and declare the
+required `PrismSection` uniform buffer. Prism V1 vertices are section-local;
+the per-draw `PrismSection` vec4 supplies the camera-relative section origin,
+so a vanilla `DynamicTransforms` binding is not required. A program may also
+declare any captured vanilla default uniform (`Projection`, `Fog`, `Globals`,
+or `Lighting`) and the supported `Sampler0` block-atlas and `Sampler2`
+lightmap bindings. Unsupported or unavailable bindings fail closed.
 
 The replacement bridge runs at the HEAD of Minecraft 1.21.11's
 `ChunkSectionsToRender.renderGroup`. It prepares every non-empty layer in the
