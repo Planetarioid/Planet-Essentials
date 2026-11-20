@@ -24,7 +24,7 @@ public final class EssentialsScreen extends Screen {
         int buttonWidth = Math.min(320, width - 48);
         int left = center - buttonWidth / 2;
 
-        addRenderableWidget(clientButton("Minecraft Settings", left, top + 40,
+        addRenderableWidget(clientButton("All Minecraft Settings", left, top + 40,
                 buttonWidth, () -> VanillaOptionsAccess.open(minecraft, this)));
         addRenderableWidget(clientButton("HUD Editor", left, top + 64,
                 buttonWidth, () -> minecraft.setScreen(new HudEditorScreen(this))));
@@ -67,7 +67,7 @@ public final class EssentialsScreen extends Screen {
         graphics.fill(left, top - 26, left + panelWidth, top - 23, accent);
         graphics.fill(left + 12, top + 28, left + panelWidth - 12, top + 29, accent & 0x55FFFFFF);
         graphics.drawCenteredString(font, title, center, top - 12, textColor);
-        graphics.drawCenteredString(font, "MINECRAFT  /  SYSTEMS  /  RENDERING", center, top + 8,
+        graphics.drawCenteredString(font, "VANILLA MINECRAFT SETTINGS  /  PLANET SYSTEMS", center, top + 8,
                 0xFF8FAFC8);
         super.render(graphics, mouseX, mouseY, partialTick);
 

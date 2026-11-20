@@ -14,7 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-/** Searchable, categorized index of all registered Planet settings. */
+/** Searchable, categorized index of Planet settings with a direct route to every vanilla option page. */
 public final class SettingsSearchScreen extends Screen {
     private final Screen parent;
     private EditBox search;
@@ -30,13 +30,16 @@ public final class SettingsSearchScreen extends Screen {
 
     @Override protected void init() {
         search = new EditBox(font, width / 2 - 150, 48, 300, 20, Component.literal("Search settings"));
-        search.setHint(Component.literal("Name, category, description, or keyword..."));
+        search.setHint(Component.literal("Planet setting name, category, or keyword..."));
         search.setMaxLength(80);
         search.setResponder(value -> { page = 0; rebuildResults(); });
         addRenderableWidget(search);
         addRenderableWidget(Button.builder(Component.literal("CLEAR"), b -> search.setValue(""))
                 .bounds(width / 2 + 156, 48, 54, 20).build());
         rebuildResults();
+        addRenderableWidget(Button.builder(Component.literal("ALL MINECRAFT SETTINGS"), b ->
+                VanillaOptionsAccess.open(minecraft, this))
+                .bounds(width / 2 - 110, height - 88, 220, 20).build());
         addRenderableWidget(Button.builder(Component.literal("PREVIOUS"), b -> { page=Math.max(0,page-1); rebuildResults(); })
                 .bounds(width/2-110,height-34,100,20).build());
         addRenderableWidget(Button.builder(Component.literal("NEXT"), b -> { if((page+1)*PAGE_SIZE<matches.size())page++; rebuildResults(); })
@@ -107,7 +110,7 @@ public final class SettingsSearchScreen extends Screen {
     @Override public void render(GuiGraphics graphics,int mouseX,int mouseY,float partialTick) {
         super.render(graphics,mouseX,mouseY,partialTick);
         graphics.drawCenteredString(font,title,width/2,24,0xFFF4FAFF);
-        graphics.drawCenteredString(font,matches.size()+" matching settings  •  Search names, categories, descriptions, and aliases",
+        graphics.drawCenteredString(font,matches.size()+" Planet settings  •  Vanilla settings are available below",
                 width/2,73,0xFF8FAFC8);
         graphics.drawCenteredString(font,matches.isEmpty()?"No settings found. Try a broader search.":
                 "Page "+(page+1)+" / "+Math.max(1,(matches.size()+PAGE_SIZE-1)/PAGE_SIZE),

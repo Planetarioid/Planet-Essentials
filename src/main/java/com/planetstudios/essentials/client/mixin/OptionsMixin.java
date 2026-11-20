@@ -10,13 +10,15 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
 /**
  * Extends both vanilla chunk-distance controls to the same inclusive range.
- * The server's view-distance limit can still cap effective multiplayer rendering.
+ * This runs at the beginning of Options.load(), before options.txt is decoded,
+ * so saved values above vanilla's default maximum are accepted instead of
+ * being rejected during startup. A multiplayer server can still cap the
+ * effective view distance independently.
  *
  * OptionInstance.ValueSet is package-private in Minecraft 1.21.11. Resolve its
  * backing field by checking which interface accepts the replacement IntRange,
@@ -30,9 +32,8 @@ public abstract class OptionsMixin {
     @Shadow public abstract OptionInstance<Integer> renderDistance();
     @Shadow public abstract OptionInstance<Integer> simulationDistance();
 
-    @Inject(method = "<init>", at = @At("TAIL"))
-    private void planetEssentials$extendChunkDistanceRanges(Minecraft client, File optionsFile,
-            CallbackInfo callback) {
+    @Inject(method = "load", at = @At("HEAD"))
+    private void planetEssentials$extendChunkDistanceRangesBeforeLoad(CallbackInfo callback) {
         planetEssentials$extend(renderDistance());
         planetEssentials$extend(simulationDistance());
     }
