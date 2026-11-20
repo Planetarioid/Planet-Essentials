@@ -72,6 +72,9 @@ public final class PrismTerrainPreparedRenderBatch implements AutoCloseable {
     public void submitToCapturedPass(GpuDevice device, String debugLabel) {
         RenderSystem.assertOnRenderThread();
         ensureOpen();
+        if (submissionState.phase() != PrismTerrainSubmissionState.Phase.PREPARED) {
+            throw new IllegalStateException("Prepared terrain batch can only be submitted once");
+        }
         if (Minecraft.getInstance().level != level
                 || layers.stream().anyMatch(layer -> !layer.isValidFor(level, snapshot))) {
             throw new IllegalStateException("Prepared terrain batch became stale before pass creation");
