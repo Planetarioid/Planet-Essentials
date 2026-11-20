@@ -160,7 +160,7 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
             if (!boundUniforms.equals(externallyBoundUniforms)) {
                 throw new IllegalStateException("Captured default-uniform bindings changed after terrain preflight");
             }
-            submitDraws(pass, snapshot.chunkSectionInfos());
+            submitDraws(pass);
         }
     }
 
