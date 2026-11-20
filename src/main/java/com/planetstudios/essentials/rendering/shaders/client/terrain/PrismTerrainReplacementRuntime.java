@@ -9,7 +9,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 
 import java.util.EnumMap;
-import java.util.Map;
 import java.util.Optional;
 
 /**
