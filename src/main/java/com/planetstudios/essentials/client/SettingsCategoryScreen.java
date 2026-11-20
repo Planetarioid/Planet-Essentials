@@ -49,7 +49,9 @@ public final class SettingsCategoryScreen extends Screen {
  }
  private Component label(SettingDefinition<?> setting){return Component.literal(setting.displayName()+": "+setting.get(EssentialsRuntime.config()));}
  @Override public void render(GuiGraphics g,int mx,int my,float tick){
-  renderBackground(g,mx,my,tick);super.render(g,mx,my,tick);g.drawCenteredString(font,title,width/2,height/4,0xFFFFFF);
+  // Screen.renderWithTooltipAndSubtitles renders the background before this method.
+  // Calling renderBackground here would enqueue a second blur in the same frame.
+  super.render(g,mx,my,tick);g.drawCenteredString(font,title,width/2,height/4,0xFFFFFF);
   int y=height/4+48+SettingsRegistry.inCategory(category).size()*27;
   if("systems".equals(category)){
    g.drawCenteredString(font,"Each subsystem switch is independent; Diagnostics remains the master switch.",width/2,y,0xAAAAAA);
