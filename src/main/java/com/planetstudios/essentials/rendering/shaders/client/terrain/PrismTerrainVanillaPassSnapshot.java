@@ -297,12 +297,15 @@ public record PrismTerrainVanillaPassSnapshot(
      * known 1.21.11 OpenGL backend. Unknown backends remain explicitly unknown.
      */
     private static PassOptions passOptions(RenderTarget target) {
-        // The render-group HEAD hook runs before vanilla creates its RenderPass.
-        // RenderTarget dimensions are not proof of the active GL viewport, and
-        // an absent scissor is not proof that scissoring is disabled. Keep both
-        // facets unknown until they can be captured from the actual pass state.
+        // Verified against Minecraft 1.21.11 GlCommandEncoder.createRenderPass:
+        // creating the pass binds the captured attachments and sets viewport to
+        // (0, 0, color width, color height). GlRenderPass constructs a fresh
+        // ScissorState, whose initial state is disabled. Vanilla does not issue
+        // an enableScissor call for ChunkSectionsToRender.renderGroup.
         return new PassOptions(OptionalInt.empty(), OptionalDouble.empty(),
-                false, Optional.empty(), Optional.empty());
+                false,
+                Optional.of(new ViewportState(0, 0, target.width, target.height)),
+                Optional.of(new ScissorState(false, 0, 0, 0, 0)));
     }
 
     public record ViewportState(int x, int y, int width, int height) {

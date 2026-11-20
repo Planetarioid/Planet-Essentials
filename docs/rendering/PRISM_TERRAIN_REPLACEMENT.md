@@ -25,10 +25,15 @@ backend and terrain layer.
 
 ## Current safety gate
 
-The replacement hook executes before vanilla creates its RenderPass. The current
-snapshot therefore cannot truthfully claim the active viewport or scissor state.
-Those facets are intentionally marked unknown, and the all-or-nothing readiness
-gate keeps vanilla terrain rendering enabled until both can be captured and
-replayed from authoritative state. Render-target dimensions are not used as a
-substitute for viewport state. This is a deliberate fail-open limitation, not a
-completed terrain takeover.
+The replacement hook executes before vanilla creates its RenderPass. The
+viewport and scissor values are captured from the verified Minecraft 1.21.11
+pass-creation behavior: the OpenGL command encoder binds the target and sets
+the viewport to the color attachment dimensions, while each new GlRenderPass
+starts with scissoring disabled. Vanilla's terrain renderGroup does not alter
+that per-pass scissor state. The replacement pass is created through the same
+command-encoder API, so these defaults are reproduced rather than inferred from
+the previously active global GL state.
+
+This closes the viewport/scissor capture gap for the supported vanilla OpenGL
+backend. It does not establish visual parity by itself; the remaining shader,
+pipeline-state, and in-game validation gates below still apply.
