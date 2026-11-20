@@ -43,25 +43,20 @@ public final class PrismTerrainPreparedRenderBatch implements AutoCloseable {
             PrismTerrainVanillaPassSnapshot.LayerInput input = snapshot.passInputs().layers().get(layer);
             if (input != null && input.pipelineApplied() && !input.orderedDraws().isEmpty()) expected.add(layer);
         }
-        if (expected.size() != this.layers.size()) {
-            throw new IllegalArgumentException("Prepared batch does not cover every non-empty vanilla layer");
-        }
+        validateLayerOrder(expected, this.layers.stream().map(PrismTerrainPreparedRenderGroup::layer).toList());
 
         Set<String> uniformNames = null;
         for (int i = 0; i < this.layers.size(); i++) {
             PrismTerrainPreparedRenderGroup prepared = Objects.requireNonNull(this.layers.get(i), "prepared layer");
             ChunkSectionLayer expectedLayer = expected.get(i);
-            if (prepared.layer() != expectedLayer || !prepared.isValidFor(level, snapshot)) {
+            if (!prepared.isValidFor(level, snapshot)) {
                 throw new IllegalArgumentException("Prepared terrain layers are stale or not in vanilla order");
             }
             List<?> vanillaDraws = snapshot.passInputs().layers().get(expectedLayer).orderedDraws();
-            if (prepared.draws().size() != vanillaDraws.size()) {
-                throw new IllegalArgumentException("Prepared layer does not replace the complete vanilla draw list");
-            }
-            for (int drawIndex = 0; drawIndex < vanillaDraws.size(); drawIndex++) {
-                if (prepared.draws().get(drawIndex).vanillaDraw() != vanillaDraws.get(drawIndex)) {
-                    throw new IllegalArgumentException("Prepared draw order differs from vanilla layer order");
-                }
+            List<?> preparedDraws = prepared.draws().stream()
+                    .map(PrismTerrainPreparedRenderGroup.Draw::vanillaDraw).toList();
+            if (!hasExactDrawIdentityOrder(vanillaDraws, preparedDraws)) {
+                throw new IllegalArgumentException("Prepared draw order differs from vanilla layer order");
             }
             if (uniformNames == null) uniformNames = prepared.externallyBoundUniforms();
             else if (!uniformNames.equals(prepared.externallyBoundUniforms())) {
@@ -100,6 +95,23 @@ public final class PrismTerrainPreparedRenderBatch implements AutoCloseable {
                 throw failure;
             }
         }
+    }
+
+
+    static void validateLayerOrder(List<ChunkSectionLayer> expected, List<ChunkSectionLayer> actual) {
+        Objects.requireNonNull(expected, "expected");
+        Objects.requireNonNull(actual, "actual");
+        if (expected.isEmpty() || !expected.equals(actual)) {
+            throw new IllegalArgumentException("Prepared batch must cover every vanilla layer exactly once and in order");
+        }
+    }
+
+    static boolean hasExactDrawIdentityOrder(List<?> expected, List<?> actual) {
+        if (expected == null || actual == null || expected.size() != actual.size()) return false;
+        for (int i = 0; i < expected.size(); i++) {
+            if (expected.get(i) != actual.get(i)) return false;
+        }
+        return true;
     }
 
     public boolean mayFallBackToVanilla() {
