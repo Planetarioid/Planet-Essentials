@@ -14,8 +14,8 @@ public final class EssentialsConfig {
  public boolean comboCounterEnabled=true;
  /** Per-widget HUD visibility, anchor, and offsets. */
  public Map<String,HudWidgetPlacement> hudWidgetPlacements=new TreeMap<>();
- /** Independent switches for active diagnostics subsystems; diagnosticsEnabled is the master switch. */
- public boolean performanceMonitoringEnabled=false, eventCollectionEnabled=true;
+ /** Event collection is opt-in to keep background diagnostic work out of normal play. */
+ public boolean performanceMonitoringEnabled=false, eventCollectionEnabled=false;
  /** Prism remains opt-in and its experimental render hooks are not installed in this build. */
  public boolean shadersEnabled=false;
  public String selectedShaderPack="planet:default";
