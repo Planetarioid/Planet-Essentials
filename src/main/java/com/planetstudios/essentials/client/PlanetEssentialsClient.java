@@ -2,6 +2,7 @@ package com.planetstudios.essentials.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.PlanetEssentials;
+import com.planetstudios.essentials.hud.HudWidgetRenderer;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackResourceReloadListener;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStageRegistry;
@@ -55,7 +56,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         PlanetEssentials.LOGGER.info(
                 "Prism renderer environment: {} (Iris: {}, adapter: {}). {}",
                 renderer.renderer(), renderer.irisPresent(),
-                renderer.adapter().map(PrismRendererAdapter -> PrismRendererAdapter.testedVersion()).orElse("none"),
+                renderer.adapter().map(adapter -> adapter.testedVersion()).orElse("none"),
                 renderer.compatibilityNote());
 
         TextureResourceReloadListener.register(TEXTURE_ASSETS, TEXTURE_DECODER);
@@ -76,10 +77,12 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         });
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             EssentialsRuntime.sessionStatistics().start();
+            HudWidgetRenderer.comboCounter().reset();
             record(DiagnosticEventType.WORLD_JOINED);
         });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             EssentialsRuntime.sessionStatistics().stop();
+            HudWidgetRenderer.comboCounter().reset();
             record(DiagnosticEventType.WORLD_LEFT);
         });
 

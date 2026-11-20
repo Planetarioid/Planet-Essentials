@@ -5,6 +5,7 @@
   "client": [
     "MinecraftMixin",
     "GuiMixin",
+    "ClientPacketListenerMixin",
     "PauseScreenMixin",
     "OptionsMixin",
     "SectionCompilerMixin",
