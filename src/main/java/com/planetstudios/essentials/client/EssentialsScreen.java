@@ -3,7 +3,6 @@ package com.planetstudios.essentials.client;
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.config.SettingsRegistry;
 import com.planetstudios.essentials.diagnostics.PerformanceMonitor;
-import com.planetstudios.essentials.client.mixin.MinecraftMixin;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -28,7 +27,7 @@ public final class EssentialsScreen extends Screen {
         // Keep every original Minecraft option available from the Planet hub.
         // This opens the real vanilla options tree, including all native child pages.
         addRenderableWidget(clientButton("Minecraft Settings", left, top + 46,
-                buttonWidth, () -> MinecraftMixin.openVanillaOptions(minecraft, this)));
+                buttonWidth, () -> VanillaOptionsAccess.open(minecraft, this)));
         addRenderableWidget(clientButton("Performance  /  Diagnostics", left, top + 73,
                 buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "diagnostics"))));
         addRenderableWidget(clientButton("System Controls", left, top + 100,
