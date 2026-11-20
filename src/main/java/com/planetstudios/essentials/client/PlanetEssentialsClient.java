@@ -3,13 +3,6 @@ package com.planetstudios.essentials.client;
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.PlanetEssentials;
 import com.planetstudios.essentials.hud.HudWidgetRenderer;
-import com.planetstudios.essentials.rendering.shaders.client.ShaderPackResourceReloadListener;
-import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
-import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStageRegistry;
-import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainFrameCoordinator;
-import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainChunkLifecycleEvents;
-import com.planetstudios.essentials.rendering.shaders.client.PrismWorldPostProcessor;
-import com.planetstudios.essentials.rendering.shaders.client.PrismRendererCompatibility;
 import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
 import com.planetstudios.essentials.textures.TextureAssetCatalog;
 import com.planetstudios.essentials.textures.TextureDecodeLimits;
@@ -52,19 +45,8 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         OPEN_PLANET_MENU = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.planet_essentials.open_menu", InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_0, PLANET_KEY_CATEGORY));
-        var renderer = PrismRendererCompatibility.detectInstalled();
-        PlanetEssentials.LOGGER.info(
-                "Prism renderer environment: {} (Iris: {}, adapter: {}). {}",
-                renderer.renderer(), renderer.irisPresent(),
-                renderer.adapter().map(adapter -> adapter.testedVersion()).orElse("none"),
-                renderer.compatibilityNote());
 
         TextureResourceReloadListener.register(TEXTURE_ASSETS, TEXTURE_DECODER);
-        ShaderPackResourceReloadListener.register();
-        PrismFrameStageRegistry.registerFabricEvents();
-        PrismTerrainFrameCoordinator.registerFabricEvents();
-        PrismTerrainChunkLifecycleEvents.registerFabricEvents();
-        PrismWorldPostProcessor.register();
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> record(DiagnosticEventType.CLIENT_STARTED));
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
@@ -72,8 +54,6 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
             TextureGpuRegistrar.shutdown(client);
             TEXTURE_ASSETS.clear();
             TEXTURE_DECODER.close();
-            PrismWorldPostProcessor.shutdown();
-            ShaderPackRuntime.shutdown();
         });
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             EssentialsRuntime.sessionStatistics().start();

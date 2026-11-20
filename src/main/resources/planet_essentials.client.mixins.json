@@ -6,11 +6,7 @@
     "MinecraftMixin",
     "GuiMixin",
     "ClientPacketListenerMixin",
-    "OptionsMixin",
-    "SectionCompilerMixin",
-    "RenderSectionRegionAccessor",
-    "LevelRendererMixin",
-    "ChunkSectionsToRenderMixin"
+    "OptionsMixin"
   ],
   "injectors": {
     "defaultRequire": 1
