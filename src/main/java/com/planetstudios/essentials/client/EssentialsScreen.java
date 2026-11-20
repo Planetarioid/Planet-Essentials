@@ -59,7 +59,7 @@ public final class EssentialsScreen extends Screen {
         int textColor = 0xFFF4FAFF;
         int panel = 0xEE111B2B;
         graphics.fill(0, 0, width, height, 0xB5080D18);
-        graphics.fill(left, top - 26, left + panelWidth, top + 299, panel);
+        graphics.fill(left, top - 26, left + panelWidth, top + 351, panel);
         graphics.fill(left, top - 26, left + panelWidth, top - 23, accent);
         graphics.fill(left + 12, top + 28, left + panelWidth - 12, top + 29, accent & 0x55FFFFFF);
         graphics.drawCenteredString(font, title, center, top - 12, textColor);
@@ -68,7 +68,7 @@ public final class EssentialsScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         var config = EssentialsRuntime.config();
-        int infoY = top + 306;
+        int infoY = top + 358;
         if (config.showPerformanceScreen && config.diagnosticsEnabled && config.performanceMonitoringEnabled) {
             PerformanceMonitor monitor = EssentialsRuntime.performance();
             graphics.drawCenteredString(font, "FPS  " + monitor.latestFps()
