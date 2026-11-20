@@ -21,7 +21,7 @@ public final class ChunkSchedulingPolicy {
     }
 
     /** Returns the maximum number of queue entries that may be inspected during one poll. */
-    public static int maxTasksToInspect(int pendingTasks) {
+    static int maxTasksToInspect(int pendingTasks) {
         return Math.max(0, Math.min(pendingTasks, MAX_TASKS_PER_POLL));
     }
 

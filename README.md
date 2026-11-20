@@ -4,40 +4,40 @@
 
 Space Client is a Fabric mod for Minecraft Java Edition **1.21.11**, targeting Java 21. It brings settings, integrations, diagnostics, HUD tools, and client optimization systems into one cohesive in-game experience.
 
-Its custom rendering initiative is now named **Space Renderer**. Space Renderer is the engine architecture for terrain section management, visibility, asynchronous mesh work, GPU memory management, shader pipelines, and batched drawing. It is an active development project, not a claim of completed renderer functionality.
+Its custom rendering initiative is named the **Prism Rendering Engine (PPRE)**. Prism is the umbrella architecture for texture processing, GPU resource management, shader systems, rendering capabilities, and compatibility. It is an active development project, not a claim of completed renderer functionality.
 
 ## Development status
 
-The repository is in active development. Automated CI status must be checked against the latest commit; a successful build does not establish in-game correctness, GPU performance, or third-party compatibility.
+The repository is in active development. The latest CI build and test workflow passed for commit `7c1e554204b20e585e8befe3d324c4927f706c15`: 238 automated tests, 0 failures, 0 ignored tests, plus distributable JAR verification. This is automated verification only; Minecraft runtime, GPU behavior, multiplayer behavior, and third-party compatibility remain unverified until tested.
 
-Implemented foundations include typed configuration and profiles, bounded local diagnostics, diagnostics export, mod discovery through Planet Lib, feature-priority controls, searchable settings and keybind screens, a HUD editor, and a route from Minecraft's normal Options entry point to the Space Client settings hub.
+Implemented foundations include typed configuration and profiles, bounded local diagnostics, explicit diagnostics export, mod discovery through Planet Lib, feature-priority controls, searchable settings and keybind screens, a HUD editor, and a route from Minecraft's normal Options entry point to the Essentials settings hub.
 
 - [x] Repository and Fabric build foundation
 - [x] Configuration, migrations, profiles, and persistence tests
 - [x] Planet Lib API bridge and loaded-mod/capability discovery
 - [x] Feature-priority settings and provider lifecycle integration
 - [x] Local diagnostics collection and explicit JSON export
-- [x] Searchable Space Client settings and keybind screens (runtime test pending)
-- [x] HUD editor foundation (runtime test pending)
+- [x] Searchable Space Client settings and keybind screens (automated build verified; runtime test pending)
+- [x] HUD editor foundation (automated build verified; runtime test pending)
 - [~] Diagnostics runtime-overhead verification
 - [~] Space Client settings hub and vanilla Options integration
-- [~] Space Renderer shader, texture, and terrain foundations (client runtime and performance validation pending)
-- [ ] Complete terrain renderer and visual parity validation
+- [~] Prism shader and texture pipelines: source implementation and CI verification; client runtime and consumer integration pending
+- [ ] Prism terrain takeover and visual parity validation
 - [ ] Client and dedicated-server launch validation
 - [ ] Third-party coexistence validation
 
-See [the development roadmap](docs/ROADMAP.md), [first testing pass](docs/TESTING_GUIDE.md), [compatibility test matrix](docs/COMPATIBILITY_TEST_MATRIX.md), [Space Renderer architecture](docs/rendering/SPACE_RENDERER_ARCHITECTURE.md), [baseline profiling protocol](docs/performance/BASELINE_PROFILING.md), and [benchmark and correctness protocol](docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md) for tracked work and verification requirements.
+See [the development roadmap](docs/ROADMAP.md), [first testing pass](docs/TESTING_GUIDE.md), [compatibility test matrix](docs/COMPATIBILITY_TEST_MATRIX.md), [Prism architecture](docs/rendering/PRISM_RENDERING_ENGINE.md), [baseline profiling protocol](docs/performance/BASELINE_PROFILING.md), and [benchmark and correctness protocol](docs/performance/BENCHMARK_AND_CORRECTNESS_PROTOCOL.md) for tracked work and verification requirements.
 
-## Space Renderer responsibilities
+## Planned responsibilities
 
-- World and render-section lifecycle management
-- Asynchronous terrain mesh construction and stale-build rejection
-- Visibility graph, frustum, and occlusion culling
-- Shared GPU region allocation and upload scheduling
-- Opaque, cutout, and translucent render lists
-- Batched terrain submission and per-frame sorting
-- Shader/material management and GPU capability selection
-- Safe fallback to Minecraft's renderer when a feature is unavailable
+- Main in-game settings hub, entered through Minecraft's normal Options button
+- Access to vanilla Minecraft settings through the hub
+- Central settings UI and configuration profiles
+- Integration with installed Planet Studios mods
+- Per-feature implementation priority controls
+- Diagnostics and performance visibility
+- CPU, GPU, memory, rendering, audio, particle, and animation optimization systems
+- **Prism Rendering Engine (PPRE)** for texture processing, shader management, GPU resource lifecycle, and rendering optimizations
 
 ## Design principles
 
