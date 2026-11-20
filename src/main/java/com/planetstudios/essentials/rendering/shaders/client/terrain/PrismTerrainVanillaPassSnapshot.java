@@ -110,9 +110,25 @@ public record PrismTerrainVanillaPassSnapshot(
         if (debugLabel == null || debugLabel.isBlank()) {
             throw new IllegalArgumentException("Render-pass debug label cannot be blank");
         }
+        validateCapturedTarget(device);
         return device.createCommandEncoder().createRenderPass(
                 () -> debugLabel, colorAttachment, passOptions.colorClear(),
                 depthAttachment.orElse(null), passOptions.depthClear());
+    }
+
+    /**
+     * Rejects snapshots whose device or render-target attachments changed after
+     * capture. A resized/recreated target must be recaptured before submission.
+     */
+    private void validateCapturedTarget(GpuDevice device) {
+        if (RenderSystem.getDevice() != device) {
+            throw new IllegalStateException("Captured terrain pass belongs to a different GPU device");
+        }
+        if (target.width != targetWidth || target.height != targetHeight
+                || target.getColorTextureView() != colorAttachment
+                || target.getDepthTextureView() != depthAttachment.orElse(null)) {
+            throw new IllegalStateException("Captured terrain render target changed after snapshot creation");
+        }
     }
 
     /**
