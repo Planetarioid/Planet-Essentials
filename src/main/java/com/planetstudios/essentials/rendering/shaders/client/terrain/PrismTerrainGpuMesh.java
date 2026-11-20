@@ -46,6 +46,8 @@ public final class PrismTerrainGpuMesh implements AutoCloseable {
     public boolean matches(PrismTerrainVertexData data) {
         return !closed && sourceHash.equals(data.contentHash());
     }
+    /** True while this borrowed cache allocation is still usable. */
+    public boolean isOpen() { return !closed; }
     public GpuBuffer vertexBuffer() {
         if(closed) throw new IllegalStateException("Prism terrain GPU mesh is closed");
         return vertexBuffer;

@@ -93,6 +93,9 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         RenderSystem.assertOnRenderThread();
         ensureOpen();
         Objects.requireNonNull(pass, "pass");
+        if (!hasLiveResources()) {
+            throw new IllegalStateException("Prepared terrain group contains an evicted mesh or closed uniform allocation");
+        }
         if (Minecraft.getInstance().level != level || !ShaderPackRuntime.isEnabled()
                 || ShaderPackRuntime.pipelineSnapshot().generation() != shaderGeneration) {
             throw new IllegalStateException("Prepared terrain group became stale before submission");
@@ -146,6 +149,9 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         }
         Objects.requireNonNull(device, "device");
         Objects.requireNonNull(debugLabel, "debugLabel");
+        if (!hasLiveResources()) {
+            throw new IllegalStateException("Prepared terrain group contains an evicted mesh or closed uniform allocation");
+        }
 
         try (RenderPass pass = snapshot.passInputs().openCapturedTargetPass(device, debugLabel)) {
             Set<String> boundUniforms = snapshot.passInputs().bindCapturedDefaultUniforms(pass);
@@ -162,6 +168,9 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         ensureOpen();
         Objects.requireNonNull(pass, "pass");
         Objects.requireNonNull(batchState, "batchState");
+        if (!hasLiveResources()) {
+            throw new IllegalStateException("Prepared terrain layer contains an evicted mesh or closed uniform allocation");
+        }
         if (Minecraft.getInstance().level != level || !ShaderPackRuntime.isEnabled()
                 || ShaderPackRuntime.pipelineSnapshot().generation() != shaderGeneration) {
             throw new IllegalStateException("Prepared terrain layer became stale before batch submission");
@@ -208,6 +217,19 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
                 && snapshot != null && snapshot.sequence() == snapshotSequence
                 && ShaderPackRuntime.isEnabled()
                 && ShaderPackRuntime.pipelineSnapshot().generation() == shaderGeneration;
+    }
+
+    /**
+     * Checks borrowed GPU meshes and owned uniform allocations immediately before
+     * pass creation/submission. Cache eviction or chunk invalidation closes meshes,
+     * so a prepared batch must fail before issuing its first draw.
+     */
+    boolean hasLiveResources() {
+        if (closed) return false;
+        for (Draw draw : draws) {
+            if (!draw.mesh().isOpen() || !draw.sectionUniform().isOpen()) return false;
+        }
+        return true;
     }
 
     private void ensureOpen() {

@@ -43,6 +43,9 @@ public final class PrismTerrainSectionUniformAllocation implements AutoCloseable
         return buffer.slice(0L, PrismTerrainSectionUniform.BYTE_SIZE);
     }
 
+    /** True while the immutable uniform allocation can still be bound. */
+    public boolean isOpen() { return !closed; }
+
     private void ensureOpen() {
         if (closed) throw new IllegalStateException("Prism terrain section uniform is closed");
     }

@@ -76,8 +76,10 @@ public final class PrismTerrainPreparedRenderBatch implements AutoCloseable {
             throw new IllegalStateException("Prepared terrain batch can only be submitted once");
         }
         if (Minecraft.getInstance().level != level
-                || layers.stream().anyMatch(layer -> !layer.isValidFor(level, snapshot))) {
-            throw new IllegalStateException("Prepared terrain batch became stale before pass creation");
+                || layers.stream().anyMatch(layer -> !layer.isValidFor(level, snapshot)
+                        || !layer.hasLiveResources())) {
+            throw new IllegalStateException(
+                    "Prepared terrain batch became stale or contains an evicted GPU resource before pass creation");
         }
         Objects.requireNonNull(device, "device");
         Objects.requireNonNull(debugLabel, "debugLabel");
