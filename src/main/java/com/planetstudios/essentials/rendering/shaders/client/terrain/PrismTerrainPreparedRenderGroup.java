@@ -157,7 +157,9 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
 
         try (RenderPass pass = snapshot.passInputs().openCapturedTargetPass(device, debugLabel)) {
             Set<String> boundUniforms = snapshot.passInputs().bindCapturedDefaultUniforms(pass);
-            if (!boundUniforms.equals(externallyBoundUniforms)) {
+            Set<String> expectedDefaultUniforms = new java.util.HashSet<>(externallyBoundUniforms);
+            expectedDefaultUniforms.remove("ChunkSection");
+            if (!boundUniforms.equals(expectedDefaultUniforms)) {
                 throw new IllegalStateException("Captured default-uniform bindings changed after terrain preflight");
             }
             submitDraws(pass);
