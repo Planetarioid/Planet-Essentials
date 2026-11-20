@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.client;
 
 import com.planetstudios.essentials.EssentialsRuntime;
+import com.planetstudios.essentials.diagnostics.BottleneckAnalyzer;
 import com.planetstudios.essentials.diagnostics.DiagnosticsExporter;
 import com.planetstudios.essentials.diagnostics.FrameTimeSample;
 import com.planetstudios.essentials.diagnostics.PerformanceMonitor;
@@ -17,7 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Frame pacing dashboard with a live FPS graph and a complete local benchmark export. */
+/** Frame pacing dashboard with a live FPS graph, presets, and benchmark export. */
 public final class PerformanceScreen extends Screen {
     private final Screen parent;
     private String exportStatus = "Benchmark exports stay on this computer.";
@@ -32,14 +33,29 @@ public final class PerformanceScreen extends Screen {
     @Override
     protected void init() {
         int center = width / 2;
+        int presetY = height - 68;
+        addRenderableWidget(Button.builder(Component.literal("COMPETITIVE"), button -> applyPreset(PerformancePresetService.Preset.COMPETITIVE))
+                .bounds(center - 150, presetY, 96, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("BALANCED"), button -> applyPreset(PerformancePresetService.Preset.BALANCED))
+                .bounds(center - 48, presetY, 96, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("VISUAL"), button -> applyPreset(PerformancePresetService.Preset.VISUAL))
+                .bounds(center + 54, presetY, 96, 20).build());
+
         addRenderableWidget(Button.builder(Component.literal("EXPORT BENCHMARK"), button -> export())
                 .bounds(center - 155, height - 38, 150, 20).build());
         addRenderableWidget(Button.builder(Component.literal("CLEAR HISTORY"), button -> {
             EssentialsRuntime.performance().clear();
             exportStatus = "Performance history cleared.";
-        }).bounds(center + 5, height - 38, 150, 20).build());
+        }).bounds(center + 5, height - 38, 100, 20).build());
         addRenderableWidget(Button.builder(Component.literal("BACK"), button -> minecraft.setScreen(parent))
-                .bounds(center - 45, height - 64, 90, 20).build());
+                .bounds(center + 113, height - 38, 70, 20).build());
+    }
+
+    private void applyPreset(PerformancePresetService.Preset preset) {
+        PerformancePresetService.apply(minecraft, preset);
+        EssentialsRuntime.config().performancePreset = preset.id();
+        EssentialsRuntime.save();
+        exportStatus = "Applied " + preset.id() + " preset. Review the changed vanilla options if needed.";
     }
 
     private void export() {
@@ -56,6 +72,7 @@ public final class PerformanceScreen extends Screen {
             metadata.put("fabricLoaderVersion", FabricLoader.getInstance().getModContainer("fabricloader")
                     .map(container -> container.getMetadata().getVersion().getFriendlyString()).orElse("unknown"));
             metadata.put("installedModCount", Integer.toString(FabricLoader.getInstance().getAllMods().size()));
+            metadata.put("activePerformancePreset", EssentialsRuntime.config().performancePreset);
             Path file = DiagnosticsExporter.exportBenchmark(FabricLoader.getInstance().getConfigDir(),
                     EssentialsRuntime.performance().snapshot(),
                     EssentialsRuntime.performance().frameTimeSnapshot(),
@@ -114,10 +131,18 @@ public final class PerformanceScreen extends Screen {
                 monitor.averageFrameTimeMillis(), monitor.worstFrameTimeMillis(),
                 monitor.sampleCount(), monitor.frameSampleCount()),
                 width / 2, graphY + GRAPH_HEIGHT + 24, 0xFFB9D4EC);
-        graphics.drawCenteredString(font, exportStatus, width / 2, height - 82, 0xFF8FAFC8);
+
+        BottleneckAnalyzer.Finding finding = BottleneckAnalyzer.analyze(
+                monitor.snapshot(), frames, EssentialsRuntime.diagnosticEvents().snapshot());
+        graphics.drawCenteredString(font, "BOTTLENECK ESTIMATE: " + finding.description(),
+                width / 2, graphY + GRAPH_HEIGHT + 42, 0xFFFFC98B);
+        graphics.drawCenteredString(font, "PRESET: " + EssentialsRuntime.config().performancePreset.toUpperCase(Locale.ROOT)
+                        + "  •  Presets adjust vanilla settings and can be customized afterward.",
+                width / 2, graphY + GRAPH_HEIGHT + 58, 0xFF8FAFC8);
+        graphics.drawCenteredString(font, exportStatus, width / 2, height - 84, 0xFF8FAFC8);
         graphics.drawCenteredString(font,
-                "Enable Performance Monitoring to collect data. Export includes environment, heap, frame times and events.",
-                width / 2, height - 96, 0xFF8FAFC8);
+                "Enable Performance Monitoring to collect data. GPU-bound diagnosis requires GPU timing support.",
+                width / 2, height - 98, 0xFF8FAFC8);
     }
 
     @Override

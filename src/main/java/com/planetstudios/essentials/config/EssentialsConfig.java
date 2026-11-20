@@ -18,10 +18,12 @@ public final class EssentialsConfig {
  public String activeProfile="default";
  public boolean automaticServerProfilesEnabled=true;
  public Map<String,String> serverProfileMappings=new TreeMap<>();
+ public String performancePreset="balanced";
  public Map<String,String> featurePriorityOverrides=new TreeMap<>();
  public void validate(){
   schemaVersion=ConfigMigrator.CURRENT_SCHEMA;
   if(activeProfile==null||!activeProfile.matches("[a-z0-9_-]{1,32}")) activeProfile="default";
+  if(!java.util.Set.of("competitive","balanced","visual").contains(performancePreset)) performancePreset="balanced";
   if(selectedShaderPack==null||selectedShaderPack.length()>128
     ||(!selectedShaderPack.isEmpty()&&!selectedShaderPack.matches("[a-z0-9_.-]+:[a-z0-9_./-]+"))
     ||selectedShaderPack.contains("..")||selectedShaderPack.contains("//")) selectedShaderPack="";

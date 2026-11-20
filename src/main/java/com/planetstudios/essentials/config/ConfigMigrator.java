@@ -3,7 +3,7 @@ import com.google.gson.JsonObject;
 import java.io.IOException;
 /** Explicit, forward-only configuration schema migrations. */
 public final class ConfigMigrator {
- public static final int CURRENT_SCHEMA=8;
+ public static final int CURRENT_SCHEMA=9;
  private ConfigMigrator() {}
  public static JsonObject migrate(JsonObject json)throws IOException{
   JsonObject migrated=json.deepCopy(); int version;
@@ -35,7 +35,11 @@ public final class ConfigMigrator {
    if(!migrated.has("automaticServerProfilesEnabled"))migrated.addProperty("automaticServerProfilesEnabled",true);
    if(!migrated.has("serverProfileMappings")||migrated.get("serverProfileMappings").isJsonNull())
     migrated.add("serverProfileMappings",new JsonObject());
-   migrated.addProperty("schemaVersion",8);
+   migrated.addProperty("schemaVersion",8);version=8;
+  }
+  if(version<9){
+   if(!migrated.has("performancePreset"))migrated.addProperty("performancePreset","balanced");
+   migrated.addProperty("schemaVersion",9);
   }
   return migrated;
  }
