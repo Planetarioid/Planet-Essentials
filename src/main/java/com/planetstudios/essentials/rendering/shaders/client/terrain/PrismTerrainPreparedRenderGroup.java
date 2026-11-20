@@ -156,6 +156,27 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         }
     }
 
+    /** Submits this layer as part of a caller-managed shared vanilla-group pass. */
+    void submitDrawsInBatch(RenderPass pass, PrismTerrainSubmissionState batchState) {
+        RenderSystem.assertOnRenderThread();
+        ensureOpen();
+        Objects.requireNonNull(pass, "pass");
+        Objects.requireNonNull(batchState, "batchState");
+        if (Minecraft.getInstance().level != level || !ShaderPackRuntime.isEnabled()
+                || ShaderPackRuntime.pipelineSnapshot().generation() != shaderGeneration) {
+            throw new IllegalStateException("Prepared terrain layer became stale before batch submission");
+        }
+        for (Draw draw : draws) {
+            boolean submitted = PrismTerrainDrawExecutor.drawPreparedWithPipeline(
+                    pass, program, pipeline, draw.mesh(), samplerBindings,
+                    draw.sectionUniform(), externallyBoundUniforms,
+                    indexBuffer.buffer(), indexBuffer.type(), batchState);
+            if (!submitted) {
+                throw new IllegalStateException("Prism terrain draw executor rejected a batched draw");
+            }
+        }
+    }
+
     public boolean mayFallBackToVanilla() {
         return submissionState.mayFallBackToVanilla();
     }
