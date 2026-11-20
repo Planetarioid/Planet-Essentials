@@ -21,7 +21,7 @@ public final class ExperienceConfig {
     public boolean showMemoryWidget = false;
     public boolean showCpuWidget = false;
     public boolean showGpuWidget = false;
-    public final Map<String, HudWidget> hudWidgets = new LinkedHashMap<>();
+    public Map<String, HudWidget> hudWidgets = new LinkedHashMap<>();
 
     public void validate() {
         if (!oneOf(theme, "midnight", "obsidian", "light")) theme = "midnight";
@@ -31,11 +31,7 @@ public final class ExperienceConfig {
         uiScale = clamp(uiScale, 0.75f, 1.5f);
         if (!Float.isFinite(panelOpacity)) panelOpacity = 0.92f;
         panelOpacity = clamp(panelOpacity, 0.45f, 1.0f);
-        if (hudWidgets == null) {
-            // Gson can assign null when a user-edited config explicitly contains null.
-            // The field is replaced through the helper below to keep the config recoverable.
-            return;
-        }
+        if (hudWidgets == null) hudWidgets = new LinkedHashMap<>();
         hudWidgets.entrySet().removeIf(entry -> entry.getKey() == null
                 || !entry.getKey().matches("[a-z0-9_.-]{1,64}") || entry.getValue() == null);
         hudWidgets.values().forEach(HudWidget::validate);
