@@ -16,7 +16,8 @@ class DiagnosticsExporterTest {
     @TempDir Path temp;
 
     @Test void exportsOnlyTheProvidedLocalDiagnosticSnapshot() throws Exception {
-        PerformanceSample sample = new PerformanceSample(Instant.parse("2026-01-02T03:04:05Z"), 144);
+        PerformanceSample sample = new PerformanceSample(Instant.parse("2026-01-02T03:04:05Z"),
+                144, 128L * 1024 * 1024, 1024L * 1024 * 1024);
         DiagnosticEvent event = new DiagnosticEvent(Instant.parse("2026-01-02T03:04:06Z"),
                 DiagnosticEventType.SLOW_CLIENT_TICK, 73);
 
@@ -27,8 +28,10 @@ class DiagnosticsExporterTest {
         JsonObject json = JsonParser.parseString(Files.readString(output)).getAsJsonObject();
         assertEquals(1, json.get("schemaVersion").getAsInt());
         assertEquals(1, json.getAsJsonArray("performanceSamples").size());
-        assertEquals(144, json.getAsJsonArray("performanceSamples").get(0)
-                .getAsJsonObject().get("framesPerSecond").getAsInt());
+        JsonObject exportedSample = json.getAsJsonArray("performanceSamples").get(0).getAsJsonObject();
+        assertEquals(144, exportedSample.get("framesPerSecond").getAsInt());
+        assertEquals(128L * 1024 * 1024, exportedSample.get("usedHeapBytes").getAsLong());
+        assertEquals(1024L * 1024 * 1024, exportedSample.get("maxHeapBytes").getAsLong());
         assertEquals("SLOW_CLIENT_TICK", json.getAsJsonArray("events").get(0)
                 .getAsJsonObject().get("type").getAsString());
         assertEquals(73, json.getAsJsonArray("events").get(0)
