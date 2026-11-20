@@ -17,7 +17,7 @@ public abstract class MinecraftMixin {
     private static boolean planetEssentials$allowVanillaOptionsOnce;
 
     /** Opens the real vanilla options page from the Essentials hub without interception. */
-    private static void openVanillaOptions(Minecraft client, Screen parent) {
+    public static void openVanillaOptions(Minecraft client, Screen parent) {
         planetEssentials$allowVanillaOptionsOnce = true;
         client.setScreen(new OptionsScreen(parent, client.options));
     }

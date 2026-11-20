@@ -3,6 +3,7 @@ package com.planetstudios.essentials.client;
 import com.planetstudios.essentials.EssentialsRuntime;
 import com.planetstudios.essentials.config.SettingsRegistry;
 import com.planetstudios.essentials.diagnostics.PerformanceMonitor;
+import com.planetstudios.essentials.client.mixin.MinecraftMixin;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -20,22 +21,26 @@ public final class EssentialsScreen extends Screen {
     @Override
     protected void init() {
         int center = width / 2;
-        int top = Math.max(72, height / 4 - 12);
+        int top = Math.max(54, height / 4 - 12);
         int buttonWidth = Math.min(320, width - 48);
         int left = center - buttonWidth / 2;
 
-        addRenderableWidget(clientButton("Performance  /  Diagnostics", left, top + 46,
+        // Keep every original Minecraft option available from the Planet hub.
+        // This opens the real vanilla options tree, including all native child pages.
+        addRenderableWidget(clientButton("Minecraft Settings", left, top + 46,
+                buttonWidth, () -> MinecraftMixin.openVanillaOptions(minecraft, this)));
+        addRenderableWidget(clientButton("Performance  /  Diagnostics", left, top + 73,
                 buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "diagnostics"))));
-        addRenderableWidget(clientButton("System Controls", left, top + 73,
+        addRenderableWidget(clientButton("System Controls", left, top + 100,
                 buttonWidth, () -> minecraft.setScreen(new SettingsCategoryScreen(this, "systems"))));
-        addRenderableWidget(clientButton("Prism  /  Shader Engine", left, top + 100,
+        addRenderableWidget(clientButton("Prism  /  Shader Engine", left, top + 127,
                 buttonWidth, () -> minecraft.setScreen(new ShaderSettingsScreen(this))));
-        addRenderableWidget(clientButton("Configuration Profiles", left, top + 127,
+        addRenderableWidget(clientButton("Configuration Profiles", left, top + 154,
                 buttonWidth, () -> minecraft.setScreen(new ProfilesScreen(this))));
-        addRenderableWidget(clientButton("Feature Priorities", left, top + 154,
+        addRenderableWidget(clientButton("Feature Priorities", left, top + 181,
                 buttonWidth, () -> minecraft.setScreen(new FeaturePriorityScreen(this))));
         addRenderableWidget(Button.builder(Component.literal("CLOSE"), button -> onClose())
-                .bounds(center - 70, top + 194, 140, 20).build());
+                .bounds(center - 70, top + 215, 140, 20).build());
     }
 
     private Button clientButton(String label, int x, int y, int width, Runnable action) {
@@ -52,15 +57,15 @@ public final class EssentialsScreen extends Screen {
         int panelWidth = Math.min(380, width - 24);
         int left = center - panelWidth / 2;
         graphics.fill(0, 0, width, height, 0xB5080D18);
-        graphics.fill(left, top - 26, left + panelWidth, top + 224, 0xEE111B2B);
+        graphics.fill(left, top - 26, left + panelWidth, top + 246, 0xEE111B2B);
         graphics.fill(left, top - 26, left + panelWidth, top - 23, 0xFF55C7FF);
         graphics.fill(left + 12, top + 28, left + panelWidth - 12, top + 29, 0x553F91B5);
         graphics.drawCenteredString(font, title, center, top - 12, 0xFFF4FAFF);
-        graphics.drawCenteredString(font, "SETTINGS  /  SYSTEMS  /  RENDERING", center, top + 8, 0xFF8FAFC8);
+        graphics.drawCenteredString(font, "MINECRAFT  /  SYSTEMS  /  RENDERING", center, top + 8, 0xFF8FAFC8);
         super.render(graphics, mouseX, mouseY, partialTick);
 
         var config = EssentialsRuntime.config();
-        int infoY = top + 232;
+        int infoY = top + 254;
         if (config.showPerformanceScreen && config.diagnosticsEnabled && config.performanceMonitoringEnabled) {
             PerformanceMonitor monitor = EssentialsRuntime.performance();
             graphics.drawCenteredString(font, "FPS  " + monitor.latestFps()
