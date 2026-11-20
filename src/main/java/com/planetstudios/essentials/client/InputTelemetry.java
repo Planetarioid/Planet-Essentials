@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayDeque;
-import java.util.Iterator;
 
 /** Lightweight local input telemetry for the optional Keystrokes and CPS HUD widgets. */
 public final class InputTelemetry {
@@ -33,7 +32,7 @@ public final class InputTelemetry {
     }
 
     public static String keystrokes(Minecraft client) {
-        long window = client.getWindow().getWindow();
+        long window = client.getWindow().handle();
         return key(window, GLFW.GLFW_KEY_W, "W") + " "
                 + key(window, GLFW.GLFW_KEY_A, "A") + " "
                 + key(window, GLFW.GLFW_KEY_S, "S") + " "
