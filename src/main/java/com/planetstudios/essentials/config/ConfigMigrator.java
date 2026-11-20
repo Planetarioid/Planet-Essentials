@@ -3,7 +3,7 @@ import com.google.gson.JsonObject;
 import java.io.IOException;
 /** Explicit, forward-only configuration schema migrations. */
 public final class ConfigMigrator {
- public static final int CURRENT_SCHEMA=6;
+ public static final int CURRENT_SCHEMA=7;
  private ConfigMigrator(){}
  public static JsonObject migrate(JsonObject json)throws IOException{
   JsonObject migrated=json.deepCopy(); int version;
@@ -24,9 +24,11 @@ public final class ConfigMigrator {
    migrated.addProperty("schemaVersion",5);version=5;
   }
   if(version<6){
-   if(!migrated.has("experience")||migrated.get("experience").isJsonNull())
-    migrated.add("experience",new JsonObject());
-   migrated.addProperty("schemaVersion",6);
+   migrated.addProperty("schemaVersion",6);version=6;
+  }
+  if(version<7){
+   migrated.remove("experience");
+   migrated.addProperty("schemaVersion",7);
   }
   return migrated;
  }

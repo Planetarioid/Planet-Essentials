@@ -84,7 +84,8 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [ ] Redesign every incorporated vanilla setting control using reusable Planet UI components; no final vanilla-looking controls in the finished experience
 - [ ] Keep vanilla settings screens as a recovery route until complete parity and in-game validation
 - [ ] Registry-driven settings pages, search/filter, reset flows, accessibility, and localization
-- [ ] Full custom main menu and cohesive Planet visual system, deferred until underlying features stabilize
+- [ ] Fixed, cohesive Planet visual system across Planet-owned screens, deferred until underlying features stabilize
+- [ ] Optional FancyMenu coexistence for user-customized Minecraft main menus; no competing Planet main-menu editor or hard dependency
 
 ## 6. Unified feature and third-party integration experience
 - [ ] Unified feature directory organized by capability/function, not by originating mod
@@ -109,12 +110,14 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [ ] Clear unavailable-sensor states; never invent or imply unsupported sensor readings
 - [ ] HUD widget visibility, positioning, scale, opacity, colors, formatting, and compact/graph modes
 
-### Main menu, identity, and customization
+### Skin management and main-menu integration
 - [ ] Full skin management: upload/import, preview, Classic/Slim model selection, saved skins, apply/change, and export
 - [ ] Account-authenticated skin changes through supported Minecraft services; never collect or store Microsoft passwords/tokens in Planet
 - [ ] Additional cosmetics only where supported by Minecraft services or an explicitly compatible provider
-- [ ] Customizable menu backgrounds, optional animation, themes, accent colors, fonts, transitions, and menu audio controls
-- [ ] Recently played worlds and servers
+- [ ] FancyMenu optional compatibility for Minecraft main-menu layouts/backgrounds (no bundled FancyMenu code, no hard dependency)
+- [ ] Verify FancyMenu coexistence with Planet-owned screens and buttons on Fabric 1.21.11
+- [ ] Keep Planet UI appearance fixed and consistent; do not build player-facing theme, font, color, scale, opacity, animation, or home-screen layout editors
+- [ ] Keep functional customization such as HUD widget placement/visibility and feature settings
 
 ### Server discovery and multiplayer
 - [ ] Separate My Servers and Discover Servers views
@@ -159,7 +162,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [ ] Performance, memory, resource-lifecycle, accessibility, localization, and failure/fallback testing
 - [ ] Resolve duplicate ownership and verify that absent/incompatible optional mods never prevent normal startup
 - [ ] Freeze feature behavior and interaction contracts before final UI design
-- [ ] Complete the full Planet visual/UI overhaul across the main menu, all settings, HUD editor, skin manager, server browser, voice interface, and utility screens
+- [ ] Complete the fixed Planet visual/UI system across Planet settings, HUD editor, skin manager, server browser, voice interface, and utility screens; rely on optional FancyMenu for user-authored main-menu layouts
 - [ ] Regression-test the finished UI and all navigation/persistence after the overhaul
 - [ ] Select and verify project license and third-party notices/attributions; confirm redistribution permissions for every bundled component
 - [ ] Prepare changelog, versioning, documentation, support/issue process, and release artifacts

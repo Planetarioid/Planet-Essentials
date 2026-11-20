@@ -13,7 +13,7 @@ The development sequence is deliberate:
 4. Perform the comprehensive Planet UI/visual overhaul across every screen and setting.
 5. Regression-test the finished interface, then prepare and publish a release only after all release gates pass.
 
-The current UI remains developmental until that final overhaul. Do not confuse a roadmap item with implemented functionality.
+The current UI remains developmental until the fixed Planet visual system is completed and regression-tested. The design is fixed rather than player-theme-customizable. FancyMenu is the optional path for users who want to customize the Minecraft main menu.
 
 ## Integration ownership
 
@@ -70,7 +70,7 @@ Planned Planet-native information widgets:
 
 Sensor readings are platform-dependent. Missing or inaccessible sensors must be reported as unavailable; never substitute guessed values. Performance monitoring must be bounded and benchmarked so the overlay does not become a source of avoidable overhead.
 
-## Main menu, skin management, and customization
+## Skin management and FancyMenu compatibility
 
 ### Skin system
 - Import/upload supported Minecraft skin files.
@@ -82,9 +82,11 @@ Sensor readings are platform-dependent. Missing or inaccessible sensors must be 
 Changing an online Minecraft profile skin requires appropriate account authentication and service support. Planet must not ask users to paste Microsoft passwords or collect/store account credentials or tokens. Clearly distinguish local preview/import from a successfully applied account skin.
 
 ### Main menu personalization
-- Custom backgrounds, optional animation, themes, accent colors, fonts, transitions, and menu audio controls.
-- Recently played worlds and servers.
-- A consistent Planet visual identity across all entry points.
+- Planet uses a fixed, carefully art-directed visual identity. Do not build a deep player-facing editor for Planet UI themes, colors, fonts, panel opacity, animation, or home-screen layout.
+- FancyMenu is the optional, user-facing tool for main-menu layout/background customization. Planet should coexist with FancyMenu rather than implement a competing main-menu editor.
+- Keep Planet-owned screens visually consistent and fixed; functional settings such as HUD widget placement/visibility remain configurable.
+- FancyMenu is optional, never a hard dependency. Do not bundle or redistribute it. Target its Fabric build for Minecraft 1.21.11 and verify coexistence with Planet screens in-game before making a tested compatibility claim.
+- Recently played worlds and servers remain a Planet utility, not a theme-customization feature.
 
 ## Server discovery
 
@@ -116,7 +118,7 @@ Planned features:
 - Session statistics limited to data legitimately observable or tracked locally.
 - Central notification center.
 - Chat tabs, filters, timestamps, highlighting, and appearance controls, with feature-provider ownership respected.
-- Full-client profiles for Planet settings and explicitly supported integration settings.
+- Full-client profiles for Planet settings and explicitly supported integration settings. Functional HUD placement and visibility remain customizable; Planet UI themes and home-screen layout do not.
 
 ## Vanilla Minecraft settings
 

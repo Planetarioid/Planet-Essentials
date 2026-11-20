@@ -14,8 +14,6 @@ public final class EssentialsConfig {
  public String activeProfile="default";
  /** Capability ID to explicitly preferred FeatureId (modId:featureId). */
  public Map<String,String> featurePriorityOverrides=new TreeMap<>();
- /** All Planet-owned presentation, layout and HUD preferences. */
- public ExperienceConfig experience=new ExperienceConfig();
  public void validate(){
   schemaVersion=ConfigMigrator.CURRENT_SCHEMA;
   if(activeProfile==null||!activeProfile.matches("[a-z0-9_-]{1,32}")) activeProfile="default";
@@ -29,8 +27,6 @@ public final class EssentialsConfig {
    if(cap!=null&&cap.matches("[a-z0-9_.-]+:[a-z0-9_./-]+")&&feature!=null&&feature.matches("[a-z0-9_.-]+:[a-z0-9_.-]+")) valid.put(cap,feature);
   });
   featurePriorityOverrides=valid;
-  if(experience==null) experience=new ExperienceConfig();
-  experience.validate();
   SettingsRegistry.validate(this);
  }
 }
