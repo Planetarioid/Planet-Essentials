@@ -2,6 +2,7 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.systems.RenderPass;
 
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ public record PrismTerrainRenderPassState(
         OVERLAY,
         FOG,
         MODEL_VIEW_MATRIX,
+        CHUNK_SECTION_UNIFORMS,
         PROJECTION_MATRIX,
         DEFAULT_UNIFORMS,
         LAYER_PIPELINE,
@@ -101,6 +103,13 @@ public record PrismTerrainRenderPassState(
             }
         }
         if (snapshot.modelView() != null) facets.add(Facet.MODEL_VIEW_MATRIX);
+        if (layerInput != null && !layerInput.orderedDraws().isEmpty()
+                && snapshot.chunkSectionInfos().length > 0
+                && layerInput.orderedDraws().stream().allMatch(draw ->
+                        draw instanceof RenderPass.Draw<?> vanillaDraw
+                                && vanillaDraw.uniformUploaderConsumer() != null)) {
+            facets.add(Facet.CHUNK_SECTION_UNIFORMS);
+        }
         return new PrismTerrainRenderPassState(layer, facets, samplers);
     }
 

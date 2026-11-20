@@ -2,6 +2,7 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBackend;
@@ -90,6 +91,10 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
      * not roll back draw commands already submitted by this method.</p>
      */
     public void submitDraws(RenderPass pass) {
+        submitDraws(pass, null);
+    }
+
+    private void submitDraws(RenderPass pass, GpuBufferSlice[] chunkSectionInfos) {
         RenderSystem.assertOnRenderThread();
         ensureOpen();
         Objects.requireNonNull(pass, "pass");
@@ -104,6 +109,7 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         submissionState.begin();
         try {
             for (Draw draw : draws) {
+                bindVanillaChunkSectionUniform(pass, draw.vanillaDraw(), chunkSectionInfos);
                 boolean submitted = PrismTerrainDrawExecutor.drawPreparedWithPipeline(
                         pass, program, pipeline, draw.mesh(), samplerBindings,
                         draw.sectionUniform(), externallyBoundUniforms,
@@ -158,12 +164,13 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
             if (!boundUniforms.equals(externallyBoundUniforms)) {
                 throw new IllegalStateException("Captured default-uniform bindings changed after terrain preflight");
             }
-            submitDraws(pass);
+            submitDraws(pass, snapshot.chunkSectionInfos());
         }
     }
 
     /** Submits this layer as part of a caller-managed shared vanilla-group pass. */
-    void submitDrawsInBatch(RenderPass pass, PrismTerrainSubmissionState batchState) {
+    void submitDrawsInBatch(RenderPass pass, GpuBufferSlice[] chunkSectionInfos,
+            PrismTerrainSubmissionState batchState) {
         RenderSystem.assertOnRenderThread();
         ensureOpen();
         Objects.requireNonNull(pass, "pass");
@@ -176,6 +183,7 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
             throw new IllegalStateException("Prepared terrain layer became stale before batch submission");
         }
         for (Draw draw : draws) {
+            bindVanillaChunkSectionUniform(pass, draw.vanillaDraw(), chunkSectionInfos);
             boolean submitted = PrismTerrainDrawExecutor.drawPreparedWithPipeline(
                     pass, program, pipeline, draw.mesh(), samplerBindings,
                     draw.sectionUniform(), externallyBoundUniforms,
@@ -184,6 +192,25 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
                 throw new IllegalStateException("Prism terrain draw executor rejected a batched draw");
             }
         }
+    }
+
+    /**
+     * Replays the exact per-draw ChunkSection UBO callback created by
+     * LevelRenderer.prepareChunkRenders. It carries the matching section's
+     * model-view matrix, visibility, atlas dimensions, and block-space origin.
+     */
+    @SuppressWarnings("unchecked")
+    private static void bindVanillaChunkSectionUniform(
+            RenderPass pass, Object vanillaDraw, GpuBufferSlice[] chunkSectionInfos) {
+        if (chunkSectionInfos == null || !(vanillaDraw instanceof RenderPass.Draw<?> rawDraw)) {
+            throw new IllegalStateException("Captured vanilla ChunkSection uniform data is unavailable");
+        }
+        RenderPass.Draw<GpuBufferSlice[]> draw = (RenderPass.Draw<GpuBufferSlice[]>) rawDraw;
+        var uploader = draw.uniformUploaderConsumer();
+        if (uploader == null) {
+            throw new IllegalStateException("Vanilla terrain draw has no ChunkSection uniform uploader");
+        }
+        uploader.accept(chunkSectionInfos, (name, buffer) -> pass.setUniform(name, buffer));
     }
 
     public boolean mayFallBackToVanilla() {

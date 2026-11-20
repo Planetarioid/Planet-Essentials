@@ -399,8 +399,19 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
 
             Set<String> requiredUniforms = new HashSet<>(program.bindings().uniformBuffers());
             requiredUniforms.remove(PrismTerrainSectionUniform.BINDING_NAME);
-            Set<String> capturedUniforms = snapshot.passInputs().defaultUniforms().availableNames();
-            if (!capturedUniforms.containsAll(requiredUniforms)) {
+            if (!requiredUniforms.contains("ChunkSection") || !requiredUniforms.contains("Projection")) {
+                PlanetEssentials.LOGGER.warn(
+                        "Prism terrain program {} must declare ChunkSection and Projection uniform buffers",
+                        programId);
+                return java.util.Optional.empty();
+            }
+            Set<String> capturedUniforms = new HashSet<>(
+                    snapshot.passInputs().defaultUniforms().availableNames());
+            if (snapshot.renderStateFor(layer).capturedFacets().contains(
+                    PrismTerrainRenderPassState.Facet.CHUNK_SECTION_UNIFORMS)) {
+                capturedUniforms.add("ChunkSection");
+            }
+            if (!capturedUniforms.containsAll(requiredUniforms))
                 PlanetEssentials.LOGGER.warn(
                         "Prism terrain program {} requires uniforms not captured from vanilla: {}",
                         programId, difference(requiredUniforms, capturedUniforms));
