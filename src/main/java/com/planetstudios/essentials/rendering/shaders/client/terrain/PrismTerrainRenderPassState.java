@@ -91,10 +91,16 @@ public record PrismTerrainRenderPassState(
             samplers.add("Sampler0");
         }
         // The snapshot retains both present and absent optional default bindings.
-        facets.add(Facet.FOG);
+        // Default-uniform inputs are captured as nullable resources. A missing
+        // projection buffer is not evidence that the projection state was replayed.
+        if (snapshot.defaultUniforms() != null) {
+            facets.add(Facet.FOG); // Presence or absence is explicitly captured.
+            facets.add(Facet.DEFAULT_UNIFORMS);
+            if (snapshot.defaultUniforms().projection() != null) {
+                facets.add(Facet.PROJECTION_MATRIX);
+            }
+        }
         if (snapshot.modelView() != null) facets.add(Facet.MODEL_VIEW_MATRIX);
-        facets.add(Facet.PROJECTION_MATRIX);
-        facets.add(Facet.DEFAULT_UNIFORMS);
         return new PrismTerrainRenderPassState(layer, facets, samplers);
     }
 

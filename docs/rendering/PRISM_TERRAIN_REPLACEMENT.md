@@ -21,3 +21,14 @@ treated as an incomplete frame requiring investigation.
 This integration is an opt-in execution path, not a claim of visual parity on
 all devices. Runtime validation is still required for each supported graphics
 backend and terrain layer.
+
+
+## Current safety gate
+
+The replacement hook executes before vanilla creates its RenderPass. The current
+snapshot therefore cannot truthfully claim the active viewport or scissor state.
+Those facets are intentionally marked unknown, and the all-or-nothing readiness
+gate keeps vanilla terrain rendering enabled until both can be captured and
+replayed from authoritative state. Render-target dimensions are not used as a
+substitute for viewport state. This is a deliberate fail-open limitation, not a
+completed terrain takeover.

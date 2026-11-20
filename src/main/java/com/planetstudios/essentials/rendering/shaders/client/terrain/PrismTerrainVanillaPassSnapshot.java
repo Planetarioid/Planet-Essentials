@@ -13,7 +13,6 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderPass;
-import com.mojang.blaze3d.opengl.GlDevice;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
@@ -298,15 +297,12 @@ public record PrismTerrainVanillaPassSnapshot(
      * known 1.21.11 OpenGL backend. Unknown backends remain explicitly unknown.
      */
     private static PassOptions passOptions(RenderTarget target) {
-        boolean openGl = RenderSystem.getDevice() instanceof GlDevice;
-        Optional<ViewportState> viewport = openGl
-                ? Optional.of(new ViewportState(0, 0, target.width, target.height))
-                : Optional.empty();
-        Optional<ScissorState> scissor = openGl
-                ? Optional.of(new ScissorState(false, 0, 0, 0, 0))
-                : Optional.empty();
+        // The render-group HEAD hook runs before vanilla creates its RenderPass.
+        // RenderTarget dimensions are not proof of the active GL viewport, and
+        // an absent scissor is not proof that scissoring is disabled. Keep both
+        // facets unknown until they can be captured from the actual pass state.
         return new PassOptions(OptionalInt.empty(), OptionalDouble.empty(),
-                false, viewport, scissor);
+                false, Optional.empty(), Optional.empty());
     }
 
     public record ViewportState(int x, int y, int width, int height) {
