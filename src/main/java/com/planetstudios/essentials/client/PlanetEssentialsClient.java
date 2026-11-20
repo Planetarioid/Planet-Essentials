@@ -74,7 +74,14 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
             PrismWorldPostProcessor.shutdown();
             ShaderPackRuntime.shutdown();
         });
-        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> record(DiagnosticEventType.WORLD_JOINED));
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            EssentialsRuntime.sessionStatistics().start();
+            record(DiagnosticEventType.WORLD_JOINED);
+        });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            EssentialsRuntime.sessionStatistics().stop();
+            record(DiagnosticEventType.WORLD_LEFT);
+        });
 
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
             var config = EssentialsRuntime.config();
@@ -92,6 +99,11 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
             if (planetMenuRequested && client.screen == null
                     && client.player != null && client.level != null) {
                 client.setScreen(new EssentialsScreen(null));
+            }
+
+            if (client.player != null && client.level != null) {
+                EssentialsRuntime.sessionStatistics().recordPlayerTick(
+                        client.player.getX(), client.player.getY(), client.player.getZ());
             }
 
             if (performanceSamplingEnabledForCurrentTick && client.level != null) {

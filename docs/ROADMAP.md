@@ -136,7 +136,8 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [ ] Resource-pack manager with search, sorting, and preview where possible
 - [ ] Waypoint manager and world information, respecting server authority and information legitimately available to the client
 - [ ] Configurable item tooltip enhancements that do not duplicate an installed provider's feature
-- [ ] Session statistics for locally observable/tracked data
+- [x] Local in-memory session statistics for active ticks and continuous player travel distance, with teleport discontinuity handling and unit tests
+- [ ] Expand session statistics with additional accurately observable metrics
 - [ ] Central notification center for client, server, voice, and system notifications
 - [ ] Chat customization: tabs, filters, timestamps, highlighting, and appearance controls, with provider ownership respected
 - [ ] Profile manager for complete Planet setups and supported integration settings
