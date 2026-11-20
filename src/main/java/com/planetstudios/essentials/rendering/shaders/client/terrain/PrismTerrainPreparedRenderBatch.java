@@ -44,6 +44,11 @@ public final class PrismTerrainPreparedRenderBatch implements AutoCloseable {
             if (input != null && input.pipelineApplied() && !input.orderedDraws().isEmpty()) expected.add(layer);
         }
         validateLayerOrder(expected, this.layers.stream().map(PrismTerrainPreparedRenderGroup::layer).toList());
+        if (!hasSharedIdentity(this.layers.stream()
+                .map(layer -> layer.indexBuffer().buffer()).toList())) {
+            throw new IllegalArgumentException(
+                    "Prepared terrain layers must retain the same shared sequential index-buffer allocation");
+        }
 
         Set<String> uniformNames = null;
         for (int i = 0; i < this.layers.size(); i++) {
@@ -102,6 +107,18 @@ public final class PrismTerrainPreparedRenderBatch implements AutoCloseable {
         }
     }
 
+
+
+    /** All prepared layers must reference one allocation, not buffers invalidated by later growth. */
+    static boolean hasSharedIdentity(List<?> resources) {
+        if (resources == null || resources.isEmpty()) return false;
+        Object first = resources.get(0);
+        if (first == null) return false;
+        for (int i = 1; i < resources.size(); i++) {
+            if (resources.get(i) != first) return false;
+        }
+        return true;
+    }
 
     static void validateLayerOrder(List<ChunkSectionLayer> expected, List<ChunkSectionLayer> actual) {
         Objects.requireNonNull(expected, "expected");

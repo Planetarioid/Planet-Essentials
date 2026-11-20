@@ -37,6 +37,14 @@ class PrismTerrainPreparedRenderBatchTest {
     }
 
     @Test
+    void preparedLayersMustShareOneLiveSequentialIndexAllocation() {
+        Object shared = new Object();
+        assertTrue(PrismTerrainPreparedRenderBatch.hasSharedIdentity(List.of(shared, shared)));
+        assertFalse(PrismTerrainPreparedRenderBatch.hasSharedIdentity(List.of(new Object(), new Object())));
+        assertFalse(PrismTerrainPreparedRenderBatch.hasSharedIdentity(List.of()));
+    }
+
+    @Test
     void drawValidationRequiresExactObjectIdentityAndOrder() {
         Object first = new Object();
         Object second = new Object();
