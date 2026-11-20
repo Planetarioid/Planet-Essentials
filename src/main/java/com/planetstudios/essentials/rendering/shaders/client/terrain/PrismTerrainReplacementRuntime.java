@@ -33,6 +33,18 @@ public final class PrismTerrainReplacementRuntime {
     public static boolean tryReplace(PrismTerrainRenderGroupBoundary.Snapshot snapshot) {
         RenderSystem.assertOnRenderThread();
         if (snapshot == null || !ShaderPackRuntime.isEnabled()) return false;
+        try {
+            return prepareAndSubmit(snapshot);
+        } catch (RuntimeException instrumentationFailure) {
+            // A Prism observation or preflight failure must never break vanilla's render path.
+            PlanetEssentials.LOGGER.warn(
+                    "Prism terrain replacement could not prepare group {}; vanilla remains in control",
+                    snapshot.group().label(), instrumentationFailure);
+            return false;
+        }
+    }
+
+    private static boolean prepareAndSubmit(PrismTerrainRenderGroupBoundary.Snapshot snapshot) {
         ClientLevel level = Minecraft.getInstance().level;
         if (level == null || ShaderPackRuntime.terrainProgram(TERRAIN_PROGRAM_ID) == null) return false;
 
