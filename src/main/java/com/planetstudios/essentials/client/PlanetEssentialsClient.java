@@ -22,8 +22,12 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -33,6 +37,9 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
     private static final TexturePixelCache TEXTURE_CACHE = new TexturePixelCache();
     private static final TextureDecodeService TEXTURE_DECODER =
             new TextureDecodeService(TextureDecodeLimits.DEFAULT, TEXTURE_CACHE);
+    private static final KeyMapping.Category PLANET_KEY_CATEGORY = KeyMapping.Category.register(
+            Identifier.fromNamespaceAndPath("planet_essentials", "client"));
+    private static KeyMapping OPEN_PLANET_MENU;
 
     private static long tickStartedAtNanos;
     private static boolean performanceSamplingEnabledForCurrentTick;
@@ -41,6 +48,9 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EssentialsRuntime.initialize();
+        OPEN_PLANET_MENU = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+                "key.planet_essentials.open_menu", InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_0, PLANET_KEY_CATEGORY));
         var renderer = PrismRendererCompatibility.detectInstalled();
         PlanetEssentials.LOGGER.info(
                 "Prism renderer environment: {} (Iris: {}, adapter: {}). {}",
@@ -77,6 +87,13 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            boolean planetMenuRequested = false;
+            while (OPEN_PLANET_MENU.consumeClick()) planetMenuRequested = true;
+            if (planetMenuRequested && client.screen == null
+                    && client.player != null && client.level != null) {
+                client.setScreen(new EssentialsScreen(null));
+            }
+
             if (performanceSamplingEnabledForCurrentTick && client.level != null) {
                 EssentialsRuntime.performance().recordFps(Minecraft.getInstance().getFps());
             }

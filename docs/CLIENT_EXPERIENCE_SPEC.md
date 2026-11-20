@@ -15,6 +15,26 @@ The development sequence is deliberate:
 
 The current UI remains developmental until the fixed Planet visual system is completed and regression-tested. The design is fixed rather than player-theme-customizable. FancyMenu is the optional path for users who want to customize the Minecraft main menu.
 
+## In-game client hub access
+
+The full Planet client hub has two entry points:
+- A configurable key mapping that defaults to the `0` key. It opens only during active gameplay when a world and player are present and no screen is open. It must not steal input from inventory, trading, container, chat, or any other open GUI.
+- A dedicated **PLANET CLIENT** button in the pause menu. This route opens the same hub and returns to the pause menu when closed.
+
+The shortcut is consumed even when a screen is open so a key press made inside a GUI cannot be queued and unexpectedly open the hub after that GUI closes. The key mapping remains visible in Controls so players can rebind it.
+
+## Combat combo counter
+
+The Planet combo counter is a planned native PvP HUD feature. It must:
+- Increase when the local player successfully lands a hit.
+- Decrease by one when the local player takes a confirmed hit, and continue below zero.
+- Preserve signed values across zero; do not clamp negative values to zero or silently reset on incoming damage.
+- Reset only at clearly defined combat/session boundaries, with the reset behavior exposed as a functional setting if appropriate.
+- Distinguish confirmed damage/hits from attack-button presses, blocked attacks, misses, and unrelated environmental damage.
+- Register through Planet's shared HUD/widget and settings infrastructure rather than becoming a one-off overlay.
+
+This counter is not implemented yet. Its event source and attribution must be validated in multiplayer before it is advertised as accurate.
+
 ## Integration ownership
 
 Planet should provide shared infrastructure for:

@@ -80,6 +80,9 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 
 ## 5. Planet client experience and settings
 - [~] Main settings hub and Prism shader panel
+- [x] In-game Planet hub shortcut registered to default key 0, gated to active gameplay with no open screen
+- [x] Dedicated Planet Client entry in the pause menu, returning to the pause menu when closed
+- [ ] Runtime-test keybind behavior across world states, pause/resume, inventory, trading, chat, and container screens
 - [ ] Migrate every supported vanilla settings category into Planet-owned pages while preserving native Minecraft option behavior and persistence
 - [ ] Redesign every incorporated vanilla setting control using reusable Planet UI components; no final vanilla-looking controls in the finished experience
 - [ ] Keep vanilla settings screens as a recovery route until complete parity and in-game validation
@@ -145,7 +148,13 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [ ] Unified keybinds and HUD registration for supported voice features
 - [ ] No replacement voice transport or server-authoritative behavior changes
 
-## 8. Uku feature ownership and optional ecosystem
+## 8. Combat HUD features
+- [ ] Signed combo counter: increment on confirmed outgoing hits and decrement on confirmed incoming hits, continuing below zero
+- [ ] Correctly attribute damage sources and exclude misses, blocked hits, environmental damage, and unrelated entity damage
+- [ ] Reset only at defined combat/session boundaries and expose appropriate functional settings
+- [ ] Integrate the counter through the shared HUD/widget registry and verify multiplayer behavior
+
+## 9. Uku feature ownership and optional ecosystem
 - [ ] Treat Uku mods as optional, independently installable providers that enrich the Planet experience
 - [ ] Do not recreate or ship duplicate implementations of features already owned by the approved Uku ecosystem
 - [ ] Integrate supported Uku capabilities into Planet's feature directory, HUD editor, settings, keybinds, and profiles only where documented APIs permit
@@ -154,7 +163,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [ ] When a provider conflicts with another implementation, resolve ownership per capability without silently disabling unrelated features
 - [ ] Verify every exact Minecraft/mod version before making compatibility claims
 
-## 9. Testing, final UI overhaul, and publication
+## 10. Testing, final UI overhaul, and publication
 - [ ] Implement and stabilize feature backends, APIs, data models, and non-final functional screens before the major visual overhaul
 - [ ] Unit/integration tests for registries, providers, profiles, optional dependencies, skin workflows, server directory responses, and sensor availability
 - [ ] In-game testing for every settings page, HUD widget, menu flow, multiplayer action, voice integration, and profile round trip
@@ -168,7 +177,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [ ] Prepare changelog, versioning, documentation, support/issue process, and release artifacts
 - [ ] Final clean-install and upgrade tests; publish only after release gates pass
 
-## 10. Compatibility and platform constraints
+## 11. Compatibility and platform constraints
 - [x] Primary target: vanilla Minecraft 1.21.11 with Fabric
 - [x] No Sodium, Iris, VulkanMod, or Canvas compatibility targets or adapters planned
 - [ ] Reconcile documented Fabric Loader baseline with the user's current 0.20.1 test environment before release claims
