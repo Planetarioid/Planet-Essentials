@@ -13,8 +13,9 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
-/** Writes a local diagnostics snapshot only when explicitly invoked by the user. */
+/** Writes a local diagnostics or benchmark snapshot only when explicitly invoked by the user. */
 public final class DiagnosticsExporter {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final DateTimeFormatter FILE_TIME =
@@ -25,7 +26,17 @@ public final class DiagnosticsExporter {
     public static Path export(Path configDirectory,
                               List<PerformanceSample> samples,
                               List<DiagnosticEvent> events) {
-        if (configDirectory == null || samples == null || events == null) {
+        return exportBenchmark(configDirectory, samples, List.of(), events, Map.of());
+    }
+
+    /** Full benchmark bundle. No data is uploaded or transmitted. */
+    public static Path exportBenchmark(Path configDirectory,
+                                       List<PerformanceSample> samples,
+                                       List<FrameTimeSample> frameTimes,
+                                       List<DiagnosticEvent> events,
+                                       Map<String, String> metadata) {
+        if (configDirectory == null || samples == null || frameTimes == null
+                || events == null || metadata == null) {
             throw new NullPointerException("Export inputs cannot be null");
         }
         Path exportDirectory = configDirectory.resolve("planet-essentials").resolve("exports");
@@ -33,8 +44,13 @@ public final class DiagnosticsExporter {
         try {
             Files.createDirectories(exportDirectory);
             JsonObject root = new JsonObject();
-            root.addProperty("schemaVersion", 1);
+            root.addProperty("schemaVersion", 2);
+            root.addProperty("exportType", "space-client-benchmark");
             root.addProperty("exportedAt", Instant.now().toString());
+
+            JsonObject environment = new JsonObject();
+            metadata.forEach(environment::addProperty);
+            root.add("environment", environment);
 
             JsonArray performance = new JsonArray();
             for (PerformanceSample sample : List.copyOf(samples)) {
@@ -47,6 +63,17 @@ public final class DiagnosticsExporter {
             }
             root.add("performanceSamples", performance);
 
+            JsonArray frameData = new JsonArray();
+            for (FrameTimeSample sample : List.copyOf(frameTimes)) {
+                JsonObject item = new JsonObject();
+                item.addProperty("timestamp", sample.timestamp().toString());
+                item.addProperty("frameTimeNanos", sample.frameTimeNanos());
+                item.addProperty("frameTimeMillis", sample.milliseconds());
+                item.addProperty("estimatedFps", sample.estimatedFps());
+                frameData.add(item);
+            }
+            root.add("frameTimeSamples", frameData);
+
             JsonArray diagnosticEvents = new JsonArray();
             for (DiagnosticEvent event : List.copyOf(events)) {
                 JsonObject item = new JsonObject();
@@ -57,9 +84,9 @@ public final class DiagnosticsExporter {
             }
             root.add("events", diagnosticEvents);
 
-            String baseName = "diagnostics-" + FILE_TIME.format(Instant.now());
+            String baseName = "space-client-benchmark-" + FILE_TIME.format(Instant.now());
             Path destination = uniqueDestination(exportDirectory, baseName);
-            temporary = Files.createTempFile(exportDirectory, ".diagnostics-", ".tmp");
+            temporary = Files.createTempFile(exportDirectory, ".benchmark-", ".tmp");
             Files.writeString(temporary, GSON.toJson(root));
             try {
                 Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE);
@@ -68,7 +95,7 @@ public final class DiagnosticsExporter {
             }
             return destination;
         } catch (IOException exception) {
-            throw new IllegalStateException("Could not export Planet Essentials diagnostics", exception);
+            throw new IllegalStateException("Could not export Space Client benchmark", exception);
         } finally {
             if (temporary != null) {
                 try { Files.deleteIfExists(temporary); } catch (IOException ignored) {}

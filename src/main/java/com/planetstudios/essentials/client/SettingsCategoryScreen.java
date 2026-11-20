@@ -23,10 +23,17 @@ public final class SettingsCategoryScreen extends Screen {
   List<SettingDefinition<?>> settings=SettingsRegistry.inCategory(category);int center=width/2,y=height/4+24;
   for(SettingDefinition<?> setting:settings){addRenderableWidget(createButton(setting,center-155,y,310,20));y+=27;}
   if("diagnostics".equals(category)){
+   addRenderableWidget(Button.builder(Component.literal("Open Performance Analyzer"),button->minecraft.setScreen(new PerformanceScreen(this)))
+    .bounds(center-100,height-124,200,20).build());
    addRenderableWidget(Button.builder(Component.literal("Export diagnostics"),button->{
     try{
-     Path file=DiagnosticsExporter.export(FabricLoader.getInstance().getConfigDir(),
-       EssentialsRuntime.performance().snapshot(),EssentialsRuntime.diagnosticEvents().snapshot());
+     Path file=DiagnosticsExporter.exportBenchmark(FabricLoader.getInstance().getConfigDir(),
+       EssentialsRuntime.performance().snapshot(),EssentialsRuntime.performance().frameTimeSnapshot(),
+       EssentialsRuntime.diagnosticEvents().snapshot(),java.util.Map.of(
+        "minecraftVersion",minecraft.getLaunchedVersion(),
+        "javaVersion",System.getProperty("java.version","unknown"),
+        "operatingSystem",System.getProperty("os.name","unknown"),
+        "architecture",System.getProperty("os.arch","unknown")));
      exportStatus="Exported: "+file.getFileName();
     }catch(RuntimeException exception){exportStatus="Export failed: "+exception.getMessage();}
    }).bounds(center-100,height-96,200,20).build());
@@ -49,8 +56,6 @@ public final class SettingsCategoryScreen extends Screen {
  }
  private Component label(SettingDefinition<?> setting){return Component.literal(setting.displayName()+": "+setting.get(EssentialsRuntime.config()));}
  @Override public void render(GuiGraphics g,int mx,int my,float tick){
-  // Screen.renderWithTooltipAndSubtitles renders the background before this method.
-  // Calling renderBackground here would enqueue a second blur in the same frame.
   super.render(g,mx,my,tick);g.drawCenteredString(font,title,width/2,height/4,0xFFFFFF);
   int y=height/4+48+SettingsRegistry.inCategory(category).size()*27;
   if("systems".equals(category)){

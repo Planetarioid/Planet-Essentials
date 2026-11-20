@@ -34,8 +34,8 @@ public final class EssentialsScreen extends Screen {
                 () -> minecraft.setScreen(new HudEditorScreen(this)));
         addCard("KEYBINDS", "Find and manage controls", contentLeft, top + 62, cardWidth,
                 () -> minecraft.setScreen(new KeybindSearchScreen(this)));
-        addCard("PERFORMANCE", "Diagnostics and frame data", contentLeft + cardWidth + gap, top + 62, cardWidth,
-                () -> minecraft.setScreen(new SettingsCategoryScreen(this, "diagnostics")));
+        addCard("PERFORMANCE", "Frame pacing, FPS graph and benchmarks", contentLeft + cardWidth + gap, top + 62, cardWidth,
+                () -> minecraft.setScreen(new PerformanceScreen(this)));
         addCard("SYSTEMS", "Client-side optimizations", contentLeft, top + 124, cardWidth,
                 () -> minecraft.setScreen(new SettingsCategoryScreen(this, "systems")));
         addCard("PRISM", "Shader engine and packs", contentLeft + cardWidth + gap, top + 124, cardWidth,
