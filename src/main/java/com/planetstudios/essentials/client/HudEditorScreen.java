@@ -28,7 +28,7 @@ public final class HudEditorScreen extends Screen {
     protected void init() {
         widgets = HudWidgetRegistry.snapshot();
         int rowY = 58;
-        int left = Math.max(8, (width - 354) / 2);
+        int left = Math.max(8, (width - 366) / 2);
         for (HudWidgetDefinition definition : widgets) {
             final String id = definition.id();
             addRenderableWidget(Button.builder(toggleLabel(definition), button -> {
@@ -51,7 +51,7 @@ public final class HudEditorScreen extends Screen {
             addRenderableWidget(Button.builder(Component.literal("RESET"), button -> {
                 EssentialsRuntime.config().hudWidgetPlacements.remove(id);
                 EssentialsRuntime.save();
-                rebuildWidgets();
+                refreshEditor();
             }).bounds(left + 324, rowY, 42, 20).build());
             rowY += 27;
         }
@@ -59,7 +59,7 @@ public final class HudEditorScreen extends Screen {
         addRenderableWidget(Button.builder(Component.literal("RESET ALL"), button -> {
             EssentialsRuntime.config().hudWidgetPlacements.clear();
             EssentialsRuntime.save();
-            rebuildWidgets();
+            refreshEditor();
         }).bounds(width / 2 - 104, height - 34, 100, 20).build());
         addRenderableWidget(Button.builder(Component.literal("BACK"), button -> onClose())
                 .bounds(width / 2 + 4, height - 34, 100, 20).build());
@@ -108,10 +108,10 @@ public final class HudEditorScreen extends Screen {
 
     private void saveAndRefresh() {
         EssentialsRuntime.save();
-        rebuildWidgets();
+        refreshEditor();
     }
 
-    private void rebuildWidgets() {
+    private void refreshEditor() {
         minecraft.setScreen(new HudEditorScreen(parent));
     }
 
@@ -141,7 +141,7 @@ public final class HudEditorScreen extends Screen {
             int widgetWidth = font.width(label);
             HudWidgetLayout.Position position = HudWidgetLayout.resolve(placement.anchor,
                     innerWidth, innerHeight, widgetWidth, font.lineHeight,
-                    placement.offsetX / 4, placement.offsetY / 4);
+                    placement.offsetX, placement.offsetY);
             graphics.drawString(font, label, innerX + position.x(), innerY + position.y(),
                     0xFF70D7FF, true);
         }
