@@ -48,7 +48,7 @@ public final class PrismTerrainGpuCache implements AutoCloseable {
         Key key=Key.of(data);
         PrismTerrainGpuMesh previous=entries.remove(key);
         if(previous!=null){currentBytes-=previous.gpuBytes();previous.close();}
-        while(currentBytes+replacement.gpuBytes()>maxBytes){
+        while(currentBytes>maxBytes-replacement.gpuBytes()){
             Iterator<Map.Entry<Key,PrismTerrainGpuMesh>> it=entries.entrySet().iterator();
             if(!it.hasNext())break;
             PrismTerrainGpuMesh eldest=it.next().getValue();
