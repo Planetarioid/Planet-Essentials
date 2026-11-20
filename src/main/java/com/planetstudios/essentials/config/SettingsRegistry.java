@@ -36,6 +36,10 @@ public final class SettingsRegistry {
                 "Player hit indicator", "Turn the crosshair red when a player is directly targeted and inside melee attack range.",
                 SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
                 config -> config.crosshairTargetIndicator, (config, value) -> config.crosshairTargetIndicator = value));
+        register(new SettingDefinition<>("combat.combo_counter", "combat",
+                "Combo counter", "Show the signed combat streak HUD widget. Positive values count landed hits; negative values count received hits.",
+                SettingDefinition.Kind.BOOLEAN, true, value -> value != null,
+                config -> config.comboCounterEnabled, (config, value) -> config.comboCounterEnabled = value));
         register(new SettingDefinition<>("shaders.enabled", "shaders",
                 "Enable Prism shaders", "Enable the selected Prism shader pack. Turning this off immediately bypasses Prism effects.",
                 SettingDefinition.Kind.BOOLEAN, false, value -> value != null,

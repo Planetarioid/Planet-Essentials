@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.client.mixin;
 
 import com.planetstudios.essentials.client.CrosshairTargetIndicator;
+import com.planetstudios.essentials.hud.HudWidgetRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Gui;
@@ -10,9 +11,15 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Draws a compact red overlay when the vanilla crosshair targets an attackable player. */
+/** Draws Planet HUD widgets and the optional player hit crosshair indicator. */
 @Mixin(Gui.class)
 public abstract class GuiMixin {
+    @Inject(method = "render", at = @At("RETURN"))
+    private void planetEssentials$renderHudWidgets(GuiGraphics graphics, DeltaTracker deltaTracker,
+                                                    CallbackInfo callback) {
+        HudWidgetRenderer.render(graphics, Minecraft.getInstance());
+    }
+
     @Inject(method = "renderCrosshair", at = @At("RETURN"))
     private void planetEssentials$drawTargetIndicator(GuiGraphics graphics, DeltaTracker deltaTracker,
                                                        CallbackInfo callback) {
@@ -24,7 +31,6 @@ public abstract class GuiMixin {
         int red = 0xFFFF3030;
         int shadow = 0xFF401010;
 
-        // Dark one-pixel outline keeps the indicator readable over bright and dark scenes.
         graphics.fill(centerX - 1, centerY - 6, centerX + 2, centerY + 6, shadow);
         graphics.fill(centerX - 6, centerY - 1, centerX + 6, centerY + 2, shadow);
         graphics.fill(centerX, centerY - 5, centerX + 1, centerY + 5, red);
