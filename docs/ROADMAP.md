@@ -149,10 +149,11 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [ ] No replacement voice transport or server-authoritative behavior changes
 
 ## 8. Combat HUD features
-- [ ] Signed combo counter: increment on confirmed outgoing hits and decrement on confirmed incoming hits, continuing below zero
-- [ ] Correctly attribute damage sources and exclude misses, blocked hits, environmental damage, and unrelated entity damage
-- [ ] Reset only at defined combat/session boundaries and expose appropriate functional settings
-- [ ] Integrate the counter through the shared HUD/widget registry and verify multiplayer behavior
+- [x] Pure signed combo-counter state model: outgoing hit streak counts Hit 1, Hit 2, Hit 3...; first incoming hit breaks the positive streak and displays -1; further consecutive incoming hits display -2, -3...
+- [ ] Connect the model to confirmed outgoing-hit and incoming-hit events; exclude attack attempts, misses, blocked hits, environmental damage, and unrelated entity damage
+- [ ] Define and implement combat/session reset boundaries and functional settings
+- [ ] Render the counter in the HUD and register it through the shared HUD/widget infrastructure
+- [ ] Verify hit attribution and counter behavior in multiplayer
 
 ## 9. Uku feature ownership and optional ecosystem
 - [ ] Treat Uku mods as optional, independently installable providers that enrich the Planet experience

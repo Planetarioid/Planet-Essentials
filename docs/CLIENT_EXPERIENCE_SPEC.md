@@ -26,14 +26,15 @@ The shortcut is consumed even when a screen is open so a key press made inside a
 ## Combat combo counter
 
 The Planet combo counter is a planned native PvP HUD feature. It must:
-- Increase when the local player successfully lands a hit.
-- Decrease by one when the local player takes a confirmed hit, and continue below zero.
-- Preserve signed values across zero; do not clamp negative values to zero or silently reset on incoming damage.
-- Reset only at clearly defined combat/session boundaries, with the reset behavior exposed as a functional setting if appropriate.
-- Distinguish confirmed damage/hits from attack-button presses, blocked attacks, misses, and unrelated environmental damage.
+- Count consecutive confirmed hits landed by the local player as positive values: Hit 1, Hit 2, Hit 3, and onward.
+- The first confirmed hit received by the local player breaks the positive streak and immediately displays -1, regardless of the previous positive value.
+- Further consecutive confirmed hits received display -2, -3, and onward.
+- A confirmed outgoing hit after a negative sequence starts a new positive streak at Hit 1.
+- Do not count attack-button presses, misses, blocked hits, environmental damage, or unrelated entity damage.
+- Reset only at clearly defined combat/session boundaries.
 - Register through Planet's shared HUD/widget and settings infrastructure rather than becoming a one-off overlay.
 
-This counter is not implemented yet. Its event source and attribution must be validated in multiplayer before it is advertised as accurate.
+The signed counter state model and unit tests are implemented. Client event attribution, HUD rendering, reset policy, and multiplayer validation remain outstanding; do not advertise the complete feature until those parts are connected and tested.
 
 ## Integration ownership
 
