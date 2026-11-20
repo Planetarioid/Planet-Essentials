@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.client.mixin;
 
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainActiveFrustum;
+import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainChunkLifecycleEvents;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVanillaDrawIndex;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVisibleSections;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -27,6 +28,9 @@ public abstract class LevelRendererMixin {
     @Shadow @Final
     private ObjectArrayList<SectionRenderDispatcher.RenderSection> visibleSections;
 
+    @Shadow
+    private ClientLevel level;
+
     @Inject(method = "prepareCullFrustum", at = @At("RETURN"))
     private void planetEssentials$captureActiveFrustum(Matrix4f modelViewMatrix,
             Matrix4f projectionMatrixForCulling, net.minecraft.world.phys.Vec3 cameraPosition,
@@ -50,6 +54,10 @@ public abstract class LevelRendererMixin {
 
     @Inject(method = "setLevel", at = @At("HEAD"))
     private void planetEssentials$clearWorldSnapshots(ClientLevel level, CallbackInfo callback) {
+        ClientLevel previousLevel = this.level;
+        if (previousLevel != null && previousLevel != level) {
+            PrismTerrainChunkLifecycleEvents.clearWorld(previousLevel);
+        }
         PrismTerrainVisibleSections.clear();
         PrismTerrainActiveFrustum.clear();
         PrismTerrainVanillaDrawIndex.clear();
