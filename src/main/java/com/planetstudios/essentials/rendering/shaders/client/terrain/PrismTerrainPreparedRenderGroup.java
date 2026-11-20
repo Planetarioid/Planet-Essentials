@@ -116,6 +116,36 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         }
     }
 
+    /**
+     * Opens a pass against the captured vanilla target, rebinds the captured
+     * default uniforms, submits this prepared group, and closes the pass.
+     *
+     * <p>This method deliberately does not cancel or suppress vanilla rendering.
+     * If it throws, callers must consult mayFallBackToVanilla(): failures before
+     * the first indexed draw permit vanilla fallback; failures after submission
+     * begins do not. Closing a pass never rolls back submitted draws.</p>
+     */
+    public void submitToCapturedPass(
+            PrismTerrainRenderGroupBoundary.Snapshot snapshot,
+            com.mojang.blaze3d.systems.GpuDevice device,
+            String debugLabel) {
+        RenderSystem.assertOnRenderThread();
+        ensureOpen();
+        if (!isValidFor(level, snapshot)) {
+            throw new IllegalStateException("Prepared terrain group no longer matches the captured render group");
+        }
+        Objects.requireNonNull(device, "device");
+        Objects.requireNonNull(debugLabel, "debugLabel");
+
+        try (RenderPass pass = snapshot.passInputs().openCapturedTargetPass(device, debugLabel)) {
+            Set<String> boundUniforms = snapshot.passInputs().bindCapturedDefaultUniforms(pass);
+            if (!boundUniforms.equals(externallyBoundUniforms)) {
+                throw new IllegalStateException("Captured default-uniform bindings changed after terrain preflight");
+            }
+            submitDraws(pass);
+        }
+    }
+
     public boolean mayFallBackToVanilla() {
         return submissionState.mayFallBackToVanilla();
     }
