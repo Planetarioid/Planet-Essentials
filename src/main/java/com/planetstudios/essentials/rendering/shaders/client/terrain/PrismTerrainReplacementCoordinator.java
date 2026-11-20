@@ -397,6 +397,7 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
                     snapshot.passInputs().layers().get(layer);
             if (layerInput == null || !layerInput.pipelineApplied()) return java.util.Optional.empty();
 
+            var state = snapshot.renderStateFor(layer);
             Set<String> requiredUniforms = new HashSet<>(program.bindings().uniformBuffers());
             requiredUniforms.remove(PrismTerrainSectionUniform.BINDING_NAME);
             if (!requiredUniforms.contains("ChunkSection") || !requiredUniforms.contains("Projection")) {
@@ -407,11 +408,10 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
             }
             Set<String> capturedUniforms = new HashSet<>(
                     snapshot.passInputs().defaultUniforms().availableNames());
-            if (snapshot.renderStateFor(layer).capturedFacets().contains(
-                    PrismTerrainRenderPassState.Facet.CHUNK_SECTION_UNIFORMS)) {
+            if (state.capturedFacets().contains(PrismTerrainRenderPassState.Facet.CHUNK_SECTION_UNIFORMS)) {
                 capturedUniforms.add("ChunkSection");
             }
-            if (!capturedUniforms.containsAll(requiredUniforms))
+            if (!capturedUniforms.containsAll(requiredUniforms)) {
                 PlanetEssentials.LOGGER.warn(
                         "Prism terrain program {} requires uniforms not captured from vanilla: {}",
                         programId, difference(requiredUniforms, capturedUniforms));
@@ -420,7 +420,6 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
 
             Set<String> requiredSamplers = Set.copyOf(program.bindings().samplers());
             var samplerBindings = snapshot.passInputs().samplerBindingsFor(layer, requiredSamplers);
-            var state = snapshot.renderStateFor(layer);
             if (!state.isCompleteFor(layer, requiredSamplers)) return java.util.Optional.empty();
 
             // Pipeline compilation is deliberately completed before any pass opens.
