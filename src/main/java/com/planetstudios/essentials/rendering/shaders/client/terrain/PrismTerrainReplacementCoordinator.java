@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.planetstudios.essentials.PlanetEssentials;
 import com.planetstudios.essentials.rendering.shaders.client.MinecraftShaderBackend;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
+import com.planetstudios.essentials.rendering.shaders.ShaderCompileException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
@@ -465,7 +466,7 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
                     sharedIndexBuffer, samplerBindings, capturedUniforms, draws);
             allocated.clear(); // Ownership transferred to the prepared group.
             return java.util.Optional.of(prepared);
-        } catch (RuntimeException | Error failure) {
+        } catch (ShaderCompileException | RuntimeException | Error failure) {
             for (PrismTerrainSectionUniformAllocation uniform : allocated) {
                 try { uniform.close(); } catch (RuntimeException closeFailure) {
                     failure.addSuppressed(closeFailure);
