@@ -137,6 +137,7 @@ public final class ShaderPackRuntime {
     public static ShaderPipeline.Snapshot pipelineSnapshot() { return PIPELINE.snapshot(); }
 
     public static void shutdown() {
+        PrismTerrainReplacementRuntime.shutdown();
         CATALOG.clear();
         lastResourceManager = null;
         compiledPackId = "";
