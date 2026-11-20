@@ -3,6 +3,7 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -58,7 +59,14 @@ public record PrismTerrainRenderPassState(
      */
     public static PrismTerrainRenderPassState fromVanillaSnapshot(
             ChunkSectionLayer layer, PrismTerrainVanillaPassSnapshot snapshot) {
+        return fromVanillaSnapshot(layer, snapshot, new GpuBufferSlice[0]);
+    }
+
+    public static PrismTerrainRenderPassState fromVanillaSnapshot(
+            ChunkSectionLayer layer, PrismTerrainVanillaPassSnapshot snapshot,
+            GpuBufferSlice[] chunkSectionInfos) {
         Objects.requireNonNull(layer, "layer");
+        Objects.requireNonNull(chunkSectionInfos, "chunkSectionInfos");
         Objects.requireNonNull(snapshot, "snapshot");
         if (snapshot.group().layers().length == 0
                 || java.util.Arrays.stream(snapshot.group().layers()).noneMatch(candidate -> candidate == layer)) {
@@ -104,7 +112,7 @@ public record PrismTerrainRenderPassState(
         }
         if (snapshot.modelView() != null) facets.add(Facet.MODEL_VIEW_MATRIX);
         if (layerInput != null && !layerInput.orderedDraws().isEmpty()
-                && snapshot.chunkSectionInfos().length > 0
+                && chunkSectionInfos.length > 0
                 && layerInput.orderedDraws().stream().allMatch(draw ->
                         draw instanceof RenderPass.Draw<?> vanillaDraw
                                 && vanillaDraw.uniformUploaderConsumer() != null)) {

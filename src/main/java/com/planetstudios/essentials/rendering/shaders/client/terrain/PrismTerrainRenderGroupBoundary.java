@@ -109,7 +109,7 @@ public final class PrismTerrainRenderGroupBoundary {
 
         /** Builds an evidence-only state record for a layer in this captured group. */
         public PrismTerrainRenderPassState renderStateFor(ChunkSectionLayer layer) {
-            return PrismTerrainRenderPassState.fromVanillaSnapshot(layer, passInputs);
+            return PrismTerrainRenderPassState.fromVanillaSnapshot(layer, passInputs, chunkSectionInfos);
         }
     }
 }
