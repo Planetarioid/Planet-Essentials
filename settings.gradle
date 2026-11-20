@@ -1,0 +1,16 @@
+pluginManagement {
+    repositories {
+        maven {
+            name = "Fabric"
+            url = "https://maven.fabricmc.net/"
+        }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "planet-essentials"
+
+// Planet Lib is pinned as a Git submodule and built in the same Gradle build.
+include(":Planet-Lib")
+project(":Planet-Lib").projectDir = file("Planet-Lib")
