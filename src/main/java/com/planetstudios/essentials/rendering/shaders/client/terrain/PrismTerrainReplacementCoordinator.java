@@ -223,6 +223,56 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
     }
 
     /**
+     * Resolves one shared sequential-index allocation for every layer plan in
+     * a captured vanilla render group. Call this once before preparing any
+     * layer's draw resources, then pass the returned object to each layer.
+     * This prevents a later layer from growing AutoStorageIndexBuffer and
+     * closing the allocation already captured by an earlier layer.
+     */
+    public java.util.Optional<PrismTerrainVanillaPassSnapshot.PreparedIndexBuffer>
+            prepareSequentialIndexBuffer(ClientLevel level,
+                    PrismTerrainRenderGroupBoundary.Snapshot snapshot,
+                    List<PrismTerrainReplacementPlan.Plan> plans) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        Objects.requireNonNull(plans, "plans");
+        RenderSystem.assertOnRenderThread();
+        ensureOpen();
+        if (plans.isEmpty() || level == null || Minecraft.getInstance().level != level
+                || plans.stream().anyMatch(plan -> plan == null || !plan.mayReplace())) {
+            return java.util.Optional.empty();
+        }
+        PrismTerrainSectionCache cpuCache = PrismTerrainChunkLifecycleEvents.cache(level);
+        PrismTerrainGpuCache gpuCache = worldState(level).gpuCache;
+        int maximumIndexCount = 0;
+        for (PrismTerrainReplacementPlan.Plan plan : plans) {
+            for (PrismTerrainReplacementPlan.Entry entry : plan.entries()) {
+                var descriptor = entry.descriptor();
+                if (!PrismTerrainReplacementReadiness.isReady(descriptor, cpuCache, gpuCache)) {
+                    return java.util.Optional.empty();
+                }
+                String material = PrismTerrainReplacementReadiness.materialFor(descriptor.layer());
+                var stage = PrismTerrainReplacementReadiness.stageFor(descriptor.layer());
+                PrismTerrainGpuMesh mesh = gpuCache.get(descriptor.sectionX(), descriptor.sectionY(),
+                        descriptor.sectionZ(), material, stage);
+                if (mesh == null || mesh.vertexCount() <= 0 || mesh.vertexCount() % 4 != 0) {
+                    return java.util.Optional.empty();
+                }
+                maximumIndexCount = Math.max(maximumIndexCount,
+                        PrismTerrainVanillaPassSnapshot.IndexBufferInput
+                                .indexCountForQuadVertexCount(mesh.vertexCount()));
+            }
+        }
+        try {
+            return snapshot.passInputs().indexBuffer().resolveBufferForIndexCount(maximumIndexCount);
+        } catch (RuntimeException failure) {
+            PlanetEssentials.LOGGER.warn(
+                    "Prism could not resolve shared sequential index capacity for the complete terrain group; vanilla remains in control",
+                    failure);
+            return java.util.Optional.empty();
+        }
+    }
+
+    /**
      * Resolves every draw-time resource for one replacement layer before a
      * Prism RenderPass is opened: state-matched pipeline variant, captured
      * samplers/default-uniform coverage, current GPU meshes, and immutable
@@ -235,10 +285,28 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
             PrismTerrainReplacementPlan.Plan plan,
             ChunkSectionLayer layer,
             String programId) {
+        var sharedIndexBuffer = prepareSequentialIndexBuffer(level, snapshot, plan, layer);
+        if (sharedIndexBuffer.isEmpty()) return java.util.Optional.empty();
+        return prepareDrawResources(level, snapshot, plan, layer, programId, sharedIndexBuffer.get());
+    }
+
+    /**
+     * Prepares one layer using an index allocation resolved for the complete
+     * multi-layer group. The supplied allocation is never grown or replaced
+     * here; insufficient capacity fails closed before publication.
+     */
+    public java.util.Optional<PrismTerrainPreparedRenderGroup> prepareDrawResources(
+            ClientLevel level,
+            PrismTerrainRenderGroupBoundary.Snapshot snapshot,
+            PrismTerrainReplacementPlan.Plan plan,
+            ChunkSectionLayer layer,
+            String programId,
+            PrismTerrainVanillaPassSnapshot.PreparedIndexBuffer sharedIndexBuffer) {
         Objects.requireNonNull(snapshot, "snapshot");
         Objects.requireNonNull(plan, "plan");
         Objects.requireNonNull(layer, "layer");
         Objects.requireNonNull(programId, "programId");
+        Objects.requireNonNull(sharedIndexBuffer, "sharedIndexBuffer");
         RenderSystem.assertOnRenderThread();
         ensureOpen();
         if (!plan.mayReplace() || level == null || Minecraft.getInstance().level != level) {
@@ -318,12 +386,14 @@ public final class PrismTerrainReplacementCoordinator implements AutoCloseable {
                 throw new IllegalStateException("Terrain draw-resource preflight became stale before publication");
             }
 
-            var preparedIndexBuffer = snapshot.passInputs().indexBuffer()
-                    .resolveBufferForIndexCount(maximumIndexCount)
-                    .orElseThrow(() -> new IllegalStateException("No sequential index buffer was prepared"));
+            if (sharedIndexBuffer.indexCount() < maximumIndexCount
+                    || !PrismTerrainDrawExecutor.indexRangeFits(sharedIndexBuffer.buffer().size(),
+                            sharedIndexBuffer.type(), 0, maximumIndexCount)) {
+                throw new IllegalStateException("Shared sequential index allocation cannot cover this terrain layer");
+            }
             PrismTerrainPreparedRenderGroup prepared = new PrismTerrainPreparedRenderGroup(
                     level, snapshot.sequence(), shaderGeneration, layer, program, pipeline,
-                    preparedIndexBuffer, samplerBindings, capturedUniforms, draws);
+                    sharedIndexBuffer, samplerBindings, capturedUniforms, draws);
             allocated.clear(); // Ownership transferred to the prepared group.
             return java.util.Optional.of(prepared);
         } catch (Exception failure) {
