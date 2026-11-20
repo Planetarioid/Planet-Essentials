@@ -134,6 +134,16 @@ public final class PrismTerrainPreparedRenderGroup implements AutoCloseable {
         if (!isValidFor(level, snapshot)) {
             throw new IllegalStateException("Prepared terrain group no longer matches the captured render group");
         }
+        if (!snapshot.group().layers().contains(layer)) {
+            throw new IllegalStateException("Prepared terrain layer is not part of the captured vanilla group");
+        }
+        // Vanilla opens one pass for the complete layer group. Reopening a pass
+        // per layer can reapply attachment clear operations and erase earlier
+        // layer submissions. Multi-layer groups require a shared-pass batch.
+        if (snapshot.group().layers().size() != 1) {
+            throw new IllegalStateException(
+                    "A multi-layer vanilla terrain group must be submitted through one shared render pass");
+        }
         Objects.requireNonNull(device, "device");
         Objects.requireNonNull(debugLabel, "debugLabel");
 
