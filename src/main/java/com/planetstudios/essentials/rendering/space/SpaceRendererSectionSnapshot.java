@@ -98,11 +98,11 @@ public final class SpaceRendererSectionSnapshot {
 
                     FluidState fluidState = state.getFluidState();
                     if (!fluidState.isEmpty()) {
-                        Vec3 flow = fluidState.getType().getFlow(region, pos, fluidState);
+                        Vec3 flow = fluidState.getFlow(region, pos);
                         fluids[index] = new FluidSample(
                                 BuiltInRegistries.FLUID.getKey(fluidState.getType()).toString(),
                                 fluidState.getHeight(region, pos), fluidState.getOwnHeight(),
-                                flow.x, flow.y, flow.z, fluidState.isSource());
+                                (float) flow.x, (float) flow.y, (float) flow.z, fluidState.isSource());
                     }
 
                     if (x >= 0 && x < 16 && y >= 0 && y < 16 && z >= 0 && z < 16
