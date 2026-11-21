@@ -44,6 +44,28 @@ class SpaceRendererBlockModelMesherTest {
     }
 
     @Test
+    void snapshotRetainsPerBlockTintIndexAndResolvedColor() {
+        var key = new SpaceRendererSectionManager.SectionKey("minecraft:overworld", 0, 0, 0);
+        int[][] tints = new int[SpaceRendererSectionSnapshot.STATE_COUNT][];
+        tints[index(2, 3, 4)] = new int[]{0, 0x63B34A, 7, 0xD9A441};
+        var snapshot = SpaceRendererSectionSnapshot.fromStates(
+                key, airStates(), uniformLights(packLight(0, 15)), tints);
+
+        assertEquals(0x63B34A, snapshot.tintColor(2, 3, 4, 0));
+        assertEquals(0xD9A441, snapshot.tintColor(2, 3, 4, 7));
+        assertEquals(-1, snapshot.tintColor(2, 3, 4, 1));
+        assertEquals(-1, snapshot.tintColor(3, 3, 4, 0));
+    }
+
+    @Test
+    void tintMultipliesRgbWithoutChangingAoAlpha() {
+        int ao = 0xC2C2C2C2;
+        int tinted = SpaceRendererBlockModelMesher.multiplyTintAndAo(0x63B34A, ao);
+        assertEquals(0xC24A8740, tinted);
+        assertEquals(ao, SpaceRendererBlockModelMesher.multiplyTintAndAo(-1, ao));
+    }
+
+    @Test
     void vertexLightingPreservesUniformLightWithoutOcclusion() {
         var snapshot = snapshot(airStates(), uniformLights(packLight(4, 8)));
         var result = SpaceRendererBlockModelMesher.vertexLighting(snapshot, 4, 4, 4,

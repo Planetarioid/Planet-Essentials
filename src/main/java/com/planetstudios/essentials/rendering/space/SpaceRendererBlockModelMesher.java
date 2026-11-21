@@ -19,8 +19,8 @@ import java.util.Optional;
  * Builds independent section geometry from Minecraft's baked block models.
  *
  * <p>This pass preserves baked quad geometry, atlas UVs, face normals, deterministic
- * model variants, and corner-sampled block/sky light with a conservative
- * ambient-occlusion approximation. Biome tint, translucent layers, fluids,
+ * model variants, corner-sampled block/sky light, biome/mod block tint, and a
+ * conservative ambient-occlusion approximation. Translucent layers, fluids,
  * and block entities remain separate work.</p>
  */
 public final class SpaceRendererBlockModelMesher {
@@ -83,6 +83,8 @@ public final class SpaceRendererBlockModelMesher {
         int packedNormal = (face.getStepX() & 0xFF)
                 | ((face.getStepY() & 0xFF) << 8)
                 | ((face.getStepZ() & 0xFF) << 16);
+        int tint = quad.hasTint()
+                ? snapshot.tintColor(blockX, blockY, blockZ, quad.tintIndex()) : -1;
         PrismTerrainVertex[] vertices = new PrismTerrainVertex[4];
         for (int i = 0; i < 4; i++) {
             var position = quad.position(i);
@@ -91,10 +93,21 @@ public final class SpaceRendererBlockModelMesher {
                     position.x(), position.y(), position.z(), face, packedLight);
             vertices[i] = new PrismTerrainVertex(
                     blockX + position.x(), blockY + position.y(), blockZ + position.z(),
-                    unpackU(packedUv), unpackV(packedUv), lighting.color(),
+                    unpackU(packedUv), unpackV(packedUv),
+                    multiplyTintAndAo(tint, lighting.color()),
                     lighting.packedLight(), NO_OVERLAY, packedNormal);
         }
         builder.addQuad(vertices[0], vertices[1], vertices[2], vertices[3]);
+    }
+
+    /** Multiplies resolved RGB tint by AO while keeping the AO alpha channel intact. */
+    static int multiplyTintAndAo(int tintRgb, int aoRgba) {
+        if (tintRgb == -1) return aoRgba;
+        int alpha = (aoRgba >>> 24) & 0xFF;
+        int red = (((tintRgb >>> 16) & 0xFF) * ((aoRgba >>> 16) & 0xFF) + 127) / 255;
+        int green = (((tintRgb >>> 8) & 0xFF) * ((aoRgba >>> 8) & 0xFF) + 127) / 255;
+        int blue = ((tintRgb & 0xFF) * (aoRgba & 0xFF) + 127) / 255;
+        return (alpha << 24) | (red << 16) | (green << 8) | blue;
     }
 
     record VertexLighting(int packedLight, int color) {}
