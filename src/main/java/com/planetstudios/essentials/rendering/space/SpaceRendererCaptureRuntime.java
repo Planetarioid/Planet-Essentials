@@ -38,6 +38,7 @@ public final class SpaceRendererCaptureRuntime {
         Objects.requireNonNull(pos, "pos");
         var key = key(level, pos);
         UPLOADS.removeSection(key);
+        queueGpu(() -> GPU_CACHE.invalidateSection(key));
         return SECTIONS.beginBuild(key);
     }
 
@@ -91,6 +92,11 @@ public final class SpaceRendererCaptureRuntime {
             }
         }
         return uploaded;
+    }
+    public static com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainGpuMesh gpuMesh(
+            SpaceRendererSectionManager.SectionKey section, String material,
+            com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage stage) {
+        return GPU_CACHE.meshFor(section, material, stage);
     }
     public static int gpuMeshCount() { RenderSystem.assertOnRenderThread(); return GPU_CACHE.size(); }
     public static long gpuBytes() { RenderSystem.assertOnRenderThread(); return GPU_CACHE.currentBytes(); }
