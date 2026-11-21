@@ -18,17 +18,15 @@ import java.util.Optional;
 /**
  * Builds independent section geometry from Minecraft's baked block models.
  *
- * <p>This first model-backed pass intentionally includes only solid-render
- * model blocks. It preserves each baked quad's shape, atlas UVs, face normal,
- * and deterministic model variant. Per-vertex lighting, tint, translucent
- * layers, fluids, and block entities are separate follow-up milestones.</p>
+ * <p>This pass preserves baked quad geometry, atlas UVs, face normals, deterministic
+ * model variants, and sampled vanilla packed block/sky light. Per-vertex AO,
+ * biome tint, translucent layers, fluids, and block entities remain separate work.</p>
  */
 public final class SpaceRendererBlockModelMesher {
     /** The vanilla block atlas used by baked block-model UV coordinates. */
     public static final String BLOCK_ATLAS_MATERIAL = "minecraft:textures/atlas/blocks.png";
     private static final int WHITE = 0xFFFFFFFF;
     private static final int NO_OVERLAY = 0;
-    private static final int FULL_BRIGHT = 0x00F000F0;
 
     private SpaceRendererBlockModelMesher() {}
 
@@ -54,10 +52,11 @@ public final class SpaceRendererBlockModelMesher {
                     var model = blockRenderer.getBlockModel(state);
                     List<BlockModelPart> parts = model.collectParts(
                             RandomSource.create(state.getSeed(worldPos)));
+                    int packedLight = snapshot.packedLight(x, y, z);
 
                     for (BlockModelPart part : parts) {
                         for (BakedQuad quad : part.getQuads(null)) {
-                            appendQuad(builder, quad, x, y, z);
+                            appendQuad(builder, quad, x, y, z, packedLight);
                             quadCount++;
                         }
                         for (Direction side : Direction.values()) {
@@ -66,7 +65,7 @@ public final class SpaceRendererBlockModelMesher {
                                 continue;
                             }
                             for (BakedQuad quad : part.getQuads(side)) {
-                                appendQuad(builder, quad, x, y, z);
+                                appendQuad(builder, quad, x, y, z, packedLight);
                                 quadCount++;
                             }
                         }
@@ -78,7 +77,7 @@ public final class SpaceRendererBlockModelMesher {
     }
 
     private static void appendQuad(PrismTerrainVertexData.Builder builder,
-            BakedQuad quad, int blockX, int blockY, int blockZ) {
+            BakedQuad quad, int blockX, int blockY, int blockZ, int packedLight) {
         Direction face = quad.direction();
         int packedNormal = (face.getStepX() & 0xFF)
                 | ((face.getStepY() & 0xFF) << 8)
@@ -90,7 +89,7 @@ public final class SpaceRendererBlockModelMesher {
             vertices[i] = new PrismTerrainVertex(
                     blockX + position.x(), blockY + position.y(), blockZ + position.z(),
                     unpackU(packedUv), unpackV(packedUv), WHITE,
-                    FULL_BRIGHT, NO_OVERLAY, packedNormal);
+                    packedLight, NO_OVERLAY, packedNormal);
         }
         builder.addQuad(vertices[0], vertices[1], vertices[2], vertices[3]);
     }
