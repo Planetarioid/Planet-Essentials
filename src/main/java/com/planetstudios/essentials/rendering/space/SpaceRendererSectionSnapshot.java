@@ -118,7 +118,7 @@ public final class SpaceRendererSectionSnapshot {
             BlockPos pos, net.minecraft.client.color.block.BlockColors blockColors,
             Map<Integer, Integer> resolved) {
         for (BakedQuad quad : quads) {
-            if (!quad.hasTint() || resolved.containsKey(quad.tintIndex())) continue;
+            if (quad.tintIndex() < 0 || resolved.containsKey(quad.tintIndex())) continue;
             int color = blockColors.getColor(state, region, pos, quad.tintIndex());
             if (color != -1) resolved.put(quad.tintIndex(), color);
         }

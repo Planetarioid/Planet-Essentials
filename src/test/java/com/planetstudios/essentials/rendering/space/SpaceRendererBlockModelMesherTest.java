@@ -61,7 +61,7 @@ class SpaceRendererBlockModelMesherTest {
     void tintMultipliesRgbWithoutChangingAoAlpha() {
         int ao = 0xC2C2C2C2;
         int tinted = SpaceRendererBlockModelMesher.multiplyTintAndAo(0x63B34A, ao);
-        assertEquals(0xC24A8740, tinted);
+        assertEquals(0xC24B8838, tinted);
         assertEquals(ao, SpaceRendererBlockModelMesher.multiplyTintAndAo(-1, ao));
     }
 

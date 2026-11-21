@@ -83,7 +83,7 @@ public final class SpaceRendererBlockModelMesher {
         int packedNormal = (face.getStepX() & 0xFF)
                 | ((face.getStepY() & 0xFF) << 8)
                 | ((face.getStepZ() & 0xFF) << 16);
-        int tint = quad.hasTint()
+        int tint = quad.tintIndex() >= 0
                 ? snapshot.tintColor(blockX, blockY, blockZ, quad.tintIndex()) : -1;
         PrismTerrainVertex[] vertices = new PrismTerrainVertex[4];
         for (int i = 0; i < 4; i++) {
