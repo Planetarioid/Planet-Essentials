@@ -77,7 +77,8 @@ public final class SpaceRendererBlockModelMesher {
     }
 
     static boolean isSupportedModelState(BlockState state) {
-        return state != null && state.getRenderShape() == RenderShape.MODEL;
+        return state != null && !state.hasBlockEntity()
+                && state.getRenderShape() == RenderShape.MODEL;
     }
 
     private static void appendQuad(PrismTerrainVertexData.Builder builder,
