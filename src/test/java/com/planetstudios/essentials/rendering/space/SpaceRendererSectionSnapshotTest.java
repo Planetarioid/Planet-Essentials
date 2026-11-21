@@ -28,6 +28,26 @@ class SpaceRendererSectionSnapshotTest {
         assertEquals(Blocks.WATER.defaultBlockState().getFluidState(), snapshot.fluidState(-1, 16, 16));
     }
 
+    @Test void storesImmutableFluidGeometryInputs() {
+        var key = new SpaceRendererSectionManager.SectionKey("minecraft:overworld", 0, 0, 0);
+        var states = new net.minecraft.world.level.block.state.BlockState[SpaceRendererSectionSnapshot.STATE_COUNT];
+        java.util.Arrays.fill(states, Blocks.AIR.defaultBlockState());
+        var fluids = new SpaceRendererSectionSnapshot.FluidSample[SpaceRendererSectionSnapshot.STATE_COUNT];
+        fluids[index(4, 5, 6)] = new SpaceRendererSectionSnapshot.FluidSample(
+                "minecraft:water", 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, true);
+
+        var snapshot = SpaceRendererSectionSnapshot.fromStates(key, states,
+                fullBrightLights(), new int[SpaceRendererSectionSnapshot.STATE_COUNT][], fluids);
+        assertEquals(new SpaceRendererSectionSnapshot.FluidSample(
+                "minecraft:water", 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, true),
+                snapshot.fluidSample(4, 5, 6));
+        assertNull(snapshot.fluidSample(0, 0, 0));
+        fluids[index(4, 5, 6)] = null;
+        assertNotNull(snapshot.fluidSample(4, 5, 6), "snapshot must defensively copy fluid samples");
+        assertTrue(snapshot.estimatedBytes() > (long) SpaceRendererSectionSnapshot.STATE_COUNT
+                * (Long.BYTES + Integer.BYTES));
+    }
+
     @Test void cacheIsByteBoundedAndEvictsLeastRecentlyUsed() {
         var cache = new SpaceRendererSectionSnapshotCache(
                 SpaceRendererSectionSnapshot.STATE_COUNT * (Long.BYTES + Integer.BYTES) + 1L);
@@ -52,6 +72,12 @@ class SpaceRendererSectionSnapshotTest {
         java.util.Arrays.fill(states, Blocks.AIR.defaultBlockState());
         return SpaceRendererSectionSnapshot.fromStates(
                 new SpaceRendererSectionManager.SectionKey(dimension, x, 0, 0), states);
+    }
+
+    private static int[] fullBrightLights() {
+        int[] lights = new int[SpaceRendererSectionSnapshot.STATE_COUNT];
+        java.util.Arrays.fill(lights, 0x00F000F0);
+        return lights;
     }
 
     private static int index(int x, int y, int z) {

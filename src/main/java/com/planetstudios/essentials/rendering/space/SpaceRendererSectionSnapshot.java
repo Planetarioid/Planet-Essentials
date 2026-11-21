@@ -6,6 +6,8 @@ import net.minecraft.client.renderer.block.model.BlockModelPart;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.RenderShape;
@@ -33,9 +35,11 @@ public final class SpaceRendererSectionSnapshot {
     private final int[] packedLights;
     /** Per-cell flat pairs of tint index and resolved RGB color. Null means no registered tint color. */
     private final int[][] tintColors;
+    /** Immutable fluid metadata captured while the compile region is valid; null for empty-fluid cells. */
+    private final FluidSample[] fluidSamples;
 
     private SpaceRendererSectionSnapshot(SpaceRendererSectionManager.SectionKey key,
-            BlockState[] states, int[] packedLights, int[][] tintColors) {
+            BlockState[] states, int[] packedLights, int[][] tintColors, FluidSample[] fluidSamples) {
         this.key = Objects.requireNonNull(key, "key");
         if (states == null || states.length != STATE_COUNT) {
             throw new IllegalArgumentException("Section snapshot must contain exactly " + STATE_COUNT + " states");
@@ -43,12 +47,16 @@ public final class SpaceRendererSectionSnapshot {
         if (packedLights == null || packedLights.length != STATE_COUNT) {
             throw new IllegalArgumentException("Section snapshot must contain exactly " + STATE_COUNT + " light values");
         }
+        if (fluidSamples == null || fluidSamples.length != STATE_COUNT) {
+            throw new IllegalArgumentException("Section snapshot must contain exactly " + STATE_COUNT + " fluid entries");
+        }
         if (tintColors == null || tintColors.length != STATE_COUNT) {
             throw new IllegalArgumentException("Section snapshot must contain exactly " + STATE_COUNT + " tint entries");
         }
         this.states = states.clone();
         this.packedLights = packedLights.clone();
         this.tintColors = new int[STATE_COUNT][];
+        this.fluidSamples = fluidSamples.clone();
         for (int i = 0; i < STATE_COUNT; i++) {
             Objects.requireNonNull(this.states[i], "block state");
             this.tintColors[i] = tintColors[i] == null ? null : tintColors[i].clone();
@@ -71,6 +79,7 @@ public final class SpaceRendererSectionSnapshot {
         BlockState[] states = new BlockState[STATE_COUNT];
         int[] lights = new int[STATE_COUNT];
         int[][] tints = new int[STATE_COUNT][];
+        FluidSample[] fluids = new FluidSample[STATE_COUNT];
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         var minecraft = Minecraft.getInstance();
         var blockRenderer = minecraft.getBlockRenderer();
@@ -86,6 +95,15 @@ public final class SpaceRendererSectionSnapshot {
                     int block = region.getBrightness(LightLayer.BLOCK, pos);
                     int sky = region.getBrightness(LightLayer.SKY, pos);
                     lights[index] = packLight(block, sky);
+
+                    FluidState fluidState = state.getFluidState();
+                    if (!fluidState.isEmpty()) {
+                        Vec3 flow = fluidState.getType().getFlow(region, pos, fluidState);
+                        fluids[index] = new FluidSample(
+                                BuiltInRegistries.FLUID.getKey(fluidState.getType()).toString(),
+                                fluidState.getHeight(region, pos), fluidState.getOwnHeight(),
+                                flow.x, flow.y, flow.z, fluidState.isSource());
+                    }
 
                     if (x >= 0 && x < 16 && y >= 0 && y < 16 && z >= 0 && z < 16
                             && state.getRenderShape() == RenderShape.MODEL) {
@@ -111,7 +129,7 @@ public final class SpaceRendererSectionSnapshot {
                 }
             }
         }
-        return new SpaceRendererSectionSnapshot(key, states, lights, tints);
+        return new SpaceRendererSectionSnapshot(key, states, lights, tints, fluids);
     }
 
     private static void captureTints(List<BakedQuad> quads, BlockState state, RenderSectionRegion region,
@@ -129,20 +147,40 @@ public final class SpaceRendererSectionSnapshot {
             SpaceRendererSectionManager.SectionKey key, BlockState[] states) {
         int[] lights = new int[STATE_COUNT];
         Arrays.fill(lights, 0x00F000F0);
-        return new SpaceRendererSectionSnapshot(key, states, lights, new int[STATE_COUNT][]);
+        return new SpaceRendererSectionSnapshot(key, states, lights, new int[STATE_COUNT][], new FluidSample[STATE_COUNT]);
     }
 
     /** Test/adapter factory with explicit packed block/sky light values. */
     public static SpaceRendererSectionSnapshot fromStates(
             SpaceRendererSectionManager.SectionKey key, BlockState[] states, int[] packedLights) {
-        return new SpaceRendererSectionSnapshot(key, states, packedLights, new int[STATE_COUNT][]);
+        return new SpaceRendererSectionSnapshot(key, states, packedLights, new int[STATE_COUNT][], new FluidSample[STATE_COUNT]);
     }
 
     /** Test/adapter factory with explicit packed light and per-cell tint index/color pairs. */
     public static SpaceRendererSectionSnapshot fromStates(
             SpaceRendererSectionManager.SectionKey key, BlockState[] states, int[] packedLights,
             int[][] tintColors) {
-        return new SpaceRendererSectionSnapshot(key, states, packedLights, tintColors);
+        return new SpaceRendererSectionSnapshot(key, states, packedLights, tintColors, new FluidSample[STATE_COUNT]);
+    }
+
+    /** Test/adapter factory with explicit immutable fluid metadata for selected cells. */
+    public static SpaceRendererSectionSnapshot fromStates(
+            SpaceRendererSectionManager.SectionKey key, BlockState[] states, int[] packedLights,
+            int[][] tintColors, FluidSample[] fluidSamples) {
+        return new SpaceRendererSectionSnapshot(key, states, packedLights, tintColors, fluidSamples);
+    }
+
+    /** Fluid geometry inputs copied from the live region before asynchronous meshing begins. */
+    public record FluidSample(String typeId, float height, float ownHeight,
+            float flowX, float flowY, float flowZ, boolean source) {
+        public FluidSample {
+            Objects.requireNonNull(typeId, "typeId");
+            if (typeId.isBlank()) throw new IllegalArgumentException("Fluid type id cannot be blank");
+            if (!Float.isFinite(height) || !Float.isFinite(ownHeight)
+                    || !Float.isFinite(flowX) || !Float.isFinite(flowY) || !Float.isFinite(flowZ)) {
+                throw new IllegalArgumentException("Fluid sample values must be finite");
+            }
+        }
     }
 
     private static int packLight(int block, int sky) {
@@ -177,11 +215,17 @@ public final class SpaceRendererSectionSnapshot {
         }
         return -1;
     }
+    public FluidSample fluidSample(int localX, int localY, int localZ) {
+        return fluidSamples[index(localX, localY, localZ)];
+    }
     public int stateCount() { return states.length; }
     public long estimatedBytes() {
         long bytes = (long) states.length * (Long.BYTES + Integer.BYTES);
         for (int[] tint : tintColors) {
             if (tint != null) bytes += (long) tint.length * Integer.BYTES;
+        }
+        for (FluidSample fluid : fluidSamples) {
+            if (fluid != null) bytes += 48L + (long) fluid.typeId().length() * Character.BYTES;
         }
         return bytes;
     }
