@@ -42,6 +42,7 @@ public final class SpaceRendererBlockModelMesher {
         if (snapshot == null) throw new NullPointerException("snapshot");
         var key = snapshot.key();
         var builders = new EnumMap<ChunkSectionLayer, PrismTerrainVertexData.Builder>(ChunkSectionLayer.class);
+        var quadCounts = new EnumMap<ChunkSectionLayer, Integer>(ChunkSectionLayer.class);
         var blockRenderer = Minecraft.getInstance().getBlockRenderer();
 
         for (int y = 0; y < 16; y++) {
@@ -66,12 +67,14 @@ public final class SpaceRendererBlockModelMesher {
                     for (BlockModelPart part : parts) {
                         for (BakedQuad quad : part.getQuads(null)) {
                             appendQuad(builder, snapshot, quad, x, y, z, packedLight);
+                            quadCounts.merge(layer, 1, Integer::sum);
                         }
                         for (Direction side : Direction.values()) {
                             if (snapshot.blockState(x + side.getStepX(), y + side.getStepY(),
                                     z + side.getStepZ()).isSolidRender()) continue;
                             for (BakedQuad quad : part.getQuads(side)) {
                                 appendQuad(builder, snapshot, quad, x, y, z, packedLight);
+                                quadCounts.merge(layer, 1, Integer::sum);
                             }
                         }
                     }
@@ -82,8 +85,10 @@ public final class SpaceRendererBlockModelMesher {
         if (builders.isEmpty()) return Optional.empty();
         List<LayeredPayload> batches = new java.util.ArrayList<>(builders.size());
         for (Map.Entry<ChunkSectionLayer, PrismTerrainVertexData.Builder> entry : builders.entrySet()) {
+            if (quadCounts.getOrDefault(entry.getKey(), 0) == 0) continue;
             batches.add(new LayeredPayload(entry.getKey(), entry.getValue().build()));
         }
+        if (batches.isEmpty()) return Optional.empty();
         return Optional.of(List.copyOf(batches));
     }
 
