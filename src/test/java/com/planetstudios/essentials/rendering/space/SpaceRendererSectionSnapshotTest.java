@@ -29,7 +29,8 @@ class SpaceRendererSectionSnapshotTest {
     }
 
     @Test void cacheIsByteBoundedAndEvictsLeastRecentlyUsed() {
-        var cache = new SpaceRendererSectionSnapshotCache(SpaceRendererSectionSnapshot.STATE_COUNT * Long.BYTES + 1L);
+        var cache = new SpaceRendererSectionSnapshotCache(
+                SpaceRendererSectionSnapshot.STATE_COUNT * (Long.BYTES + Integer.BYTES) + 1L);
         var first = snapshot("minecraft:overworld", 0);
         var second = snapshot("minecraft:overworld", 1);
         assertTrue(cache.put(first));
