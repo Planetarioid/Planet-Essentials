@@ -5,6 +5,7 @@ import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
 import com.planetstudios.essentials.hud.HudWidgetRenderer;
 import com.planetstudios.essentials.config.ServerProfileManager;
 import com.planetstudios.essentials.rendering.ChunkSchedulingPolicy;
+import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainChunkLifecycleEvents;
 import com.planetstudios.essentials.textures.TextureAssetCatalog;
 import com.planetstudios.essentials.textures.TextureDecodeLimits;
 import com.planetstudios.essentials.textures.TextureDecodeService;
@@ -43,6 +44,9 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EssentialsRuntime.initialize();
+        // Keep the section/GPU cache lifecycle synchronized with real client chunk events.
+        PrismTerrainChunkLifecycleEvents.registerFabricEvents();
+
         OPEN_PLANET_MENU = KeyBindingHelper.registerKeyBinding(new KeyMapping(
                 "key.planet_essentials.open_menu", InputConstants.Type.KEYSYM,
                 GLFW.GLFW_KEY_0, PLANET_KEY_CATEGORY));

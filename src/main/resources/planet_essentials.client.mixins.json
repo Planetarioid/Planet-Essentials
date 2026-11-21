@@ -11,7 +11,11 @@
     "CompileTaskAccessor",
     "ChunkTaskQueueMixin",
     "ClientPacketListenerMixin",
-    "OptionsMixin"
+    "OptionsMixin",
+    "LevelRendererMixin",
+    "RenderSectionRegionAccessor",
+    "SectionCompilerMixin",
+    "ChunkSectionsToRenderMixin"
   ],
   "injectors": {
     "defaultRequire": 1
