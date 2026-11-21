@@ -24,8 +24,9 @@ public final class SpaceRendererGpuUploadQueue<T> {
         Objects.requireNonNull(token, "token");
         Objects.requireNonNull(materialId, "materialId");
         Objects.requireNonNull(payload, "payload");
-        if (materialId.isBlank() || byteSize <= 0 || byteSize > maxQueuedBytes)
+        if (materialId.isBlank() || byteSize <= 0)
             throw new IllegalArgumentException("Invalid upload request");
+        if (byteSize > maxQueuedBytes) return false;
         UploadKey key = new UploadKey(token.key(), materialId);
         UploadRequest<T> previous = pending.get(key);
         long previousBytes = previous == null ? 0 : previous.byteSize();
