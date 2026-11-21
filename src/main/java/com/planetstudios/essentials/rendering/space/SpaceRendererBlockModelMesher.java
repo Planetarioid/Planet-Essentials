@@ -26,7 +26,6 @@ import java.util.Optional;
 public final class SpaceRendererBlockModelMesher {
     /** The vanilla block atlas used by baked block-model UV coordinates. */
     public static final String BLOCK_ATLAS_MATERIAL = "minecraft:textures/atlas/blocks.png";
-    private static final int WHITE = 0xFFFFFFFF;
     private static final int NO_OVERLAY = 0;
 
     private SpaceRendererBlockModelMesher() {}
@@ -66,7 +65,7 @@ public final class SpaceRendererBlockModelMesher {
                                 continue;
                             }
                             for (BakedQuad quad : part.getQuads(side)) {
-                                appendQuad(builder, quad, x, y, z, packedLight);
+                                appendQuad(builder, snapshot, quad, x, y, z, packedLight);
                                 quadCount++;
                             }
                         }
