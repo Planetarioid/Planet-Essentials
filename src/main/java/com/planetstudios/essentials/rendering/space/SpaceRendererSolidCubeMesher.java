@@ -23,7 +23,7 @@ public final class SpaceRendererSolidCubeMesher {
     private static final int FULL_BRIGHT = 0x00F000F0;
 
     private static final Face[] FACES = {
-            new Face( 1, 0, 0,  1,0,0,  1,1,0,  1,1,1,  1,0,1),
+            new Face( 1, 0, 0,  1,0,0,  1,0,0,  1,1,0,  1,1,1,  1,0,1),
             new Face(-1, 0, 0, -1,0,0,  0,0,1,  0,1,1,  0,1,0,  0,0,0),
             new Face( 0, 1, 0,  0,1,0,  0,1,1,  1,1,1,  1,1,0,  0,1,0),
             new Face( 0,-1, 0,  0,-1,0,  0,0,0,  1,0,0,  1,0,1,  0,0,1),
