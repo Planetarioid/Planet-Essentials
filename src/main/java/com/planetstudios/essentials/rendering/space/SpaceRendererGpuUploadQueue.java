@@ -71,6 +71,21 @@ public final class SpaceRendererGpuUploadQueue<T> {
         return removed;
     }
 
+    public synchronized int removeDimension(String dimensionId) {
+        Objects.requireNonNull(dimensionId, "dimensionId");
+        int removed = 0;
+        var iterator = pending.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            if (entry.getKey().section().dimensionId().equals(dimensionId)) {
+                queuedBytes -= entry.getValue().byteSize();
+                iterator.remove();
+                removed++;
+            }
+        }
+        return removed;
+    }
+
     public synchronized void clear() { pending.clear(); queuedBytes = 0; }
     public synchronized int size() { return pending.size(); }
     public synchronized long queuedBytes() { return queuedBytes; }

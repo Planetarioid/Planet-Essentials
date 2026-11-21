@@ -50,6 +50,18 @@ class SpaceRendererGpuUploadQueueTest {
         assertEquals(1, queue.size());
     }
 
+    @Test void removesOnlyUploadsForRequestedDimension() {
+        var queue = new SpaceRendererGpuUploadQueue<String>(4, 100);
+        var overworld = token(0);
+        var nether = new SpaceRendererSectionManager().beginBuild(
+                new SpaceRendererSectionManager.SectionKey("minecraft:the_nether", 0, 0, 0));
+        assertTrue(queue.offer(overworld, "opaque", "overworld", 20));
+        assertTrue(queue.offer(nether, "opaque", "nether", 30));
+        assertEquals(1, queue.removeDimension("minecraft:overworld"));
+        assertEquals(30, queue.queuedBytes());
+        assertEquals("nether", queue.pollBatch(1, 100).get(0).payload());
+    }
+
     @Test void rejectedReplacementPreservesExistingRequest() {
         var queue = new SpaceRendererGpuUploadQueue<String>(2, 50);
         var current = token(0);
