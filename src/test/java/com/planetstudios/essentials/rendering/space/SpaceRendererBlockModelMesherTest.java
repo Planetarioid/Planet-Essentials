@@ -38,7 +38,7 @@ class SpaceRendererBlockModelMesherTest {
 
         var snapshot = SpaceRendererSectionSnapshot.fromStates(key, states, lights);
         assertEquals(packLight(3, 11), snapshot.packedLight(0, 0, 0));
-        assertEquals(LightTexture.pack(3, 11), snapshot.packedLight(-1, 16, 16));
+        assertEquals(packLight(3, 11), snapshot.packedLight(-1, 16, 16));
     }
     private static int packLight(int block, int sky) {
         return (block << 4) | (sky << 20);
