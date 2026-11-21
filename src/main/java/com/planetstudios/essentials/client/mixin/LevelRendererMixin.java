@@ -53,7 +53,7 @@ public abstract class LevelRendererMixin {
         PrismTerrainVisibleSections.publish(Minecraft.getInstance().level, visibleSections);
     }
 
-    /** Drains bounded CPU completions and uploads a small batch before terrain draw submission. */
+    /** Advances uploads and captures the complete vanilla draw order for Space Renderer preflight. */
     @Inject(method = "prepareChunkRenders", at = @At("RETURN"))
     private void planetEssentials$indexVanillaTerrainDraws(Matrix4fc modelViewMatrix,
             double camX, double camY, double camZ,
@@ -64,8 +64,10 @@ public abstract class LevelRendererMixin {
             SpaceRendererCaptureRuntime.uploadPending(
                     device, SPACE_UPLOADS_PER_FRAME, SPACE_UPLOAD_BYTES_PER_FRAME);
         }
-        if (!ShaderPackRuntime.isEnabled()) return;
         PrismTerrainVanillaDrawIndex.capture(visibleSections, callback.getReturnValue());
+        SpaceRendererCaptureRuntime.captureVisibleFrame(
+                this.level, callback.getReturnValue(), PrismTerrainVanillaDrawIndex.snapshot());
+        if (!ShaderPackRuntime.isEnabled()) return;
     }
 
     @Inject(method = "setLevel", at = @At("HEAD"))

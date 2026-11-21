@@ -3,11 +3,17 @@ package com.planetstudios.essentials.rendering.space;
 import com.planetstudios.essentials.PlanetEssentials;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage;
+import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVanillaDrawIndex;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVertexData;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
 import net.minecraft.core.SectionPos;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,7 +32,9 @@ public final class SpaceRendererCaptureRuntime {
             new SpaceRendererGpuUploadQueue<>(MAX_UPLOAD_ENTRIES, MAX_UPLOAD_BYTES);
     private static final AtomicLong REJECTED_UPLOADS = new AtomicLong();
     private static final AtomicLong FAILED_GPU_UPLOADS = new AtomicLong();
+    private static final AtomicLong FRAME_SEQUENCE = new AtomicLong();
     private static final SpaceRendererGpuCache GPU_CACHE = new SpaceRendererGpuCache();
+    private static volatile SpaceRendererFrameSnapshot currentFrame = SpaceRendererFrameSnapshot.empty(1);
     private static volatile boolean closed;
 
     private SpaceRendererCaptureRuntime() {}
@@ -93,9 +101,66 @@ public final class SpaceRendererCaptureRuntime {
         }
         return uploaded;
     }
+
+    /**
+     * Captures an immutable view of the current vanilla draw list and resolves
+     * each draw to a Space Renderer-owned GPU mesh. This is preparation only:
+     * incomplete coverage always leaves vanilla rendering in control.
+     */
+    public static SpaceRendererFrameSnapshot captureVisibleFrame(ClientLevel level,
+            ChunkSectionsToRender rendered, PrismTerrainVanillaDrawIndex.Snapshot drawIndex) {
+        RenderSystem.assertOnRenderThread();
+        long sequence = FRAME_SEQUENCE.incrementAndGet();
+        if (sequence <= 0) throw new IllegalStateException("Space Renderer frame sequence exhausted");
+        if (closed || level == null || rendered == null || drawIndex == null) {
+            currentFrame = SpaceRendererFrameSnapshot.empty(sequence);
+            return currentFrame;
+        }
+
+        Map<?, ?> drawsPerLayer = (Map<?, ?>) rendered.drawsPerLayer();
+        ArrayList<Object> allDraws = new ArrayList<>();
+        for (ChunkSectionLayer layer : ChunkSectionLayer.values()) {
+            Object value = drawsPerLayer.get(layer);
+            if (!(value instanceof List<?> draws)) {
+                currentFrame = SpaceRendererFrameSnapshot.empty(sequence);
+                return currentFrame;
+            }
+            allDraws.addAll(draws);
+        }
+        if (!drawIndex.isCompleteFor(allDraws)) {
+            currentFrame = SpaceRendererFrameSnapshot.empty(sequence);
+            return currentFrame;
+        }
+
+        ArrayList<SpaceRendererFrameSnapshot.DrawInput> inputs = new ArrayList<>(allDraws.size());
+        String dimension = dimensionId(level);
+        for (ChunkSectionLayer layer : ChunkSectionLayer.values()) {
+            List<?> draws = (List<?>) drawsPerLayer.get(layer);
+            PrismFrameStage stage = layer == ChunkSectionLayer.TRANSLUCENT || layer == ChunkSectionLayer.TRIPWIRE
+                    ? PrismFrameStage.BEFORE_TRANSLUCENT : PrismFrameStage.BEFORE_ENTITIES;
+            for (int index = 0; index < draws.size(); index++) {
+                Object draw = draws.get(index);
+                PrismTerrainVanillaDrawIndex.DrawDescriptor descriptor = drawIndex.byDraw().get(draw);
+                if (descriptor == null || descriptor.layer() != layer || descriptor.layerDrawIndex() != index) {
+                    currentFrame = SpaceRendererFrameSnapshot.empty(sequence);
+                    return currentFrame;
+                }
+                var section = new SpaceRendererSectionManager.SectionKey(dimension,
+                        descriptor.sectionX(), descriptor.sectionY(), descriptor.sectionZ());
+                inputs.add(new SpaceRendererFrameSnapshot.DrawInput(draw, section,
+                        descriptor.materialId(), stage, layer.label(), index));
+            }
+        }
+        currentFrame = SpaceRendererFrameSnapshot.capture(sequence, inputs,
+                input -> GPU_CACHE.meshFor(input.section(), input.materialId(), input.stage()));
+        return currentFrame;
+    }
+
+    public static SpaceRendererFrameSnapshot currentFrameSnapshot() { return currentFrame; }
+
     public static com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainGpuMesh gpuMesh(
             SpaceRendererSectionManager.SectionKey section, String material,
-            com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage stage) {
+            PrismFrameStage stage) {
         return GPU_CACHE.meshFor(section, material, stage);
     }
     public static int gpuMeshCount() { RenderSystem.assertOnRenderThread(); return GPU_CACHE.size(); }
@@ -121,12 +186,14 @@ public final class SpaceRendererCaptureRuntime {
         String dimension = dimensionId(level);
         SECTIONS.unloadDimension(dimension);
         UPLOADS.removeDimension(dimension);
+        currentFrame = SpaceRendererFrameSnapshot.empty(Math.max(1, FRAME_SEQUENCE.incrementAndGet()));
         queueGpu(() -> GPU_CACHE.clearDimension(dimension));
     }
 
     public static void clearAll() {
         SECTIONS.clearAll();
         UPLOADS.clear();
+        currentFrame = SpaceRendererFrameSnapshot.empty(Math.max(1, FRAME_SEQUENCE.incrementAndGet()));
         queueGpu(GPU_CACHE::clear);
     }
 
