@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.planetstudios.essentials.PlanetEssentials;
+import com.planetstudios.essentials.rendering.space.SpaceRendererCaptureRuntime;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -86,6 +87,7 @@ public final class PrismTerrainChunkLifecycleEvents {
         int maxSectionY = level.getMaxSectionY();
         try {
             world.lifecycle.unloadChunk(chunkX, minSectionY, maxSectionY, chunkZ);
+            SpaceRendererCaptureRuntime.unloadChunk(level, chunkX, minSectionY, maxSectionY, chunkZ);
             PrismTerrainFrameCoordinator.invalidateChunk(chunkX, chunkZ);
             queueGpu(() -> GPU_INVALIDATORS.forEach(invalidator ->
                     safeInvalidate(invalidator, level, chunkX, chunkZ, minSectionY, maxSectionY)));
@@ -96,6 +98,7 @@ public final class PrismTerrainChunkLifecycleEvents {
     }
 
     private static void clearAllWorlds() {
+        SpaceRendererCaptureRuntime.clearAll();
         PrismTerrainFrameCoordinator.clearPublishedFrame();
         PrismTerrainActiveFrustum.clear();
         Map<ClientLevel, WorldState> removed;

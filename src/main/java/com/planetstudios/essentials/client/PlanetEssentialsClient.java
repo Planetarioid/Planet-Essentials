@@ -5,6 +5,7 @@ import com.planetstudios.essentials.diagnostics.DiagnosticEventType;
 import com.planetstudios.essentials.hud.HudWidgetRenderer;
 import com.planetstudios.essentials.config.ServerProfileManager;
 import com.planetstudios.essentials.rendering.ChunkSchedulingPolicy;
+import com.planetstudios.essentials.rendering.space.SpaceRendererCaptureRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainChunkLifecycleEvents;
 import com.planetstudios.essentials.textures.TextureAssetCatalog;
 import com.planetstudios.essentials.textures.TextureDecodeLimits;
@@ -56,6 +57,7 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> record(DiagnosticEventType.CLIENT_STARTED));
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             record(DiagnosticEventType.CLIENT_STOPPING);
+            SpaceRendererCaptureRuntime.shutdown();
             TextureGpuRegistrar.shutdown(client);
             TEXTURE_ASSETS.clear();
             TEXTURE_DECODER.close();

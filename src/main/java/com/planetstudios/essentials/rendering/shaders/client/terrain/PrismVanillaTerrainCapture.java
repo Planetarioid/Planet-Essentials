@@ -2,6 +2,7 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.planetstudios.essentials.PlanetEssentials;
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage;
+import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import com.mojang.blaze3d.vertex.CompactVectorArray;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
@@ -34,8 +35,12 @@ public final class PrismVanillaTerrainCapture {
             try {
                 PrismTerrainVertexData data = convert(context.sectionPos(), layer, mesh,
                         layer == ChunkSectionLayer.TRANSLUCENT ? results.transparencyState : null);
-                if (data != null && !context.publish(data)) {
+                if (data != null && ShaderPackRuntime.isEnabled() && !context.publish(data)) {
                     PlanetEssentials.LOGGER.debug("Discarded stale Prism terrain capture for section {}",
+                            context.sectionPos());
+                }
+                if (data != null && !context.publishSpace(data)) {
+                    PlanetEssentials.LOGGER.debug("Space Renderer deferred CPU mesh capture for section {}",
                             context.sectionPos());
                 }
             } catch (RuntimeException failure) {

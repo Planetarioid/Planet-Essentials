@@ -26,6 +26,11 @@ public final class SpaceRendererSectionManager {
         }
         return removed;
     }
+    public int clearAll() {
+        int removed = current.size();
+        current.clear();
+        return removed;
+    }
     public boolean isCurrent(BuildToken token) {
         Objects.requireNonNull(token, "token");
         Long revision = current.get(token.key());

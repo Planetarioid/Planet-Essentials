@@ -2,6 +2,8 @@ package com.planetstudios.essentials.rendering.shaders.client.terrain;
 
 import com.planetstudios.essentials.PlanetEssentials;
 import com.planetstudios.essentials.client.mixin.RenderSectionRegionAccessor;
+import com.planetstudios.essentials.rendering.space.SpaceRendererCaptureRuntime;
+import com.planetstudios.essentials.rendering.space.SpaceRendererSectionManager;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.chunk.RenderSectionRegion;
 import net.minecraft.client.renderer.chunk.SectionCompiler;
@@ -41,7 +43,8 @@ public final class PrismVanillaSectionRebuildEvents {
         }
         PrismTerrainSectionLifecycle.BuildToken token = PrismTerrainChunkLifecycleEvents.beginRebuild(
                 level, sectionPos.x(), sectionPos.y(), sectionPos.z());
-        RebuildContext context = new RebuildContext(level, sectionPos, region, token);
+        SpaceRendererSectionManager.BuildToken spaceToken = SpaceRendererCaptureRuntime.beginRebuild(level, sectionPos);
+        RebuildContext context = new RebuildContext(level, sectionPos, region, token, spaceToken);
         ACTIVE_REBUILD.set(context);
         for (Listener listener : LISTENERS) {
             try {
@@ -66,17 +69,23 @@ public final class PrismVanillaSectionRebuildEvents {
 
     /** Immutable metadata plus a callback-scoped view of Minecraft's section snapshot. */
     public record RebuildContext(ClientLevel level, SectionPos sectionPos, RenderSectionRegion region,
-                                 PrismTerrainSectionLifecycle.BuildToken token) {
+                                 PrismTerrainSectionLifecycle.BuildToken token,
+                                 SpaceRendererSectionManager.BuildToken spaceToken) {
         public RebuildContext {
             Objects.requireNonNull(level, "level");
             Objects.requireNonNull(sectionPos, "sectionPos");
             Objects.requireNonNull(region, "region");
             Objects.requireNonNull(token, "token");
+            Objects.requireNonNull(spaceToken, "spaceToken");
         }
 
         /** Publishes only if this vanilla rebuild is still the newest revision for the section. */
         public boolean publish(PrismTerrainVertexData data) {
             return PrismTerrainChunkLifecycleEvents.lifecycle(level).publish(token, data);
+        }
+
+        public boolean publishSpace(PrismTerrainVertexData data) {
+            return SpaceRendererCaptureRuntime.publish(spaceToken, data);
         }
     }
 

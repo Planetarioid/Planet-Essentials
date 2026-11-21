@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.client.mixin;
 
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
+import com.planetstudios.essentials.rendering.space.SpaceRendererCaptureRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainActiveFrustum;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainChunkLifecycleEvents;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVanillaDrawIndex;
@@ -52,6 +53,7 @@ public abstract class LevelRendererMixin {
     private void planetEssentials$indexVanillaTerrainDraws(Matrix4fc modelViewMatrix,
             double camX, double camY, double camZ,
             CallbackInfoReturnable<ChunkSectionsToRender> callback) {
+        SpaceRendererCaptureRuntime.drainCompletions();
         if (!ShaderPackRuntime.isEnabled()) return;
         PrismTerrainVanillaDrawIndex.capture(visibleSections, callback.getReturnValue());
     }
@@ -61,6 +63,7 @@ public abstract class LevelRendererMixin {
         ClientLevel previousLevel = this.level;
         if (previousLevel != null && previousLevel != level) {
             PrismTerrainChunkLifecycleEvents.clearWorld(previousLevel);
+            SpaceRendererCaptureRuntime.clearWorld(previousLevel);
         }
         PrismTerrainVisibleSections.clear();
         PrismTerrainActiveFrustum.clear();
