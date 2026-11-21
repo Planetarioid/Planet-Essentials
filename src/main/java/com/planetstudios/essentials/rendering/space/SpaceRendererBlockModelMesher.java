@@ -43,7 +43,7 @@ public final class SpaceRendererBlockModelMesher {
             for (int z = 0; z < 16; z++) {
                 for (int x = 0; x < 16; x++) {
                     BlockState state = snapshot.blockState(x, y, z);
-                    if (!state.isSolidRender() || state.getRenderShape() != RenderShape.MODEL) continue;
+                    if (!isSupportedModelState(state)) continue;
 
                     int worldX = key.x() * 16 + x;
                     int worldY = key.y() * 16 + y;
@@ -74,6 +74,10 @@ public final class SpaceRendererBlockModelMesher {
             }
         }
         return quadCount == 0 ? Optional.empty() : Optional.of(builder.build());
+    }
+
+    static boolean isSupportedModelState(BlockState state) {
+        return state != null && state.getRenderShape() == RenderShape.MODEL;
     }
 
     private static void appendQuad(PrismTerrainVertexData.Builder builder,

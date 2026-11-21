@@ -88,7 +88,7 @@ public final class SpaceRendererSectionSnapshot {
                     lights[index] = packLight(block, sky);
 
                     if (x >= 0 && x < 16 && y >= 0 && y < 16 && z >= 0 && z < 16
-                            && state.isSolidRender() && state.getRenderShape() == RenderShape.MODEL) {
+                            && state.getRenderShape() == RenderShape.MODEL) {
                         List<BlockModelPart> parts = blockRenderer.getBlockModel(state).collectParts(
                                 RandomSource.create(state.getSeed(pos)));
                         Map<Integer, Integer> resolved = new HashMap<>();

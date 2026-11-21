@@ -21,6 +21,13 @@ class SpaceRendererBlockModelMesherTest {
     }
 
     @Test
+    void supportsNonSolidModelBlocksWithoutTreatingAirOrBlockEntitiesAsModels() {
+        assertEquals(true, SpaceRendererBlockModelMesher.isSupportedModelState(Blocks.TORCH.defaultBlockState()));
+        assertEquals(false, SpaceRendererBlockModelMesher.isSupportedModelState(Blocks.AIR.defaultBlockState()));
+        assertEquals(false, SpaceRendererBlockModelMesher.isSupportedModelState(Blocks.CHEST.defaultBlockState()));
+    }
+
+    @Test
     void unpacksAtlasUvCoordinatesFromMinecraftPackedLong() {
         float u = 0.3125f;
         float v = 0.6875f;
