@@ -1,5 +1,6 @@
 package com.planetstudios.essentials.rendering.space;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVertexData;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Objects;
@@ -7,10 +8,12 @@ import java.util.Objects;
 public final class SpaceRendererMesh {
  private final PrismTerrainVertexData source;
  private final float minX,minY,minZ,maxX,maxY,maxZ;
- private SpaceRendererMesh(PrismTerrainVertexData source,float minX,float minY,float minZ,float maxX,float maxY,float maxZ){
-  this.source=source;this.minX=minX;this.minY=minY;this.minZ=minZ;this.maxX=maxX;this.maxY=maxY;this.maxZ=maxZ;
+ private final ChunkSectionLayer layer;
+ private SpaceRendererMesh(PrismTerrainVertexData source,ChunkSectionLayer layer,float minX,float minY,float minZ,float maxX,float maxY,float maxZ){
+  this.source=source;this.layer=Objects.requireNonNull(layer,"layer");this.minX=minX;this.minY=minY;this.minZ=minZ;this.maxX=maxX;this.maxY=maxY;this.maxZ=maxZ;
  }
- public static SpaceRendererMesh build(PrismTerrainVertexData source){
+ public static SpaceRendererMesh build(PrismTerrainVertexData source){ return build(source, ChunkSectionLayer.SOLID); }
+ public static SpaceRendererMesh build(PrismTerrainVertexData source, ChunkSectionLayer layer){
   Objects.requireNonNull(source,"source");
   if(source.vertexCount()<=0||source.strideBytes()<12)throw new IllegalArgumentException("Terrain payload has no valid position stream");
   ByteBuffer vertices=source.readOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);int stride=source.strideBytes();
@@ -20,9 +23,9 @@ public final class SpaceRendererMesh {
    if(!Float.isFinite(x)||!Float.isFinite(y)||!Float.isFinite(z))throw new IllegalArgumentException("Terrain payload contains a non-finite position");
    minX=Math.min(minX,x);minY=Math.min(minY,y);minZ=Math.min(minZ,z);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y);maxZ=Math.max(maxZ,z);
   }
-  return new SpaceRendererMesh(source,minX,minY,minZ,maxX,maxY,maxZ);
+  return new SpaceRendererMesh(source,layer,minX,minY,minZ,maxX,maxY,maxZ);
  }
- public PrismTerrainVertexData source(){return source;} public int vertexCount(){return source.vertexCount();}
+ public PrismTerrainVertexData source(){return source;} public ChunkSectionLayer layer(){return layer;} public int vertexCount(){return source.vertexCount();}
  public int quadCount(){return source.quadCount();} public String materialId(){return source.materialId();}
  public int sectionX(){return source.sectionX();} public int sectionY(){return source.sectionY();} public int sectionZ(){return source.sectionZ();}
  public float minX(){return minX;} public float minY(){return minY;} public float minZ(){return minZ;}

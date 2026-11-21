@@ -4,6 +4,8 @@ import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVertex;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVertexData;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.BlockModelPart;
 import net.minecraft.core.BlockPos;
@@ -14,6 +16,8 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Builds independent section geometry from Minecraft's baked block models.
@@ -30,14 +34,15 @@ public final class SpaceRendererBlockModelMesher {
 
     private SpaceRendererBlockModelMesher() {}
 
-    /** Returns empty when the section contains no supported solid model quads. */
-    public static Optional<PrismTerrainVertexData> build(SpaceRendererSectionSnapshot snapshot) {
+    /**
+     * Builds one independent payload per vanilla chunk render layer.
+     * Layer selection is delegated to Minecraft rather than inferred from solidity.
+     */
+    public static Optional<List<LayeredPayload>> build(SpaceRendererSectionSnapshot snapshot) {
         if (snapshot == null) throw new NullPointerException("snapshot");
         var key = snapshot.key();
-        var builder = PrismTerrainVertexData.builder(key.x(), key.y(), key.z(),
-                BLOCK_ATLAS_MATERIAL, PrismFrameStage.BEFORE_ENTITIES);
+        var builders = new EnumMap<ChunkSectionLayer, PrismTerrainVertexData.Builder>(ChunkSectionLayer.class);
         var blockRenderer = Minecraft.getInstance().getBlockRenderer();
-        int quadCount = 0;
 
         for (int y = 0; y < 16; y++) {
             for (int z = 0; z < 16; z++) {
@@ -45,6 +50,10 @@ public final class SpaceRendererBlockModelMesher {
                     BlockState state = snapshot.blockState(x, y, z);
                     if (!isSupportedModelState(state)) continue;
 
+                    ChunkSectionLayer layer = ItemBlockRenderTypes.getChunkRenderType(state);
+                    var builder = builders.computeIfAbsent(layer, selected ->
+                            PrismTerrainVertexData.builder(key.x(), key.y(), key.z(),
+                                    BLOCK_ATLAS_MATERIAL, stageFor(selected)));
                     int worldX = key.x() * 16 + x;
                     int worldY = key.y() * 16 + y;
                     int worldZ = key.z() * 16 + z;
@@ -57,23 +66,37 @@ public final class SpaceRendererBlockModelMesher {
                     for (BlockModelPart part : parts) {
                         for (BakedQuad quad : part.getQuads(null)) {
                             appendQuad(builder, snapshot, quad, x, y, z, packedLight);
-                            quadCount++;
                         }
                         for (Direction side : Direction.values()) {
                             if (snapshot.blockState(x + side.getStepX(), y + side.getStepY(),
-                                    z + side.getStepZ()).isSolidRender()) {
-                                continue;
-                            }
+                                    z + side.getStepZ()).isSolidRender()) continue;
                             for (BakedQuad quad : part.getQuads(side)) {
                                 appendQuad(builder, snapshot, quad, x, y, z, packedLight);
-                                quadCount++;
                             }
                         }
                     }
                 }
             }
         }
-        return quadCount == 0 ? Optional.empty() : Optional.of(builder.build());
+
+        if (builders.isEmpty()) return Optional.empty();
+        List<LayeredPayload> batches = new java.util.ArrayList<>(builders.size());
+        for (Map.Entry<ChunkSectionLayer, PrismTerrainVertexData.Builder> entry : builders.entrySet()) {
+            batches.add(new LayeredPayload(entry.getKey(), entry.getValue().build()));
+        }
+        return Optional.of(List.copyOf(batches));
+    }
+
+    static PrismFrameStage stageFor(ChunkSectionLayer layer) {
+        return layer == ChunkSectionLayer.TRANSLUCENT || layer == ChunkSectionLayer.TRIPWIRE
+                ? PrismFrameStage.BEFORE_TRANSLUCENT : PrismFrameStage.BEFORE_ENTITIES;
+    }
+
+    public record LayeredPayload(ChunkSectionLayer layer, PrismTerrainVertexData data) {
+        public LayeredPayload {
+            java.util.Objects.requireNonNull(layer, "layer");
+            java.util.Objects.requireNonNull(data, "data");
+        }
     }
 
     static boolean isSupportedModelState(BlockState state) {

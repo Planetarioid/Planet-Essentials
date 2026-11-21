@@ -2,6 +2,7 @@ package com.planetstudios.essentials.rendering.space;
 
 import net.minecraft.SharedConstants;
 import net.minecraft.core.Direction;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -25,6 +26,18 @@ class SpaceRendererBlockModelMesherTest {
         assertEquals(true, SpaceRendererBlockModelMesher.isSupportedModelState(Blocks.TORCH.defaultBlockState()));
         assertEquals(false, SpaceRendererBlockModelMesher.isSupportedModelState(Blocks.AIR.defaultBlockState()));
         assertEquals(false, SpaceRendererBlockModelMesher.isSupportedModelState(Blocks.CHEST.defaultBlockState()));
+    }
+
+    @Test
+    void mapsVanillaChunkLayersToCorrectTerrainStages() {
+        assertEquals(com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage.BEFORE_ENTITIES,
+                SpaceRendererBlockModelMesher.stageFor(ChunkSectionLayer.SOLID));
+        assertEquals(com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage.BEFORE_ENTITIES,
+                SpaceRendererBlockModelMesher.stageFor(ChunkSectionLayer.CUTOUT));
+        assertEquals(com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage.BEFORE_TRANSLUCENT,
+                SpaceRendererBlockModelMesher.stageFor(ChunkSectionLayer.TRANSLUCENT));
+        assertEquals(com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage.BEFORE_TRANSLUCENT,
+                SpaceRendererBlockModelMesher.stageFor(ChunkSectionLayer.TRIPWIRE));
     }
 
     @Test

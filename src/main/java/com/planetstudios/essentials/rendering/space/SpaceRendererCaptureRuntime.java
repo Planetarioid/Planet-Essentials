@@ -31,7 +31,7 @@ public final class SpaceRendererCaptureRuntime {
             new SpaceRendererSectionSnapshotCache(MAX_SNAPSHOT_BYTES);
     private static final SpaceRendererMeshBuildScheduler<SpaceRendererMesh> SCHEDULER =
             new SpaceRendererMeshBuildScheduler<>(WORKERS, MAX_IN_FLIGHT, threadFactory());
-    private static final SpaceRendererMeshBuildScheduler<java.util.Optional<SpaceRendererMesh>> MODEL_SCHEDULER =
+    private static final SpaceRendererMeshBuildScheduler<java.util.Optional<List<SpaceRendererMesh>>> MODEL_SCHEDULER =
             new SpaceRendererMeshBuildScheduler<>(WORKERS, MAX_IN_FLIGHT, threadFactory());
     private static final SpaceRendererGpuUploadQueue<SpaceRendererMesh> UPLOADS =
             new SpaceRendererGpuUploadQueue<>(MAX_UPLOAD_ENTRIES, MAX_UPLOAD_BYTES);
@@ -66,7 +66,7 @@ public final class SpaceRendererCaptureRuntime {
         }
         if (!SNAPSHOTS.put(snapshot)) return false;
         if (!MODEL_SCHEDULER.submit(token, 0.0, () ->
-                SpaceRendererBlockModelMesher.build(snapshot).map(SpaceRendererMesh::build))) {
+                SpaceRendererBlockModelMesher.build(snapshot).map(batches -> batches.stream().map(batch -> SpaceRendererMesh.build(batch.data(), batch.layer())).toList()))) {
             REJECTED_MESH_BUILDS.incrementAndGet();
         }
         return true;
@@ -112,12 +112,14 @@ public final class SpaceRendererCaptureRuntime {
                 continue;
             }
             if (!SECTIONS.isCurrent(result.token()) || result.value().isEmpty()) continue;
-            SpaceRendererMesh mesh = result.value().orElseThrow();
-            String queueMaterialKey = mesh.materialId() + "#" + mesh.source().stage().name();
-            if (UPLOADS.offer(result.token(), queueMaterialKey, mesh, mesh.source().estimatedCpuBytes())) {
-                queued++;
-            } else {
-                REJECTED_UPLOADS.incrementAndGet();
+            for (SpaceRendererMesh mesh : result.value().orElseThrow()) {
+                String queueMaterialKey = mesh.materialId() + "#" + mesh.layer().name()
+                        + "#" + mesh.source().stage().name();
+                if (UPLOADS.offer(result.token(), queueMaterialKey, mesh, mesh.source().estimatedCpuBytes())) {
+                    queued++;
+                } else {
+                    REJECTED_UPLOADS.incrementAndGet();
+                }
             }
         }
         return queued;
@@ -197,8 +199,15 @@ public final class SpaceRendererCaptureRuntime {
             }
         }
         currentFrame = SpaceRendererFrameSnapshot.capture(sequence, inputs,
-                input -> GPU_CACHE.meshFor(input.section(), input.materialId(), input.stage()));
+                input -> GPU_CACHE.meshFor(input.section(), input.materialId(), input.stage(), layerFromLabel(input.layerId())));
         return currentFrame;
+    }
+
+    private static ChunkSectionLayer layerFromLabel(String label) {
+        for (ChunkSectionLayer layer : ChunkSectionLayer.values()) {
+            if (layer.label().equals(label)) return layer;
+        }
+        throw new IllegalArgumentException("Unknown vanilla chunk layer: " + label);
     }
 
     public static SpaceRendererFrameSnapshot currentFrameSnapshot() { return currentFrame; }

@@ -3,6 +3,7 @@ import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainGpuMesh;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -28,7 +29,7 @@ public final class SpaceRendererGpuCache implements AutoCloseable {
             throw new IllegalArgumentException("Mesh coordinates do not match its section token");
         int bytes = source.byteSize();
         if (bytes <= 0 || bytes > maxBytes) return false;
-        Key key = new Key(token.key(), mesh.materialId(), source.stage());
+        Key key = new Key(token.key(), mesh.materialId(), source.stage(), mesh.layer());
         Entry existing = entries.get(key);
         if (existing != null && existing.hash.equals(source.contentHash())) return true;
         PrismTerrainGpuMesh replacement = PrismTerrainGpuMesh.upload(device, source);
@@ -44,9 +45,13 @@ public final class SpaceRendererGpuCache implements AutoCloseable {
         entries.put(key, next); currentBytes += bytes; return true;
     }
     public PrismTerrainGpuMesh meshFor(SpaceRendererSectionManager.SectionKey section, String material, PrismFrameStage stage) {
+        return meshFor(section, material, stage, ChunkSectionLayer.SOLID);
+    }
+    public PrismTerrainGpuMesh meshFor(SpaceRendererSectionManager.SectionKey section, String material, PrismFrameStage stage, ChunkSectionLayer layer) {
         RenderSystem.assertOnRenderThread(); ensureOpen();
         Entry entry = entries.get(new Key(Objects.requireNonNull(section, "section"),
-                Objects.requireNonNull(material, "material"), Objects.requireNonNull(stage, "stage")));
+                Objects.requireNonNull(material, "material"), Objects.requireNonNull(stage, "stage"),
+                Objects.requireNonNull(layer, "layer")));
         return entry == null ? null : entry.mesh;
     }
     public int invalidateSection(SpaceRendererSectionManager.SectionKey section) {
@@ -97,6 +102,6 @@ public final class SpaceRendererGpuCache implements AutoCloseable {
     public long maxBytes() { return maxBytes; }
     private void ensureOpen() { if (closed) throw new IllegalStateException("Space Renderer GPU cache is closed"); }
     @Override public void close() { RenderSystem.assertOnRenderThread(); if (closed) return; clear(); closed = true; }
-    private record Key(SpaceRendererSectionManager.SectionKey section, String material, PrismFrameStage stage) {}
+    private record Key(SpaceRendererSectionManager.SectionKey section, String material, PrismFrameStage stage, ChunkSectionLayer layer) {}
     private record Entry(PrismTerrainGpuMesh mesh, int bytes, String hash) {}
 }

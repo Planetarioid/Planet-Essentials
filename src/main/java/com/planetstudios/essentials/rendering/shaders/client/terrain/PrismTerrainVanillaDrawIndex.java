@@ -48,7 +48,7 @@ public final class PrismTerrainVanillaDrawIndex {
 
     public record DrawDescriptor(int sectionX, int sectionY, int sectionZ,
                                  ChunkSectionLayer layer, int layerDrawIndex) {
-        public String materialId() { return "planet_essentials:terrain/vanilla/" + layer.label(); }
+        public String materialId() { return "minecraft:textures/atlas/blocks.png"; }
     }
 
     public record Snapshot(Map<Object, DrawDescriptor> byDraw, int drawCount) {
