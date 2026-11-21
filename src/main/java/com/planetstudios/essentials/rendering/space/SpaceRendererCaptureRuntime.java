@@ -53,6 +53,6 @@ public final class SpaceRendererCaptureRuntime {
  public static void clearAll(){SECTIONS.clearAll();synchronized(READY){READY.clear();}}
  public static void shutdown(){if(closed)return;closed=true;clearAll();SCHEDULER.close();}
  private static SpaceRendererSectionManager.SectionKey key(ClientLevel level,SectionPos pos){return new SpaceRendererSectionManager.SectionKey(dimensionId(level),pos.x(),pos.y(),pos.z());}
- private static String dimensionId(ClientLevel level){return level.dimension().location().toString();}
+ private static String dimensionId(ClientLevel level){return level.dimension().toString();}
  private static ThreadFactory threadFactory(){AtomicInteger index=new AtomicInteger();return task->{Thread thread=new Thread(task,"Space Renderer Mesh Builder-"+index.incrementAndGet());thread.setDaemon(true);return thread;};}
 }
