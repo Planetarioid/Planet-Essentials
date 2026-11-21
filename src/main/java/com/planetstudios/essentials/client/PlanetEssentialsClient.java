@@ -20,6 +20,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
@@ -112,6 +113,14 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
                 }
             }
             tickStartedAtNanos = 0L;
+            if (client.level != null) {
+                RenderSystem.queueFencedTask(() -> {
+                    if (client.level != null) {
+                        SpaceRendererCaptureRuntime.drainCompletions();
+                        SpaceRendererCaptureRuntime.uploadPending(RenderSystem.getDevice(), 24, 8L * 1024 * 1024);
+                    }
+                });
+            }
         });
     }
 

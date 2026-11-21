@@ -1,6 +1,8 @@
 package com.planetstudios.essentials.rendering.space;
 
 import com.planetstudios.essentials.PlanetEssentials;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVertexData;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.SectionPos;
@@ -23,6 +25,8 @@ public final class SpaceRendererCaptureRuntime {
     private static final SpaceRendererGpuUploadQueue<SpaceRendererMesh> UPLOADS =
             new SpaceRendererGpuUploadQueue<>(MAX_UPLOAD_ENTRIES, MAX_UPLOAD_BYTES);
     private static final AtomicLong REJECTED_UPLOADS = new AtomicLong();
+    private static final AtomicLong FAILED_GPU_UPLOADS = new AtomicLong();
+    private static final SpaceRendererGpuCache GPU_CACHE = new SpaceRendererGpuCache();
     private static volatile boolean closed;
 
     private SpaceRendererCaptureRuntime() {}
@@ -55,7 +59,8 @@ public final class SpaceRendererCaptureRuntime {
             }
             if (!SECTIONS.isCurrent(result.token())) continue;
             SpaceRendererMesh mesh = result.value();
-            if (UPLOADS.offer(result.token(), mesh.materialId(), mesh, mesh.source().estimatedCpuBytes())) {
+            String queueMaterialKey = mesh.materialId() + "#" + mesh.source().stage().name();
+            if (UPLOADS.offer(result.token(), queueMaterialKey, mesh, mesh.source().estimatedCpuBytes())) {
                 queued++;
             } else {
                 REJECTED_UPLOADS.incrementAndGet();
@@ -71,6 +76,26 @@ public final class SpaceRendererCaptureRuntime {
         return UPLOADS.pollBatch(maxRequests, maxBytes);
     }
 
+    public static int uploadPending(GpuDevice device, int maxRequests, long maxBytes) {
+        RenderSystem.assertOnRenderThread();
+        if (closed) return 0;
+        int uploaded = 0;
+        for (var request : drainUploadBatch(maxRequests, maxBytes)) {
+            if (!SECTIONS.isCurrent(request.token())) continue;
+            try {
+                if (GPU_CACHE.upload(device, request.token(), request.payload())) uploaded++;
+                else REJECTED_UPLOADS.incrementAndGet();
+            } catch (RuntimeException failure) {
+                FAILED_GPU_UPLOADS.incrementAndGet();
+                PlanetEssentials.LOGGER.warn("Space Renderer GPU upload failed for {}", request.token().key(), failure);
+            }
+        }
+        return uploaded;
+    }
+    public static int gpuMeshCount() { RenderSystem.assertOnRenderThread(); return GPU_CACHE.size(); }
+    public static long gpuBytes() { RenderSystem.assertOnRenderThread(); return GPU_CACHE.currentBytes(); }
+    public static long failedGpuUploadCount() { return FAILED_GPU_UPLOADS.get(); }
+
     public static int pendingUploadCount() { return UPLOADS.size(); }
     public static long pendingUploadBytes() { return UPLOADS.queuedBytes(); }
     public static long rejectedUploadCount() { return REJECTED_UPLOADS.get(); }
@@ -82,6 +107,7 @@ public final class SpaceRendererCaptureRuntime {
             SECTIONS.unload(key);
             UPLOADS.removeSection(key);
         }
+        queueGpu(() -> GPU_CACHE.invalidateChunk(dimension, chunkX, chunkZ));
     }
 
     public static void clearWorld(ClientLevel level) {
@@ -89,11 +115,13 @@ public final class SpaceRendererCaptureRuntime {
         String dimension = dimensionId(level);
         SECTIONS.unloadDimension(dimension);
         UPLOADS.removeDimension(dimension);
+        queueGpu(() -> GPU_CACHE.clearDimension(dimension));
     }
 
     public static void clearAll() {
         SECTIONS.clearAll();
         UPLOADS.clear();
+        queueGpu(GPU_CACHE::clear);
     }
 
     public static void shutdown() {
@@ -103,6 +131,10 @@ public final class SpaceRendererCaptureRuntime {
         SCHEDULER.close();
     }
 
+    private static void queueGpu(Runnable action) {
+        if (RenderSystem.isOnRenderThread()) action.run();
+        else RenderSystem.queueFencedTask(action::run);
+    }
     private static SpaceRendererSectionManager.SectionKey key(ClientLevel level, SectionPos pos) {
         return new SpaceRendererSectionManager.SectionKey(dimensionId(level), pos.x(), pos.y(), pos.z());
     }
