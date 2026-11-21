@@ -31,11 +31,12 @@ public final class SpaceRendererCaptureRuntime {
             new SpaceRendererSectionSnapshotCache(MAX_SNAPSHOT_BYTES);
     private static final SpaceRendererMeshBuildScheduler<SpaceRendererMesh> SCHEDULER =
             new SpaceRendererMeshBuildScheduler<>(WORKERS, MAX_IN_FLIGHT, threadFactory());
-    private static final SpaceRendererMeshBuildScheduler<java.util.Optional<SpaceRendererMesh>> SOLID_CUBE_SCHEDULER =
+    private static final SpaceRendererMeshBuildScheduler<java.util.Optional<SpaceRendererMesh>> MODEL_SCHEDULER =
             new SpaceRendererMeshBuildScheduler<>(WORKERS, MAX_IN_FLIGHT, threadFactory());
     private static final SpaceRendererGpuUploadQueue<SpaceRendererMesh> UPLOADS =
             new SpaceRendererGpuUploadQueue<>(MAX_UPLOAD_ENTRIES, MAX_UPLOAD_BYTES);
     private static final AtomicLong REJECTED_UPLOADS = new AtomicLong();
+    private static final AtomicLong REJECTED_MESH_BUILDS = new AtomicLong();
     private static final AtomicLong FAILED_GPU_UPLOADS = new AtomicLong();
     private static final AtomicLong FRAME_SEQUENCE = new AtomicLong();
     private static final SpaceRendererGpuCache GPU_CACHE = new SpaceRendererGpuCache();
@@ -64,8 +65,11 @@ public final class SpaceRendererCaptureRuntime {
             throw new IllegalArgumentException("Section snapshot does not match its build token");
         }
         if (!SNAPSHOTS.put(snapshot)) return false;
-        return SOLID_CUBE_SCHEDULER.submit(token, 0.0, () ->
-                SpaceRendererSolidCubeMesher.build(snapshot).map(SpaceRendererMesh::build));
+        if (!MODEL_SCHEDULER.submit(token, 0.0, () ->
+                SpaceRendererBlockModelMesher.build(snapshot).map(SpaceRendererMesh::build))) {
+            REJECTED_MESH_BUILDS.incrementAndGet();
+        }
+        return true;
     }
 
     public static SpaceRendererSectionSnapshot sectionSnapshot(SpaceRendererSectionManager.SectionKey key) {
@@ -84,7 +88,7 @@ public final class SpaceRendererCaptureRuntime {
     public static int drainCompletions() {
         if (closed) return 0;
         var results = SCHEDULER.drainCompletions(MAX_IN_FLIGHT);
-        var solidCubeResults = SOLID_CUBE_SCHEDULER.drainCompletions(MAX_IN_FLIGHT);
+        var modelResults = MODEL_SCHEDULER.drainCompletions(MAX_IN_FLIGHT);
         int queued = 0;
         for (var result : results) {
             if (!result.succeeded()) {
@@ -101,9 +105,9 @@ public final class SpaceRendererCaptureRuntime {
                 REJECTED_UPLOADS.incrementAndGet();
             }
         }
-        for (var result : solidCubeResults) {
+        for (var result : modelResults) {
             if (!result.succeeded()) {
-                PlanetEssentials.LOGGER.warn("Space Renderer solid-cube meshing failed for {}",
+                PlanetEssentials.LOGGER.warn("Space Renderer baked-model meshing failed for {}",
                         result.token().key(), result.failure());
                 continue;
             }
@@ -211,6 +215,7 @@ public final class SpaceRendererCaptureRuntime {
     public static int pendingUploadCount() { return UPLOADS.size(); }
     public static long pendingUploadBytes() { return UPLOADS.queuedBytes(); }
     public static long rejectedUploadCount() { return REJECTED_UPLOADS.get(); }
+    public static long rejectedMeshBuildCount() { return REJECTED_MESH_BUILDS.get(); }
 
     public static void unloadChunk(ClientLevel level, int chunkX, int minSectionY, int maxSectionY, int chunkZ) {
         String dimension = dimensionId(level);
@@ -246,7 +251,7 @@ public final class SpaceRendererCaptureRuntime {
         closed = true;
         clearAll();
         SCHEDULER.close();
-        SOLID_CUBE_SCHEDULER.close();
+        MODEL_SCHEDULER.close();
     }
 
     private static void queueGpu(Runnable action) {
