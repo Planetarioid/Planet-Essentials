@@ -30,7 +30,7 @@ public abstract class SectionCompilerMixin {
             RenderSectionRegion region, VertexSorting vertexSorting,
             SectionBufferBuilderPack buffers,
             CallbackInfoReturnable<SectionCompiler.Results> callback) {
-        if (!ShaderPackRuntime.isEnabled()) return;
+        if (!SpaceRendererCaptureRuntime.isCaptureEnabled() && !ShaderPackRuntime.isEnabled()) return;
         PrismVanillaSectionRebuildEvents.onVanillaCompileComplete(callback.getReturnValue());
     }
 }
