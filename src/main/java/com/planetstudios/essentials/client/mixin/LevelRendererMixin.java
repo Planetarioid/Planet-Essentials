@@ -1,5 +1,7 @@
 package com.planetstudios.essentials.client.mixin;
 
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.planetstudios.essentials.rendering.shaders.client.ShaderPackRuntime;
 import com.planetstudios.essentials.rendering.space.SpaceRendererCaptureRuntime;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainActiveFrustum;
@@ -24,9 +26,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Captures expensive terrain snapshots only while a compiled Prism pack is active. */
+/** Captures terrain snapshots and advances bounded Space Renderer GPU uploads on the render thread. */
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
+    private static final int SPACE_UPLOADS_PER_FRAME = 24;
+    private static final long SPACE_UPLOAD_BYTES_PER_FRAME = 8L * 1024L * 1024L;
+
     @Shadow @Final
     private ObjectArrayList<SectionRenderDispatcher.RenderSection> visibleSections;
 
@@ -48,12 +53,17 @@ public abstract class LevelRendererMixin {
         PrismTerrainVisibleSections.publish(Minecraft.getInstance().level, visibleSections);
     }
 
-    /** Builds an identity map over vanilla draw records only for an active Prism terrain pipeline. */
+    /** Drains bounded CPU completions and uploads a small batch before terrain draw submission. */
     @Inject(method = "prepareChunkRenders", at = @At("RETURN"))
     private void planetEssentials$indexVanillaTerrainDraws(Matrix4fc modelViewMatrix,
             double camX, double camY, double camZ,
             CallbackInfoReturnable<ChunkSectionsToRender> callback) {
         SpaceRendererCaptureRuntime.drainCompletions();
+        GpuDevice device = RenderSystem.getDevice();
+        if (device != null) {
+            SpaceRendererCaptureRuntime.uploadPending(
+                    device, SPACE_UPLOADS_PER_FRAME, SPACE_UPLOAD_BYTES_PER_FRAME);
+        }
         if (!ShaderPackRuntime.isEnabled()) return;
         PrismTerrainVanillaDrawIndex.capture(visibleSections, callback.getReturnValue());
     }
