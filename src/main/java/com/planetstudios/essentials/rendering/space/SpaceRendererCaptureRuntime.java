@@ -25,7 +25,10 @@ public final class SpaceRendererCaptureRuntime {
     private static final int MAX_IN_FLIGHT = 96;
     private static final int MAX_UPLOAD_ENTRIES = 8192;
     private static final long MAX_UPLOAD_BYTES = 128L * 1024 * 1024;
+    private static final long MAX_SNAPSHOT_BYTES = 32L * 1024 * 1024;
     private static final SpaceRendererSectionManager SECTIONS = new SpaceRendererSectionManager();
+    private static final SpaceRendererSectionSnapshotCache SNAPSHOTS =
+            new SpaceRendererSectionSnapshotCache(MAX_SNAPSHOT_BYTES);
     private static final SpaceRendererMeshBuildScheduler<SpaceRendererMesh> SCHEDULER =
             new SpaceRendererMeshBuildScheduler<>(WORKERS, MAX_IN_FLIGHT, threadFactory());
     private static final SpaceRendererGpuUploadQueue<SpaceRendererMesh> UPLOADS =
@@ -45,10 +48,28 @@ public final class SpaceRendererCaptureRuntime {
         Objects.requireNonNull(level, "level");
         Objects.requireNonNull(pos, "pos");
         var key = key(level, pos);
+        SNAPSHOTS.remove(key);
         UPLOADS.removeSection(key);
         queueGpu(() -> GPU_CACHE.invalidateSection(key));
         return SECTIONS.beginBuild(key);
     }
+
+    /** Publishes a copied block-state snapshot only while its section revision remains current. */
+    public static boolean publishSnapshot(SpaceRendererSectionManager.BuildToken token,
+            SpaceRendererSectionSnapshot snapshot) {
+        if (closed || token == null || snapshot == null || !SECTIONS.isCurrent(token)) return false;
+        if (!token.key().equals(snapshot.key())) {
+            throw new IllegalArgumentException("Section snapshot does not match its build token");
+        }
+        return SNAPSHOTS.put(snapshot);
+    }
+
+    public static SpaceRendererSectionSnapshot sectionSnapshot(SpaceRendererSectionManager.SectionKey key) {
+        return SNAPSHOTS.get(key);
+    }
+
+    public static int sectionSnapshotCount() { return SNAPSHOTS.size(); }
+    public static long sectionSnapshotBytes() { return SNAPSHOTS.currentBytes(); }
 
     public static boolean publish(SpaceRendererSectionManager.BuildToken token, PrismTerrainVertexData data) {
         if (closed || token == null || data == null || !SECTIONS.isCurrent(token)) return false;
@@ -176,6 +197,7 @@ public final class SpaceRendererCaptureRuntime {
         for (int y = minSectionY; y < maxSectionY; y++) {
             var key = new SpaceRendererSectionManager.SectionKey(dimension, chunkX, y, chunkZ);
             SECTIONS.unload(key);
+            SNAPSHOTS.remove(key);
             UPLOADS.removeSection(key);
         }
         queueGpu(() -> GPU_CACHE.invalidateChunk(dimension, chunkX, chunkZ));
@@ -185,6 +207,7 @@ public final class SpaceRendererCaptureRuntime {
         if (level == null) return;
         String dimension = dimensionId(level);
         SECTIONS.unloadDimension(dimension);
+        SNAPSHOTS.removeDimension(dimension);
         UPLOADS.removeDimension(dimension);
         currentFrame = SpaceRendererFrameSnapshot.empty(Math.max(1, FRAME_SEQUENCE.incrementAndGet()));
         queueGpu(() -> GPU_CACHE.clearDimension(dimension));
@@ -192,6 +215,7 @@ public final class SpaceRendererCaptureRuntime {
 
     public static void clearAll() {
         SECTIONS.clearAll();
+        SNAPSHOTS.clear();
         UPLOADS.clear();
         currentFrame = SpaceRendererFrameSnapshot.empty(Math.max(1, FRAME_SEQUENCE.incrementAndGet()));
         queueGpu(GPU_CACHE::clear);

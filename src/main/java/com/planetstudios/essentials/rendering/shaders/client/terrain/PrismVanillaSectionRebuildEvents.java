@@ -4,6 +4,7 @@ import com.planetstudios.essentials.PlanetEssentials;
 import com.planetstudios.essentials.client.mixin.RenderSectionRegionAccessor;
 import com.planetstudios.essentials.rendering.space.SpaceRendererCaptureRuntime;
 import com.planetstudios.essentials.rendering.space.SpaceRendererSectionManager;
+import com.planetstudios.essentials.rendering.space.SpaceRendererSectionSnapshot;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.chunk.RenderSectionRegion;
 import net.minecraft.client.renderer.chunk.SectionCompiler;
@@ -44,6 +45,15 @@ public final class PrismVanillaSectionRebuildEvents {
         PrismTerrainSectionLifecycle.BuildToken token = PrismTerrainChunkLifecycleEvents.beginRebuild(
                 level, sectionPos.x(), sectionPos.y(), sectionPos.z());
         SpaceRendererSectionManager.BuildToken spaceToken = SpaceRendererCaptureRuntime.beginRebuild(level, sectionPos);
+        try {
+            SpaceRendererSectionSnapshot snapshot = SpaceRendererSectionSnapshot.capture(
+                    sectionPos, region, level.dimension().toString());
+            if (!SpaceRendererCaptureRuntime.publishSnapshot(spaceToken, snapshot)) {
+                PlanetEssentials.LOGGER.debug("Space Renderer did not retain block snapshot for section {}", sectionPos);
+            }
+        } catch (RuntimeException failure) {
+            PlanetEssentials.LOGGER.warn("Could not snapshot block states for Space Renderer section {}", sectionPos, failure);
+        }
         RebuildContext context = new RebuildContext(level, sectionPos, region, token, spaceToken);
         ACTIVE_REBUILD.set(context);
         for (Listener listener : LISTENERS) {
