@@ -1,6 +1,5 @@
 package com.planetstudios.essentials.rendering.space;
 
-import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.chunk.RenderSectionRegion;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -59,7 +58,7 @@ public final class SpaceRendererSectionSnapshot {
                     states[index] = region.getBlockState(pos);
                     int block = region.getBrightness(LightLayer.BLOCK, pos);
                     int sky = region.getBrightness(LightLayer.SKY, pos);
-                    lights[index] = LightTexture.pack(block, sky);
+                    lights[index] = packLight(block, sky);
                 }
             }
         }
@@ -70,7 +69,7 @@ public final class SpaceRendererSectionSnapshot {
     public static SpaceRendererSectionSnapshot fromStates(
             SpaceRendererSectionManager.SectionKey key, BlockState[] states) {
         int[] lights = new int[STATE_COUNT];
-        Arrays.fill(lights, LightTexture.FULL_BRIGHT);
+        Arrays.fill(lights, 0x00F000F0);
         return new SpaceRendererSectionSnapshot(key, states, lights);
     }
 
@@ -78,6 +77,10 @@ public final class SpaceRendererSectionSnapshot {
     public static SpaceRendererSectionSnapshot fromStates(
             SpaceRendererSectionManager.SectionKey key, BlockState[] states, int[] packedLights) {
         return new SpaceRendererSectionSnapshot(key, states, packedLights);
+    }
+
+    private static int packLight(int block, int sky) {
+        return (block << 4) | (sky << 20);
     }
 
     private static int index(int x, int y, int z) {
