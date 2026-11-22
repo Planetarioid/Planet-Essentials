@@ -18,6 +18,28 @@ class SpaceRendererFluidMesherTest {
     }
 
     @Test
+    void appliesCapturedStillAndFlowingAtlasUvsAndFluidTintToGeometry() {
+        var spriteAtlas = "minecraft:textures/atlas/blocks.png";
+        var still = new SpaceRendererSectionSnapshot.FluidSprite(spriteAtlas, 0.1f, 0.2f, 0.3f, 0.4f);
+        var flowing = new SpaceRendererSectionSnapshot.FluidSprite(spriteAtlas, 0.5f, 0.6f, 0.9f, 0.8f);
+        var visual = new SpaceRendererSectionSnapshot.FluidVisual(still, flowing, null, 0xFF74AADD);
+        var snapshot = snapshotWithVisual(cell(4, 5, 6, "minecraft:water", 1.0f), visual);
+
+        var geometry = SpaceRendererFluidMesher.build(snapshot).getFirst();
+        var top = geometry.quads().stream().filter(q -> q.a().normalY() == 1.0f).findFirst().orElseThrow();
+        var side = geometry.quads().stream().filter(q -> q.a().normalY() == 0.0f).findFirst().orElseThrow();
+
+        assertEquals(spriteAtlas, top.atlasId());
+        assertEquals(0xFF74AADD, top.tintColor());
+        assertEquals(0.1f, top.a().u(), 0.0001f);
+        assertEquals(0.2f, top.a().v(), 0.0001f);
+        assertEquals(spriteAtlas, side.atlasId());
+        assertEquals(0xFF74AADD, side.tintColor());
+        assertTrue(side.a().u() >= flowing.u0() && side.a().u() <= flowing.u1());
+        assertTrue(side.a().v() >= flowing.v0() && side.a().v() <= flowing.v1());
+    }
+
+    @Test
     void emitsTopAndFourExposedSidesForAnIsolatedFluidCell() {
         var geometry = SpaceRendererFluidMesher.build(snapshotWithFluids(
                 cell(4, 5, 6, "minecraft:water", 1.0f))).getFirst();
@@ -132,6 +154,23 @@ class SpaceRendererFluidMesherTest {
     private static int countVertical(SpaceRendererFluidMesher.FluidGeometry geometry) {
         return (int) geometry.quads().stream().filter(q ->
                 q.a().normalY() == 0.0f && (q.a().normalX() != 0.0f || q.a().normalZ() != 0.0f)).count();
+    }
+
+    private static SpaceRendererSectionSnapshot snapshotWithVisual(Cell cell,
+            SpaceRendererSectionSnapshot.FluidVisual visual) {
+        var states = new net.minecraft.world.level.block.state.BlockState[SpaceRendererSectionSnapshot.STATE_COUNT];
+        Arrays.fill(states, Blocks.AIR.defaultBlockState());
+        states[index(cell.x, cell.y, cell.z)] = Blocks.WATER.defaultBlockState();
+        var samples = new SpaceRendererSectionSnapshot.FluidSample[SpaceRendererSectionSnapshot.STATE_COUNT];
+        samples[index(cell.x, cell.y, cell.z)] = new SpaceRendererSectionSnapshot.FluidSample(
+                cell.typeId, cell.height, cell.height, 0.0f, 0.0f, 0.0f, cell.height == 1.0f);
+        var visuals = new SpaceRendererSectionSnapshot.FluidVisual[SpaceRendererSectionSnapshot.STATE_COUNT];
+        visuals[index(cell.x, cell.y, cell.z)] = visual;
+        int[] lights = new int[SpaceRendererSectionSnapshot.STATE_COUNT];
+        Arrays.fill(lights, 0x00F000F0);
+        return SpaceRendererSectionSnapshot.fromStates(
+                new SpaceRendererSectionManager.SectionKey("minecraft:overworld", 0, 0, 0),
+                states, lights, new int[SpaceRendererSectionSnapshot.STATE_COUNT][], samples, visuals);
     }
 
     private static SpaceRendererSectionSnapshot snapshotWithFluids(Cell... cells) {

@@ -28,23 +28,27 @@ public final class SpaceRendererFluidMesher {
                     List<Quad> quads = byFluid.computeIfAbsent(sample.typeId(), ignored -> new ArrayList<>());
                     CornerHeights heights = cornerHeights(snapshot, sample.typeId(), x, y, z);
                     int light = snapshot.packedLight(x, y, z);
+                    var visual = snapshot.fluidVisual(x, y, z);
+                    var stillSprite = visual == null ? null : visual.still();
+                    var flowingSprite = visual == null ? null : visual.flowing();
+                    int tintColor = visual == null ? -1 : visual.tintColor();
 
                     var above = snapshot.fluidSample(x, y + 1, z);
                     boolean sameFluidAbove = above != null && sample.typeId().equals(above.typeId());
                     boolean solidAbove = snapshot.blockState(x, y + 1, z).isSolidRender();
                     if (!sameFluidAbove && !solidAbove) {
                         quads.add(topQuad(x, y, z, heights,
-                                sample.flowX(), sample.flowZ(), light));
+                                sample.flowX(), sample.flowZ(), light, stillSprite, tintColor));
                     }
 
                     appendSide(snapshot, quads, sample.typeId(), x, y, z,
-                            0, -1, heights.northEast(), heights.northWest(), light);
+                            0, -1, heights.northEast(), heights.northWest(), light, flowingSprite, tintColor);
                     appendSide(snapshot, quads, sample.typeId(), x, y, z,
-                            0, 1, heights.southWest(), heights.southEast(), light);
+                            0, 1, heights.southWest(), heights.southEast(), light, flowingSprite, tintColor);
                     appendSide(snapshot, quads, sample.typeId(), x, y, z,
-                            -1, 0, heights.northWest(), heights.southWest(), light);
+                            -1, 0, heights.northWest(), heights.southWest(), light, flowingSprite, tintColor);
                     appendSide(snapshot, quads, sample.typeId(), x, y, z,
-                            1, 0, heights.southEast(), heights.northEast(), light);
+                            1, 0, heights.southEast(), heights.northEast(), light, flowingSprite, tintColor);
                 }
             }
         }
@@ -127,7 +131,8 @@ public final class SpaceRendererFluidMesher {
 
     private static void appendSide(SpaceRendererSectionSnapshot snapshot, List<Quad> output,
             String typeId, int x, int y, int z, int dx, int dz,
-            float firstTop, float secondTop, int light) {
+            float firstTop, float secondTop, int light,
+            SpaceRendererSectionSnapshot.FluidSprite sprite, int tintColor) {
         int neighborX = x + dx;
         int neighborZ = z + dz;
         if (snapshot.blockState(neighborX, y, neighborZ).isSolidRender()) return;
@@ -167,28 +172,47 @@ public final class SpaceRendererFluidMesher {
             topB = vertex(x, y + secondTop, faceZ, 1, 0, light, nx, 0, nz);
         }
 
-        output.add(new Quad(bottomA, bottomB, topB, topA));
+        output.add(new Quad(withSpriteUv(bottomA, sprite), withSpriteUv(bottomB, sprite),
+                withSpriteUv(topB, sprite), withSpriteUv(topA, sprite),
+                sprite == null ? null : sprite.atlasId(), tintColor));
     }
 
     private static Quad topQuad(int x, int y, int z, CornerHeights heights,
-            float flowX, float flowZ, int light) {
+            float flowX, float flowZ, int light,
+            SpaceRendererSectionSnapshot.FluidSprite sprite, int tintColor) {
         double angle = Math.atan2(flowZ, flowX);
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
         return new Quad(
-                topVertex(x, y + heights.northWest(), z, 0, 0, cos, sin, light),
-                topVertex(x, y + heights.southWest(), z + 1, 0, 1, cos, sin, light),
-                topVertex(x + 1, y + heights.southEast(), z + 1, 1, 1, cos, sin, light),
-                topVertex(x + 1, y + heights.northEast(), z, 1, 0, cos, sin, light));
+                topVertex(x, y + heights.northWest(), z, 0, 0, cos, sin, light, sprite),
+                topVertex(x, y + heights.southWest(), z + 1, 0, 1, cos, sin, light, sprite),
+                topVertex(x + 1, y + heights.southEast(), z + 1, 1, 1, cos, sin, light, sprite),
+                topVertex(x + 1, y + heights.northEast(), z, 1, 0, cos, sin, light, sprite),
+                sprite == null ? null : sprite.atlasId(), tintColor);
     }
 
     private static Vertex topVertex(float x, float y, float z, float u, float v,
-            float cos, float sin, int light) {
+            float cos, float sin, int light,
+            SpaceRendererSectionSnapshot.FluidSprite sprite) {
         float centeredU = u - 0.5f;
         float centeredV = v - 0.5f;
         float rotatedU = centeredU * cos - centeredV * sin + 0.5f;
         float rotatedV = centeredU * sin + centeredV * cos + 0.5f;
-        return vertex(x, y, z, rotatedU, rotatedV, light, 0, 1, 0);
+        return vertex(x, y, z, mapU(rotatedU, sprite), mapV(rotatedV, sprite), light, 0, 1, 0);
+    }
+
+    private static float mapU(float u, SpaceRendererSectionSnapshot.FluidSprite sprite) {
+        return sprite == null ? u : sprite.u0() + u * (sprite.u1() - sprite.u0());
+    }
+
+    private static float mapV(float v, SpaceRendererSectionSnapshot.FluidSprite sprite) {
+        return sprite == null ? v : sprite.v0() + v * (sprite.v1() - sprite.v0());
+    }
+
+    private static Vertex withSpriteUv(Vertex vertex, SpaceRendererSectionSnapshot.FluidSprite sprite) {
+        return new Vertex(vertex.x(), vertex.y(), vertex.z(),
+                mapU(vertex.u(), sprite), mapV(vertex.v(), sprite), vertex.packedLight(),
+                vertex.normalX(), vertex.normalY(), vertex.normalZ());
     }
 
     private static Vertex vertex(float x, float y, float z, float u, float v,
@@ -205,7 +229,7 @@ public final class SpaceRendererFluidMesher {
     public record Vertex(float x, float y, float z, float u, float v,
             int packedLight, float normalX, float normalY, float normalZ) {}
 
-    public record Quad(Vertex a, Vertex b, Vertex c, Vertex d) {
+    public record Quad(Vertex a, Vertex b, Vertex c, Vertex d, String atlasId, int tintColor) {
         public Quad {
             Objects.requireNonNull(a, "a");
             Objects.requireNonNull(b, "b");
