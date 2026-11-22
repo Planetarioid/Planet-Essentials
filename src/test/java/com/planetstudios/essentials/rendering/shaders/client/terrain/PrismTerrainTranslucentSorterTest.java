@@ -31,6 +31,23 @@ class PrismTerrainTranslucentSorterTest {
                 PrismTerrainTranslucentSorter.sortedIndices(new float[]{0,1},0,0,0,0,0,0));
         assertThrows(IllegalArgumentException.class, () ->
                 PrismTerrainTranslucentSorter.sortedIndices(new float[]{0,Float.NaN,0},0,0,0,0,0,0));
+        assertThrows(IllegalArgumentException.class, () ->
+                PrismTerrainTranslucentSorter.sortedIndices(new float[]{0,0,0},0,0,0,Double.NaN,0,0));
+        assertThrows(IllegalArgumentException.class, () ->
+                PrismTerrainTranslucentSorter.sortedIndices(new float[]{0,0,0},0,0,0,Double.MAX_VALUE,0,0));
+    }
+
+    @Test void rejectsMeshesThatCannotBeAddressedByUnsignedShortIndices() {
+        float[] centers = new float[(16_385) * 3];
+        assertThrows(IllegalArgumentException.class, () ->
+                PrismTerrainTranslucentSorter.sortedIndices(centers,0,0,0,0,0,0));
+    }
+
+    @Test void acceptsMaximumUnsignedShortQuadCount() {
+        float[] centers = new float[(16_384) * 3];
+        short[] indices = PrismTerrainTranslucentSorter.sortedIndices(centers,0,0,0,0,0,0);
+        assertEquals(16_384 * 6, indices.length);
+        assertEquals((short) 0xFFFF, indices[indices.length - 2]);
     }
 
     @Test void rejectsPayloadsWithoutSortMetadata() {

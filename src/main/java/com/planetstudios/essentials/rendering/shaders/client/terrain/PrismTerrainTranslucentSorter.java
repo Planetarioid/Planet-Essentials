@@ -5,6 +5,8 @@ import com.mojang.blaze3d.vertex.VertexSorting;
 
 /** Rebuilds vanilla-compatible far-to-near quad indices for captured translucent sections. */
 public final class PrismTerrainTranslucentSorter {
+    private static final int MAX_UNSIGNED_SHORT_QUADS = (0x1_0000 / 4);
+
     private PrismTerrainTranslucentSorter() {}
 
     public static short[] sortedIndices(PrismTerrainVertexData data,
@@ -28,7 +30,14 @@ public final class PrismTerrainTranslucentSorter {
         if (quadCenters == null || quadCenters.length == 0 || quadCenters.length % 3 != 0) {
             throw new IllegalArgumentException("Translucent sort centers must contain complete XYZ triples");
         }
-        CompactVectorArray centers = new CompactVectorArray(quadCenters.length / 3);
+        int quadCount = quadCenters.length / 3;
+        if (quadCount > MAX_UNSIGNED_SHORT_QUADS) {
+            throw new IllegalArgumentException("Translucent mesh exceeds the unsigned-short index range");
+        }
+        if (!Double.isFinite(cameraX) || !Double.isFinite(cameraY) || !Double.isFinite(cameraZ)) {
+            throw new IllegalArgumentException("Translucent sort camera coordinates must be finite");
+        }
+        CompactVectorArray centers = new CompactVectorArray(quadCount);
         for (int i = 0; i < quadCenters.length; i += 3) {
             float x = quadCenters[i], y = quadCenters[i + 1], z = quadCenters[i + 2];
             if (!Float.isFinite(x) || !Float.isFinite(y) || !Float.isFinite(z)) {
@@ -39,6 +48,9 @@ public final class PrismTerrainTranslucentSorter {
         float localCameraX = (float) (cameraX - (double) sectionX * 16.0);
         float localCameraY = (float) (cameraY - (double) sectionY * 16.0);
         float localCameraZ = (float) (cameraZ - (double) sectionZ * 16.0);
+        if (!Float.isFinite(localCameraX) || !Float.isFinite(localCameraY) || !Float.isFinite(localCameraZ)) {
+            throw new IllegalArgumentException("Translucent sort camera is outside the supported coordinate range");
+        }
         int[] order = VertexSorting.byDistance(localCameraX, localCameraY, localCameraZ).sort(centers);
         short[] indices = new short[Math.multiplyExact(order.length, 6)];
         int cursor = 0;
