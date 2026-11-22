@@ -3,6 +3,8 @@ package com.planetstudios.essentials.rendering.space;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class SpaceRendererDrawPlanTest {
@@ -33,5 +35,29 @@ class SpaceRendererDrawPlanTest {
         assertFalse(SpaceRendererDrawPlan.requiresSortedIndices(ChunkSectionLayer.SOLID));
         assertTrue(SpaceRendererDrawPlan.requiresSortedIndices(ChunkSectionLayer.TRANSLUCENT));
         assertTrue(SpaceRendererDrawPlan.requiresSortedIndices(ChunkSectionLayer.TRIPWIRE));
+    }
+
+    @Test void preservesVanillaRenderGroupLayerOrder() {
+        assertEquals(List.of(ChunkSectionLayer.TRANSLUCENT, ChunkSectionLayer.CUTOUT),
+                SpaceRendererDrawPlan.orderedLayers(
+                        List.of(ChunkSectionLayer.TRANSLUCENT, ChunkSectionLayer.CUTOUT)));
+    }
+
+    @Test void rejectsDuplicateLayersInRenderGroup() {
+        assertThrows(IllegalArgumentException.class, () -> SpaceRendererDrawPlan.orderedLayers(
+                List.of(ChunkSectionLayer.SOLID, ChunkSectionLayer.SOLID)));
+    }
+
+    @Test void rejectsNullLayerInRenderGroup() {
+        assertThrows(NullPointerException.class, () -> SpaceRendererDrawPlan.orderedLayers(
+                java.util.Arrays.asList(ChunkSectionLayer.SOLID, null)));
+    }
+
+    @Test void layerViewOfUnreadyPlanRemainsUnready() {
+        var view = SpaceRendererDrawPlan.empty(9).forLayers(List.of(ChunkSectionLayer.SOLID));
+        assertFalse(view.isReady());
+        assertEquals(9, view.frameSequence());
+        assertEquals(0, view.drawCount());
+        assertTrue(view.batches().isEmpty());
     }
 }

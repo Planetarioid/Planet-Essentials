@@ -102,6 +102,46 @@ public final class SpaceRendererDrawPlan {
         return new SpaceRendererDrawPlan(frame.sequence(), batches, drawCount, true);
     }
 
+    /**
+     * Creates a view containing only the layers owned by one vanilla
+     * ChunkSectionLayerGroup. The supplied order is authoritative: batches
+     * are emitted in that exact order, while material-batch and translucent
+     * draw ordering within each layer remain unchanged.
+     *
+     * <p>The returned view shares immutable draw and GPU-resource references
+     * with the parent frame plan. It does not duplicate or own those resources.</p>
+     */
+    public SpaceRendererDrawPlan forLayers(List<ChunkSectionLayer> groupLayers) {
+        List<ChunkSectionLayer> orderedLayers = orderedLayers(groupLayers);
+        if (!ready) return empty(frameSequence);
+
+        List<Batch> selected = new ArrayList<>();
+        int selectedDraws = 0;
+        for (ChunkSectionLayer layer : orderedLayers) {
+            for (Batch batch : batches) {
+                if (batch.layer() == layer) {
+                    selected.add(batch);
+                    selectedDraws = Math.addExact(selectedDraws, batch.draws().size());
+                }
+            }
+        }
+        return new SpaceRendererDrawPlan(frameSequence, selected, selectedDraws, true);
+    }
+
+    static List<ChunkSectionLayer> orderedLayers(List<ChunkSectionLayer> groupLayers) {
+        Objects.requireNonNull(groupLayers, "groupLayers");
+        List<ChunkSectionLayer> copy = new ArrayList<>(groupLayers.size());
+        java.util.EnumSet<ChunkSectionLayer> seen = java.util.EnumSet.noneOf(ChunkSectionLayer.class);
+        for (ChunkSectionLayer layer : groupLayers) {
+            Objects.requireNonNull(layer, "group layer");
+            if (!seen.add(layer)) {
+                throw new IllegalArgumentException("A vanilla render group cannot contain a duplicate layer");
+            }
+            copy.add(layer);
+        }
+        return List.copyOf(copy);
+    }
+
     static int indexCount(int vertexCount) {
         if (vertexCount <= 0 || vertexCount % 4 != 0) {
             throw new IllegalArgumentException("Terrain vertex count must be a positive multiple of four");
