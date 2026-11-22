@@ -48,6 +48,30 @@ class SpaceRendererSectionSnapshotTest {
                 * (Long.BYTES + Integer.BYTES));
     }
 
+    @Test void preservesFluidSamplesAcrossTheSectionBorder() {
+        var key = new SpaceRendererSectionManager.SectionKey("minecraft:overworld", 0, 0, 0);
+        var states = new net.minecraft.world.level.block.state.BlockState[SpaceRendererSectionSnapshot.STATE_COUNT];
+        java.util.Arrays.fill(states, Blocks.AIR.defaultBlockState());
+        var fluids = new SpaceRendererSectionSnapshot.FluidSample[SpaceRendererSectionSnapshot.STATE_COUNT];
+        fluids[index(16, 8, 8)] = new SpaceRendererSectionSnapshot.FluidSample(
+                "minecraft:lava", 0.875f, 0.875f, 0.25f, 0.0f, -0.5f, false);
+        var snapshot = SpaceRendererSectionSnapshot.fromStates(key, states,
+                fullBrightLights(), new int[SpaceRendererSectionSnapshot.STATE_COUNT][], fluids);
+        assertEquals("minecraft:lava", snapshot.fluidSample(16, 8, 8).typeId());
+        assertEquals(0.875f, snapshot.fluidSample(16, 8, 8).height());
+        assertEquals(0.25f, snapshot.fluidSample(16, 8, 8).flowX());
+        assertEquals(-0.5f, snapshot.fluidSample(16, 8, 8).flowZ());
+        assertFalse(snapshot.fluidSample(16, 8, 8).source());
+        assertNull(snapshot.fluidSample(15, 8, 8));
+    }
+
+    @Test void rejectsInvalidFluidMetadata() {
+        assertThrows(NullPointerException.class, () -> new SpaceRendererSectionSnapshot.FluidSample(null, 1, 1, 0, 0, 0, true));
+        assertThrows(IllegalArgumentException.class, () -> new SpaceRendererSectionSnapshot.FluidSample(" ", 1, 1, 0, 0, 0, true));
+        assertThrows(IllegalArgumentException.class, () -> new SpaceRendererSectionSnapshot.FluidSample("minecraft:water", Float.NaN, 1, 0, 0, 0, true));
+        assertThrows(IllegalArgumentException.class, () -> new SpaceRendererSectionSnapshot.FluidSample("minecraft:water", 1, 1, 0, Float.POSITIVE_INFINITY, 0, true));
+    }
+
     @Test void cacheIsByteBoundedAndEvictsLeastRecentlyUsed() {
         var cache = new SpaceRendererSectionSnapshotCache(
                 SpaceRendererSectionSnapshot.STATE_COUNT * (Long.BYTES + Integer.BYTES) + 1L);
