@@ -3,6 +3,9 @@ package com.planetstudios.essentials.rendering.space;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.BlockModelPart;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandler;
+import net.fabricmc.fabric.api.client.render.fluid.v1.FluidRenderHandlerRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
@@ -37,9 +40,12 @@ public final class SpaceRendererSectionSnapshot {
     private final int[][] tintColors;
     /** Immutable fluid metadata captured while the compile region is valid; null for empty-fluid cells. */
     private final FluidSample[] fluidSamples;
+    /** Resolved atlas sprite UVs and per-position tint, captured before worker-thread meshing. */
+    private final FluidVisual[] fluidVisuals;
 
     private SpaceRendererSectionSnapshot(SpaceRendererSectionManager.SectionKey key,
-            BlockState[] states, int[] packedLights, int[][] tintColors, FluidSample[] fluidSamples) {
+            BlockState[] states, int[] packedLights, int[][] tintColors, FluidSample[] fluidSamples,
+            FluidVisual[] fluidVisuals) {
         this.key = Objects.requireNonNull(key, "key");
         if (states == null || states.length != STATE_COUNT) {
             throw new IllegalArgumentException("Section snapshot must contain exactly " + STATE_COUNT + " states");
@@ -50,6 +56,9 @@ public final class SpaceRendererSectionSnapshot {
         if (fluidSamples == null || fluidSamples.length != STATE_COUNT) {
             throw new IllegalArgumentException("Section snapshot must contain exactly " + STATE_COUNT + " fluid entries");
         }
+        if (fluidVisuals == null || fluidVisuals.length != STATE_COUNT) {
+            throw new IllegalArgumentException("Section snapshot must contain exactly " + STATE_COUNT + " fluid visual entries");
+        }
         if (tintColors == null || tintColors.length != STATE_COUNT) {
             throw new IllegalArgumentException("Section snapshot must contain exactly " + STATE_COUNT + " tint entries");
         }
@@ -57,6 +66,7 @@ public final class SpaceRendererSectionSnapshot {
         this.packedLights = packedLights.clone();
         this.tintColors = new int[STATE_COUNT][];
         this.fluidSamples = fluidSamples.clone();
+        this.fluidVisuals = fluidVisuals.clone();
         for (int i = 0; i < STATE_COUNT; i++) {
             Objects.requireNonNull(this.states[i], "block state");
             this.tintColors[i] = tintColors[i] == null ? null : tintColors[i].clone();
@@ -80,6 +90,7 @@ public final class SpaceRendererSectionSnapshot {
         int[] lights = new int[STATE_COUNT];
         int[][] tints = new int[STATE_COUNT][];
         FluidSample[] fluids = new FluidSample[STATE_COUNT];
+        FluidVisual[] fluidVisuals = new FluidVisual[STATE_COUNT];
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         var minecraft = Minecraft.getInstance();
         var blockRenderer = minecraft.getBlockRenderer();
@@ -103,6 +114,18 @@ public final class SpaceRendererSectionSnapshot {
                                 BuiltInRegistries.FLUID.getKey(fluidState.getType()).toString(),
                                 fluidState.getHeight(region, pos), fluidState.getOwnHeight(),
                                 (float) flow.x, (float) flow.y, (float) flow.z, fluidState.isSource());
+                        FluidRenderHandler handler = FluidRenderHandlerRegistry.INSTANCE.get(fluidState.getType());
+                        if (handler != null) {
+                            TextureAtlasSprite[] sprites = handler.getFluidSprites(region, pos, fluidState);
+                            if (sprites != null && sprites.length >= 2 && sprites[0] != null && sprites[1] != null) {
+                                TextureAtlasSprite overlay = sprites.length >= 3 ? sprites[2] : null;
+                                // Visual records contain only primitive UVs, identifiers, and resolved tint.
+                                fluidVisuals[index] = new FluidVisual(
+                                        FluidSprite.from(sprites[0]), FluidSprite.from(sprites[1]),
+                                        overlay == null ? null : FluidSprite.from(overlay),
+                                        handler.getFluidColor(region, pos, fluidState));
+                            }
+                        }
                     }
 
                     if (x >= 0 && x < 16 && y >= 0 && y < 16 && z >= 0 && z < 16
@@ -129,7 +152,7 @@ public final class SpaceRendererSectionSnapshot {
                 }
             }
         }
-        return new SpaceRendererSectionSnapshot(key, states, lights, tints, fluids);
+        return new SpaceRendererSectionSnapshot(key, states, lights, tints, fluids, fluidVisuals);
     }
 
     private static void captureTints(List<BakedQuad> quads, BlockState state, RenderSectionRegion region,
@@ -147,27 +170,35 @@ public final class SpaceRendererSectionSnapshot {
             SpaceRendererSectionManager.SectionKey key, BlockState[] states) {
         int[] lights = new int[STATE_COUNT];
         Arrays.fill(lights, 0x00F000F0);
-        return new SpaceRendererSectionSnapshot(key, states, lights, new int[STATE_COUNT][], new FluidSample[STATE_COUNT]);
+        return new SpaceRendererSectionSnapshot(key, states, lights, new int[STATE_COUNT][], new FluidSample[STATE_COUNT], new FluidVisual[STATE_COUNT]);
     }
 
     /** Test/adapter factory with explicit packed block/sky light values. */
     public static SpaceRendererSectionSnapshot fromStates(
             SpaceRendererSectionManager.SectionKey key, BlockState[] states, int[] packedLights) {
-        return new SpaceRendererSectionSnapshot(key, states, packedLights, new int[STATE_COUNT][], new FluidSample[STATE_COUNT]);
+        return new SpaceRendererSectionSnapshot(key, states, packedLights, new int[STATE_COUNT][], new FluidSample[STATE_COUNT], new FluidVisual[STATE_COUNT]);
     }
 
     /** Test/adapter factory with explicit packed light and per-cell tint index/color pairs. */
     public static SpaceRendererSectionSnapshot fromStates(
             SpaceRendererSectionManager.SectionKey key, BlockState[] states, int[] packedLights,
             int[][] tintColors) {
-        return new SpaceRendererSectionSnapshot(key, states, packedLights, tintColors, new FluidSample[STATE_COUNT]);
+        return new SpaceRendererSectionSnapshot(key, states, packedLights, tintColors, new FluidSample[STATE_COUNT], new FluidVisual[STATE_COUNT]);
     }
 
     /** Test/adapter factory with explicit immutable fluid metadata for selected cells. */
     public static SpaceRendererSectionSnapshot fromStates(
             SpaceRendererSectionManager.SectionKey key, BlockState[] states, int[] packedLights,
             int[][] tintColors, FluidSample[] fluidSamples) {
-        return new SpaceRendererSectionSnapshot(key, states, packedLights, tintColors, fluidSamples);
+        return new SpaceRendererSectionSnapshot(key, states, packedLights, tintColors, fluidSamples,
+                new FluidVisual[STATE_COUNT]);
+    }
+
+    /** Test/adapter factory with explicit fluid visual metadata. */
+    public static SpaceRendererSectionSnapshot fromStates(
+            SpaceRendererSectionManager.SectionKey key, BlockState[] states, int[] packedLights,
+            int[][] tintColors, FluidSample[] fluidSamples, FluidVisual[] fluidVisuals) {
+        return new SpaceRendererSectionSnapshot(key, states, packedLights, tintColors, fluidSamples, fluidVisuals);
     }
 
     /** Fluid geometry inputs copied from the live region before asynchronous meshing begins. */
@@ -180,6 +211,30 @@ public final class SpaceRendererSectionSnapshot {
                     || !Float.isFinite(flowX) || !Float.isFinite(flowY) || !Float.isFinite(flowZ)) {
                 throw new IllegalArgumentException("Fluid sample values must be finite");
             }
+        }
+    }
+
+    /** Atlas-space texture coordinates copied from a live sprite without retaining it. */
+    public record FluidSprite(String atlasId, float u0, float v0, float u1, float v1) {
+        public FluidSprite {
+            Objects.requireNonNull(atlasId, "atlasId");
+            if (atlasId.isBlank() || !Float.isFinite(u0) || !Float.isFinite(v0)
+                    || !Float.isFinite(u1) || !Float.isFinite(v1)
+                    || u0 > u1 || v0 > v1) {
+                throw new IllegalArgumentException("Invalid fluid sprite metadata");
+            }
+        }
+        static FluidSprite from(TextureAtlasSprite sprite) {
+            return new FluidSprite(sprite.atlasLocation().toString(),
+                    sprite.getU0(), sprite.getV0(), sprite.getU1(), sprite.getV1());
+        }
+    }
+
+    /** Still, flowing, optional overlay sprite, and resolved RGB tint for one fluid cell. */
+    public record FluidVisual(FluidSprite still, FluidSprite flowing, FluidSprite overlay, int tintColor) {
+        public FluidVisual {
+            Objects.requireNonNull(still, "still");
+            Objects.requireNonNull(flowing, "flowing");
         }
     }
 
@@ -218,6 +273,13 @@ public final class SpaceRendererSectionSnapshot {
     public FluidSample fluidSample(int localX, int localY, int localZ) {
         return fluidSamples[index(localX, localY, localZ)];
     }
+    /** Returns null when no Fabric fluid render handler supplied visual metadata. */
+    public FluidVisual fluidVisual(int localX, int localY, int localZ) {
+        return fluidVisuals[index(localX, localY, localZ)];
+    }
+    private static long spriteBytes(FluidSprite sprite) {
+        return 16L + (long) sprite.atlasId().length() * Character.BYTES;
+    }
     public int stateCount() { return states.length; }
     public long estimatedBytes() {
         long bytes = (long) states.length * (Long.BYTES + Integer.BYTES);
@@ -226,6 +288,12 @@ public final class SpaceRendererSectionSnapshot {
         }
         for (FluidSample fluid : fluidSamples) {
             if (fluid != null) bytes += 48L + (long) fluid.typeId().length() * Character.BYTES;
+        }
+        for (FluidVisual visual : fluidVisuals) {
+            if (visual != null) {
+                bytes += 32L + spriteBytes(visual.still()) + spriteBytes(visual.flowing())
+                        + (visual.overlay() == null ? 0L : spriteBytes(visual.overlay()));
+            }
         }
         return bytes;
     }

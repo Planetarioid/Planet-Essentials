@@ -65,6 +65,39 @@ class SpaceRendererSectionSnapshotTest {
         assertNull(snapshot.fluidSample(15, 8, 8));
     }
 
+    @Test void storesImmutableFluidSpriteUvAndTintMetadata() {
+        var key = new SpaceRendererSectionManager.SectionKey("minecraft:overworld", 0, 0, 0);
+        var states = new net.minecraft.world.level.block.state.BlockState[SpaceRendererSectionSnapshot.STATE_COUNT];
+        java.util.Arrays.fill(states, Blocks.AIR.defaultBlockState());
+        var fluids = new SpaceRendererSectionSnapshot.FluidSample[SpaceRendererSectionSnapshot.STATE_COUNT];
+        var visuals = new SpaceRendererSectionSnapshot.FluidVisual[SpaceRendererSectionSnapshot.STATE_COUNT];
+        fluids[index(3, 4, 5)] = new SpaceRendererSectionSnapshot.FluidSample(
+                "minecraft:water", 1, 1, 0, 0, 0, true);
+        var still = new SpaceRendererSectionSnapshot.FluidSprite("minecraft:textures/atlas/blocks.png",
+                0.1f, 0.2f, 0.3f, 0.4f);
+        var flowing = new SpaceRendererSectionSnapshot.FluidSprite("minecraft:textures/atlas/blocks.png",
+                0.4f, 0.5f, 0.6f, 0.7f);
+        var overlay = new SpaceRendererSectionSnapshot.FluidSprite("minecraft:textures/atlas/blocks.png",
+                0.7f, 0.1f, 0.9f, 0.3f);
+        visuals[index(3, 4, 5)] = new SpaceRendererSectionSnapshot.FluidVisual(still, flowing, overlay, 0x7FABCDEF);
+
+        var snapshot = SpaceRendererSectionSnapshot.fromStates(key, states, fullBrightLights(),
+                new int[SpaceRendererSectionSnapshot.STATE_COUNT][], fluids, visuals);
+        assertEquals(still, snapshot.fluidVisual(3, 4, 5).still());
+        assertEquals(flowing, snapshot.fluidVisual(3, 4, 5).flowing());
+        assertEquals(overlay, snapshot.fluidVisual(3, 4, 5).overlay());
+        assertEquals(0x7FABCDEF, snapshot.fluidVisual(3, 4, 5).tintColor());
+        visuals[index(3, 4, 5)] = null;
+        assertNotNull(snapshot.fluidVisual(3, 4, 5), "snapshot must defensively copy visual metadata");
+        assertNull(snapshot.fluidVisual(0, 0, 0));
+    }
+
+    @Test void rejectsInvalidFluidSpriteMetadata() {
+        assertThrows(NullPointerException.class, () -> new SpaceRendererSectionSnapshot.FluidSprite(null, 0, 0, 1, 1));
+        assertThrows(IllegalArgumentException.class, () -> new SpaceRendererSectionSnapshot.FluidSprite("atlas", 0.8f, 0, 0.2f, 1));
+        assertThrows(IllegalArgumentException.class, () -> new SpaceRendererSectionSnapshot.FluidSprite("atlas", 0, 0, Float.NaN, 1));
+    }
+
     @Test void rejectsInvalidFluidMetadata() {
         assertThrows(NullPointerException.class, () -> new SpaceRendererSectionSnapshot.FluidSample(null, 1, 1, 0, 0, 0, true));
         assertThrows(IllegalArgumentException.class, () -> new SpaceRendererSectionSnapshot.FluidSample(" ", 1, 1, 0, 0, 0, true));
