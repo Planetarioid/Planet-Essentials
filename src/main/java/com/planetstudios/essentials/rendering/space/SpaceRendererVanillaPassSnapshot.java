@@ -2,6 +2,12 @@ package com.planetstudios.essentials.rendering.space;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.platform.LogicOp;
+import com.mojang.blaze3d.platform.PolygonMode;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderPass;
@@ -12,22 +18,29 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
+import net.minecraft.SharedConstants;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
+import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
 /**
  * Captures the live Minecraft terrain group's target, texture resources, and
- * currently available default-uniform resources.
+ * currently available default-uniform resources, and each layer's native
+ * fixed-function pipeline configuration.
  *
- * <p>This is a resource snapshot, not a claim of complete vanilla render-state
- * parity. It does not capture or replay viewport, scissor, blend, depth, or
- * per-layer pipeline state. The caller owns any pass opened from it.</p>
+ * <p>This is a capture snapshot, not a claim of complete vanilla render-state
+ * parity. It does not yet replay viewport, scissor, or all backend state. The
+ * caller owns any pass opened from it.</p>
  */
 public record SpaceRendererVanillaPassSnapshot(
         ChunkSectionLayerGroup group,
@@ -41,6 +54,8 @@ public record SpaceRendererVanillaPassSnapshot(
         GpuTextureView lightmap,
         GpuSampler lightmapSampler,
         List<ChunkSectionLayer> layers,
+        Map<ChunkSectionLayer, LayerPipelineInput> layerPipelines,
+        boolean wireframe,
         Matrix4f modelView,
         DefaultUniformInputs defaultUniforms,
         GpuDevice device) {
@@ -55,6 +70,7 @@ public record SpaceRendererVanillaPassSnapshot(
         Objects.requireNonNull(lightmap, "lightmap");
         Objects.requireNonNull(lightmapSampler, "lightmapSampler");
         Objects.requireNonNull(layers, "layers");
+        Objects.requireNonNull(layerPipelines, "layerPipelines");
         Objects.requireNonNull(modelView, "modelView");
         Objects.requireNonNull(defaultUniforms, "defaultUniforms");
         Objects.requireNonNull(device, "device");
@@ -65,6 +81,13 @@ public record SpaceRendererVanillaPassSnapshot(
         if (layers.isEmpty() || !layers.equals(List.of(group.layers()))) {
             throw new IllegalArgumentException("Captured layers must match the native render-group order");
         }
+        EnumMap<ChunkSectionLayer, LayerPipelineInput> pipelineCopy = new EnumMap<>(ChunkSectionLayer.class);
+        layerPipelines.forEach((layer, input) -> pipelineCopy.put(
+                Objects.requireNonNull(layer, "layer"), Objects.requireNonNull(input, "layer pipeline input")));
+        if (!pipelineCopy.keySet().equals(new java.util.HashSet<>(layers))) {
+            throw new IllegalArgumentException("Captured pipeline states must cover exactly the native render-group layers");
+        }
+        layerPipelines = Collections.unmodifiableMap(pipelineCopy);
         modelView = new Matrix4f(modelView);
     }
 
@@ -95,6 +118,17 @@ public record SpaceRendererVanillaPassSnapshot(
         GpuSampler lightmapSampler = RenderSystem.getSamplerCache()
                 .getClampToEdge(FilterMode.LINEAR);
         List<ChunkSectionLayer> layers = List.of(group.layers());
+        boolean wireframe = SharedConstants.DEBUG_HOTKEYS && minecraft.wireframe;
+        EnumMap<ChunkSectionLayer, LayerPipelineInput> layerPipelines =
+                new EnumMap<>(ChunkSectionLayer.class);
+        for (ChunkSectionLayer layer : layers) {
+            List<?> draws = input.drawsPerLayer().get(layer);
+            RenderPipeline pipeline = wireframe ? RenderPipelines.WIREFRAME : layer.pipeline();
+            boolean applied = draws != null && !draws.isEmpty();
+            layerPipelines.put(layer, new LayerPipelineInput(
+                    pipeline, applied ? java.util.Optional.of(PipelineState.capture(pipeline)) : java.util.Optional.empty(),
+                    applied));
+        }
 
         return new SpaceRendererVanillaPassSnapshot(
                 group,
@@ -108,6 +142,8 @@ public record SpaceRendererVanillaPassSnapshot(
                 lightmap,
                 lightmapSampler,
                 layers,
+                layerPipelines,
+                wireframe,
                 new Matrix4f(RenderSystem.getModelViewMatrix()),
                 new DefaultUniformInputs(
                         RenderSystem.getProjectionMatrixBuffer(),
@@ -148,6 +184,61 @@ public record SpaceRendererVanillaPassSnapshot(
                 || target.getColorTextureView() != colorAttachment
                 || target.getDepthTextureView() != depthAttachment.orElse(null)) {
             throw new IllegalStateException("Captured terrain target changed after the group snapshot");
+        }
+    }
+
+    /** Captured pipeline identity and fixed-function state for one native terrain layer. */
+    public record LayerPipelineInput(
+            RenderPipeline pipeline,
+            java.util.Optional<PipelineState> state,
+            boolean pipelineApplied) {
+        public LayerPipelineInput {
+            Objects.requireNonNull(pipeline, "pipeline");
+            Objects.requireNonNull(state, "state");
+            if (pipelineApplied != state.isPresent()) {
+                throw new IllegalArgumentException("Pipeline state must exist exactly when vanilla applies the pipeline");
+            }
+        }
+    }
+
+    /** Immutable fixed-function state copied from the pipeline vanilla selects for a layer. */
+    public record PipelineState(
+            Identifier location,
+            Identifier vertexShader,
+            Identifier fragmentShader,
+            DepthTestFunction depthTest,
+            PolygonMode polygonMode,
+            boolean cull,
+            java.util.Optional<BlendFunction> blend,
+            boolean writeColor,
+            boolean writeAlpha,
+            boolean writeDepth,
+            LogicOp colorLogic,
+            float depthBiasScale,
+            float depthBiasConstant,
+            VertexFormat vertexFormat,
+            VertexFormat.Mode vertexMode) {
+        public PipelineState {
+            Objects.requireNonNull(location, "location");
+            Objects.requireNonNull(vertexShader, "vertexShader");
+            Objects.requireNonNull(fragmentShader, "fragmentShader");
+            Objects.requireNonNull(depthTest, "depthTest");
+            Objects.requireNonNull(polygonMode, "polygonMode");
+            Objects.requireNonNull(blend, "blend");
+            Objects.requireNonNull(colorLogic, "colorLogic");
+            Objects.requireNonNull(vertexFormat, "vertexFormat");
+            Objects.requireNonNull(vertexMode, "vertexMode");
+        }
+
+        public static PipelineState capture(RenderPipeline pipeline) {
+            Objects.requireNonNull(pipeline, "pipeline");
+            return new PipelineState(
+                    pipeline.getLocation(), pipeline.getVertexShader(), pipeline.getFragmentShader(),
+                    pipeline.getDepthTestFunction(), pipeline.getPolygonMode(), pipeline.isCull(),
+                    pipeline.getBlendFunction(), pipeline.isWriteColor(), pipeline.isWriteAlpha(),
+                    pipeline.isWriteDepth(), pipeline.getColorLogic(),
+                    pipeline.getDepthBiasScaleFactor(), pipeline.getDepthBiasConstant(),
+                    pipeline.getVertexFormat(), pipeline.getVertexFormatMode());
         }
     }
 
