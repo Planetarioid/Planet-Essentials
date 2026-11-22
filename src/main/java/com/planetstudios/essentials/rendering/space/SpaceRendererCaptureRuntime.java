@@ -266,19 +266,37 @@ public final class SpaceRendererCaptureRuntime {
         }
     }
 
+    /**
+     * Retires the current frame's sorted indices behind a GPU fence. A later
+     * capture may replace the CPU-visible list immediately, but buffers remain
+     * alive until commands already submitted by the previous frame have passed.
+     */
     private static void closeSortedIndexBuffers() {
         RenderSystem.assertOnRenderThread();
+        if (SORTED_INDEX_BUFFERS.isEmpty()) {
+            sortedIndexBytes = 0;
+            return;
+        }
+        List<SpaceRendererSortedIndexBuffer> retired = List.copyOf(SORTED_INDEX_BUFFERS);
+        SORTED_INDEX_BUFFERS.clear();
+        sortedIndexBytes = 0;
+        RenderSystem.queueFencedTask(() -> closeRetiredSortedIndexBuffers(retired));
+    }
+
+    /** Runs only after the GPU fence associated with the retiring frame completes. */
+    private static void closeRetiredSortedIndexBuffers(List<SpaceRendererSortedIndexBuffer> retired) {
+        RenderSystem.assertOnRenderThread();
         RuntimeException failure = null;
-        for (SpaceRendererSortedIndexBuffer buffer : SORTED_INDEX_BUFFERS) {
+        for (SpaceRendererSortedIndexBuffer buffer : retired) {
             try { buffer.close(); }
             catch (RuntimeException closeFailure) {
                 if (failure == null) failure = closeFailure;
                 else failure.addSuppressed(closeFailure);
             }
         }
-        SORTED_INDEX_BUFFERS.clear();
-        sortedIndexBytes = 0;
-        if (failure != null) throw failure;
+        if (failure != null) {
+            PlanetEssentials.LOGGER.warn("Space Renderer failed to retire one or more sorted index buffers", failure);
+        }
     }
 
     /** Borrowed resources valid only until the next visible-frame capture. */
