@@ -59,7 +59,7 @@ class SpaceRendererFluidMesherTest {
         var vertices = payload.data().readOnlyBuffer().order(java.nio.ByteOrder.LITTLE_ENDIAN);
         assertEquals(0.1f, vertices.getFloat(12), 0.0001f);
         assertEquals(0.2f, vertices.getFloat(16), 0.0001f);
-        assertEquals(0xFF74AADD, vertices.getInt(20));
+        assertEquals(0xFFDDAA74, vertices.getInt(20), "ARGB fluid tint is serialized as RGBA bytes");
     }
 
     @Test

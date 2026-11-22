@@ -9,6 +9,11 @@ class PrismTerrainVertexDataTest {
     private static PrismTerrainVertex v(float x,float y,float z,float u,float t) {
         return new PrismTerrainVertex(x,y,z,u,t,0xAABBCCDD,0x00F000F0,0,0x007F0000);
     }
+    @Test void convertsArgbColorsToRgbaByteOrderForTheVertexFormat() {
+        assertEquals(0xFFDDAA74, PrismTerrainVertexData.packArgbAsRgba8(0xFF74AADD));
+        assertEquals(0xFF000000, PrismTerrainVertexData.packArgbAsRgba8(0xFF000000));
+        assertEquals(0x00FFFFFF, PrismTerrainVertexData.packArgbAsRgba8(0x00FFFFFF));
+    }
     @Test void encodesVersionedThirtySixByteLayout() {
         var data=PrismTerrainVertexData.builder(0,0,0,"example:stone",PrismFrameStage.BEFORE_ENTITIES)
                 .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1)).build();

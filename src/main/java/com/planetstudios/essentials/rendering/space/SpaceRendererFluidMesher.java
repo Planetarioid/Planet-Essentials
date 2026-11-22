@@ -109,7 +109,7 @@ public final class SpaceRendererFluidMesher {
     private static int vertexColor(int tintColor) {
         // Fluid handler colors are ARGB; Prism's packed vertex color uses the same
         // four byte channels in the renderer's existing normalized color attribute.
-        return tintColor == -1 ? 0xFFFFFFFF : tintColor;
+        return PrismTerrainVertexData.packArgbAsRgba8(tintColor == -1 ? 0xFFFFFFFF : tintColor);
     }
 
     static CornerHeights cornerHeights(SpaceRendererSectionSnapshot snapshot,

@@ -139,7 +139,7 @@ public final class SpaceRendererBlockModelMesher {
             vertices[i] = new PrismTerrainVertex(
                     blockX + position.x(), blockY + position.y(), blockZ + position.z(),
                     unpackU(packedUv), unpackV(packedUv),
-                    multiplyTintAndAo(tint, lighting.color()),
+                    PrismTerrainVertexData.packArgbAsRgba8(multiplyTintAndAo(tint, lighting.color())),
                     lighting.packedLight(), NO_OVERLAY, packedNormal);
         }
         builder.addQuad(vertices[0], vertices[1], vertices[2], vertices[3]);

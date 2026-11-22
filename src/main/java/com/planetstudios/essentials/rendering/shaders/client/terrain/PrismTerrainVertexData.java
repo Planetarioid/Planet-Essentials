@@ -32,6 +32,15 @@ public final class PrismTerrainVertexData {
     }
     public int sectionX(){return sectionX;} public int sectionY(){return sectionY;} public int sectionZ(){return sectionZ;}
     public String materialId(){return materialId;} public PrismFrameStage stage(){return stage;}
+    /** Packs an ARGB color integer into the RGBA byte order consumed by VertexFormatElement.COLOR. */
+    public static int packArgbAsRgba8(int argb) {
+        int alpha = (argb >>> 24) & 0xFF;
+        int red = (argb >>> 16) & 0xFF;
+        int green = (argb >>> 8) & 0xFF;
+        int blue = argb & 0xFF;
+        return (alpha << 24) | (blue << 16) | (green << 8) | red;
+    }
+
     public int layoutVersion(){return PrismTerrainVertexLayout.VERSION;}
     public int strideBytes(){return STRIDE;}
     public int vertexCount(){return vertexCount;} public int byteSize(){return bytes.length;}
