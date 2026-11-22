@@ -6,6 +6,9 @@ import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 
 import java.util.Objects;
 
@@ -56,6 +59,14 @@ public final class SpaceRendererDrawExecutor {
         sectionUniforms.beginFrame();
         try {
             RenderSystem.bindDefaultUniforms(pass);
+            // DynamicTransforms is a per-draw uniform block; bind the current camera transform
+            // explicitly, with neutral model/color/texture transforms for section-local terrain.
+            var dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(
+                    RenderSystem.getModelViewMatrix(),
+                    new Vector4f(1.0f),
+                    new Vector3f(),
+                    new Matrix4f());
+            pass.setUniform("DynamicTransforms", dynamicTransforms);
             pass.bindTexture(BLOCK_ATLAS_SAMPLER, blockAtlas, blockAtlasSampler);
             pass.bindTexture(LIGHTMAP_SAMPLER, lightmap, lightmapSampler);
 
