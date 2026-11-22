@@ -7,11 +7,10 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Builds CPU-only fluid surface geometry from immutable section snapshots.
+ * Builds CPU-only fluid geometry from immutable section snapshots.
  *
- * <p>This first pass intentionally handles flat per-cell surfaces and exposed
- * vertical boundaries. It does not yet reproduce vanilla corner-height
- * smoothing, fluid sprites, tinting, or animated UV timing.</p>
+ * <p>Surface corner heights use a weighted neighborhood average so sloped
+ * fluid surfaces follow the same broad shape as vanilla fluid rendering.</p>
  */
 public final class SpaceRendererFluidMesher {
     private SpaceRendererFluidMesher() {}
@@ -27,20 +26,25 @@ public final class SpaceRendererFluidMesher {
                     if (sample == null) continue;
 
                     List<Quad> quads = byFluid.computeIfAbsent(sample.typeId(), ignored -> new ArrayList<>());
-                    float height = clampHeight(sample.height());
+                    CornerHeights heights = cornerHeights(snapshot, sample.typeId(), x, y, z);
                     int light = snapshot.packedLight(x, y, z);
 
                     var above = snapshot.fluidSample(x, y + 1, z);
                     boolean sameFluidAbove = above != null && sample.typeId().equals(above.typeId());
                     boolean solidAbove = snapshot.blockState(x, y + 1, z).isSolidRender();
                     if (!sameFluidAbove && !solidAbove) {
-                        quads.add(topQuad(x, y, z, height, sample.flowX(), sample.flowZ(), light));
+                        quads.add(topQuad(x, y, z, heights,
+                                sample.flowX(), sample.flowZ(), light));
                     }
 
-                    appendSide(snapshot, quads, sample.typeId(), x, y, z, 0, 0, -1, height, light);
-                    appendSide(snapshot, quads, sample.typeId(), x, y, z, 0, 0, 1, height, light);
-                    appendSide(snapshot, quads, sample.typeId(), x, y, z, -1, 0, 0, height, light);
-                    appendSide(snapshot, quads, sample.typeId(), x, y, z, 1, 0, 0, height, light);
+                    appendSide(snapshot, quads, sample.typeId(), x, y, z,
+                            0, -1, heights.northEast(), heights.northWest(), light);
+                    appendSide(snapshot, quads, sample.typeId(), x, y, z,
+                            0, 1, heights.southWest(), heights.southEast(), light);
+                    appendSide(snapshot, quads, sample.typeId(), x, y, z,
+                            -1, 0, heights.northWest(), heights.southWest(), light);
+                    appendSide(snapshot, quads, sample.typeId(), x, y, z,
+                            1, 0, heights.southEast(), heights.northEast(), light);
                 }
             }
         }
@@ -52,70 +56,130 @@ public final class SpaceRendererFluidMesher {
         return List.copyOf(result);
     }
 
-    private static void appendSide(SpaceRendererSectionSnapshot snapshot, List<Quad> output,
-            String typeId, int x, int y, int z, int dx, int dy, int dz,
-            float ownHeight, int light) {
-        int neighborX = x + dx;
-        int neighborY = y + dy;
-        int neighborZ = z + dz;
-        if (snapshot.blockState(neighborX, neighborY, neighborZ).isSolidRender()) return;
+    static CornerHeights cornerHeights(SpaceRendererSectionSnapshot snapshot,
+            String typeId, int x, int y, int z) {
+        float self = surfaceHeight(snapshot, typeId, x, y, z);
+        float north = surfaceHeight(snapshot, typeId, x, y, z - 1);
+        float south = surfaceHeight(snapshot, typeId, x, y, z + 1);
+        float west = surfaceHeight(snapshot, typeId, x - 1, y, z);
+        float east = surfaceHeight(snapshot, typeId, x + 1, y, z);
 
-        var neighbor = snapshot.fluidSample(neighborX, neighborY, neighborZ);
-        float lowerHeight = 0.0f;
-        if (neighbor != null && typeId.equals(neighbor.typeId())) {
-            lowerHeight = clampHeight(neighbor.height());
-            if (lowerHeight >= ownHeight) return;
-        }
-
-        float bottom = y + lowerHeight;
-        float top = y + ownHeight;
-        if (top <= bottom) return;
-
-        if (dx != 0) {
-            float faceX = x + (dx > 0 ? 1.0f : 0.0f);
-            float nx = dx;
-            if (dx > 0) {
-                output.add(new Quad(
-                        vertex(faceX, bottom, z + 1, 0, 1, light, nx, 0, 0),
-                        vertex(faceX, bottom, z, 1, 1, light, nx, 0, 0),
-                        vertex(faceX, top, z, 1, 0, light, nx, 0, 0),
-                        vertex(faceX, top, z + 1, 0, 0, light, nx, 0, 0)));
-            } else {
-                output.add(new Quad(
-                        vertex(faceX, bottom, z, 0, 1, light, nx, 0, 0),
-                        vertex(faceX, bottom, z + 1, 1, 1, light, nx, 0, 0),
-                        vertex(faceX, top, z + 1, 1, 0, light, nx, 0, 0),
-                        vertex(faceX, top, z, 0, 0, light, nx, 0, 0)));
-            }
-        } else {
-            float faceZ = z + (dz > 0 ? 1.0f : 0.0f);
-            float nz = dz;
-            if (dz > 0) {
-                output.add(new Quad(
-                        vertex(x, bottom, faceZ, 0, 1, light, 0, 0, nz),
-                        vertex(x + 1, bottom, faceZ, 1, 1, light, 0, 0, nz),
-                        vertex(x + 1, top, faceZ, 1, 0, light, 0, 0, nz),
-                        vertex(x, top, faceZ, 0, 0, light, 0, 0, nz)));
-            } else {
-                output.add(new Quad(
-                        vertex(x + 1, bottom, faceZ, 0, 1, light, 0, 0, nz),
-                        vertex(x, bottom, faceZ, 1, 1, light, 0, 0, nz),
-                        vertex(x, top, faceZ, 1, 0, light, 0, 0, nz),
-                        vertex(x + 1, top, faceZ, 0, 0, light, 0, 0, nz)));
-            }
-        }
+        float northEast = averageCorner(snapshot, typeId, self, north, east, x + 1, y, z - 1);
+        float northWest = averageCorner(snapshot, typeId, self, north, west, x - 1, y, z - 1);
+        float southEast = averageCorner(snapshot, typeId, self, south, east, x + 1, y, z + 1);
+        float southWest = averageCorner(snapshot, typeId, self, south, west, x - 1, y, z + 1);
+        return new CornerHeights(northWest, southWest, southEast, northEast);
     }
 
-    private static Quad topQuad(int x, int y, int z, float height,
+    private static float surfaceHeight(SpaceRendererSectionSnapshot snapshot,
+            String typeId, int x, int y, int z) {
+        var sample = snapshot.fluidSample(x, y, z);
+        if (sample != null && typeId.equals(sample.typeId())) {
+            var above = snapshot.fluidSample(x, y + 1, z);
+            return above != null && typeId.equals(above.typeId())
+                    ? 1.0f : clampHeight(sample.ownHeight());
+        }
+        return snapshot.blockState(x, y, z).isSolid() ? -1.0f : 0.0f;
+    }
+
+    private static float averageCorner(SpaceRendererSectionSnapshot snapshot, String typeId,
+            float self, float firstSide, float secondSide, int cornerX, int y, int cornerZ) {
+        if (firstSide >= 1.0f || secondSide >= 1.0f) return 1.0f;
+
+        float weightedTotal = 0.0f;
+        float totalWeight = 0.0f;
+        if (firstSide > 0.0f || secondSide > 0.0f) {
+            float diagonal = surfaceHeight(snapshot, typeId, cornerX, y, cornerZ);
+            if (diagonal >= 1.0f) return 1.0f;
+            if (diagonal >= 0.8f) {
+                weightedTotal += diagonal * 10.0f;
+                totalWeight += 10.0f;
+            } else if (diagonal >= 0.0f) {
+                weightedTotal += diagonal;
+                totalWeight += 1.0f;
+            }
+        }
+
+        if (self >= 0.8f) {
+            weightedTotal += self * 10.0f;
+            totalWeight += 10.0f;
+        } else if (self >= 0.0f) {
+            weightedTotal += self;
+            totalWeight += 1.0f;
+        }
+        if (firstSide >= 0.8f) {
+            weightedTotal += firstSide * 10.0f;
+            totalWeight += 10.0f;
+        } else if (firstSide >= 0.0f) {
+            weightedTotal += firstSide;
+            totalWeight += 1.0f;
+        }
+        if (secondSide >= 0.8f) {
+            weightedTotal += secondSide * 10.0f;
+            totalWeight += 10.0f;
+        } else if (secondSide >= 0.0f) {
+            weightedTotal += secondSide;
+            totalWeight += 1.0f;
+        }
+
+        return totalWeight == 0.0f ? clampHeight(self) : weightedTotal / totalWeight;
+    }
+
+    private static void appendSide(SpaceRendererSectionSnapshot snapshot, List<Quad> output,
+            String typeId, int x, int y, int z, int dx, int dz,
+            float firstTop, float secondTop, int light) {
+        int neighborX = x + dx;
+        int neighborZ = z + dz;
+        if (snapshot.blockState(neighborX, y, neighborZ).isSolidRender()) return;
+
+        var neighbor = snapshot.fluidSample(neighborX, y, neighborZ);
+        if (neighbor != null && typeId.equals(neighbor.typeId())) return;
+        if (firstTop <= 0.0f && secondTop <= 0.0f) return;
+
+        float faceX = x + (dx > 0 ? 1.0f : 0.0f);
+        float faceZ = z + (dz > 0 ? 1.0f : 0.0f);
+        float nx = dx;
+        float nz = dz;
+        Vertex bottomA;
+        Vertex bottomB;
+        Vertex topA;
+        Vertex topB;
+
+        if (dx > 0) {
+            bottomA = vertex(faceX, y, z + 1, 0, 1, light, nx, 0, nz);
+            bottomB = vertex(faceX, y, z, 1, 1, light, nx, 0, nz);
+            topA = vertex(faceX, y + firstTop, z + 1, 0, 0, light, nx, 0, nz);
+            topB = vertex(faceX, y + secondTop, z, 1, 0, light, nx, 0, nz);
+        } else if (dx < 0) {
+            bottomA = vertex(faceX, y, z, 0, 1, light, nx, 0, nz);
+            bottomB = vertex(faceX, y, z + 1, 1, 1, light, nx, 0, nz);
+            topA = vertex(faceX, y + firstTop, z, 0, 0, light, nx, 0, nz);
+            topB = vertex(faceX, y + secondTop, z + 1, 1, 0, light, nx, 0, nz);
+        } else if (dz > 0) {
+            bottomA = vertex(x, y, faceZ, 0, 1, light, nx, 0, nz);
+            bottomB = vertex(x + 1, y, faceZ, 1, 1, light, nx, 0, nz);
+            topA = vertex(x, y + firstTop, faceZ, 0, 0, light, nx, 0, nz);
+            topB = vertex(x + 1, y + secondTop, faceZ, 1, 0, light, nx, 0, nz);
+        } else {
+            bottomA = vertex(x + 1, y, faceZ, 0, 1, light, nx, 0, nz);
+            bottomB = vertex(x, y, faceZ, 1, 1, light, nx, 0, nz);
+            topA = vertex(x + 1, y + firstTop, faceZ, 0, 0, light, nx, 0, nz);
+            topB = vertex(x, y + secondTop, faceZ, 1, 0, light, nx, 0, nz);
+        }
+
+        output.add(new Quad(bottomA, bottomB, topB, topA));
+    }
+
+    private static Quad topQuad(int x, int y, int z, CornerHeights heights,
             float flowX, float flowZ, int light) {
         double angle = Math.atan2(flowZ, flowX);
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
         return new Quad(
-                topVertex(x, y + height, z, 0, 0, cos, sin, light),
-                topVertex(x, y + height, z + 1, 0, 1, cos, sin, light),
-                topVertex(x + 1, y + height, z + 1, 1, 1, cos, sin, light),
-                topVertex(x + 1, y + height, z, 1, 0, cos, sin, light));
+                topVertex(x, y + heights.northWest(), z, 0, 0, cos, sin, light),
+                topVertex(x, y + heights.southWest(), z + 1, 0, 1, cos, sin, light),
+                topVertex(x + 1, y + heights.southEast(), z + 1, 1, 1, cos, sin, light),
+                topVertex(x + 1, y + heights.northEast(), z, 1, 0, cos, sin, light));
     }
 
     private static Vertex topVertex(float x, float y, float z, float u, float v,
@@ -135,6 +199,8 @@ public final class SpaceRendererFluidMesher {
     private static float clampHeight(float height) {
         return Math.max(0.0f, Math.min(1.0f, height));
     }
+
+    record CornerHeights(float northWest, float southWest, float southEast, float northEast) {}
 
     public record Vertex(float x, float y, float z, float u, float v,
             int packedLight, float normalX, float normalY, float normalZ) {}

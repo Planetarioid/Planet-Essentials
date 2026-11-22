@@ -38,17 +38,56 @@ class SpaceRendererFluidMesherTest {
     }
 
     @Test
-    void emitsOnlyTheExposedHeightDifferenceBetweenUnequalAdjacentCells() {
+    void suppressesSharedSideBetweenUnequalAdjacentCellsOfTheSameFluid() {
         var geometry = SpaceRendererFluidMesher.build(snapshotWithFluids(
                 cell(4, 5, 6, "minecraft:water", 1.0f),
                 cell(5, 5, 6, "minecraft:water", 0.5f))).getFirst();
 
-        assertEquals(9, geometry.quadCount());
-        var sharedWall = geometry.quads().stream()
-                .filter(q -> q.a().normalX() == 1.0f && q.a().x() == 5.0f)
+        assertEquals(8, geometry.quadCount(),
+                "same-fluid neighbors do not render an internal wall, even at different levels");
+    }
+
+    @Test
+    void smoothsCornerUsingWeightedDiagonalAndCardinalFluidHeights() {
+        var snapshot = snapshotWithFluids(
+                cell(4, 5, 6, "minecraft:water", 1.0f),
+                cell(4, 5, 5, "minecraft:water", 0.5f),
+                cell(5, 5, 6, "minecraft:water", 0.25f),
+                cell(5, 5, 5, "minecraft:water", 0.75f));
+
+        var heights = SpaceRendererFluidMesher.cornerHeights(snapshot, "minecraft:water", 4, 5, 6);
+
+        assertEquals(11.5f / 13.0f, heights.northEast(), 0.0001f);
+    }
+
+    @Test
+    void fullHeightCardinalNeighborKeepsSharedCornerAtFullHeight() {
+        var snapshot = snapshotWithFluids(
+                cell(4, 5, 6, "minecraft:water", 0.4f),
+                cell(4, 5, 5, "minecraft:water", 1.0f));
+
+        var heights = SpaceRendererFluidMesher.cornerHeights(snapshot, "minecraft:water", 4, 5, 6);
+
+        assertEquals(1.0f, heights.northWest());
+        assertEquals(1.0f, heights.northEast());
+    }
+
+    @Test
+    void topQuadUsesFourIndependentSmoothedCornerHeights() {
+        var snapshot = snapshotWithFluids(
+                cell(4, 5, 6, "minecraft:water", 1.0f),
+                cell(4, 5, 5, "minecraft:water", 0.5f),
+                cell(5, 5, 6, "minecraft:water", 0.25f),
+                cell(5, 5, 5, "minecraft:water", 0.75f));
+
+        var geometry = SpaceRendererFluidMesher.build(snapshot).getFirst();
+        var top = geometry.quads().stream().filter(q -> q.a().normalY() == 1.0f)
+                .filter(q -> q.a().x() == 4.0f && q.a().z() == 6.0f)
                 .findFirst().orElseThrow();
-        assertEquals(5.5f, minY(sharedWall));
-        assertEquals(6.0f, maxY(sharedWall));
+
+        assertEquals(5.0f + 11.5f / 13.0f, top.d().y(), 0.0001f);
+        assertNotEquals(top.a().y(), top.b().y());
+        assertNotEquals(top.b().y(), top.c().y());
     }
 
     @Test
@@ -93,14 +132,6 @@ class SpaceRendererFluidMesherTest {
     private static int countVertical(SpaceRendererFluidMesher.FluidGeometry geometry) {
         return (int) geometry.quads().stream().filter(q ->
                 q.a().normalY() == 0.0f && (q.a().normalX() != 0.0f || q.a().normalZ() != 0.0f)).count();
-    }
-
-    private static float minY(SpaceRendererFluidMesher.Quad quad) {
-        return Math.min(Math.min(quad.a().y(), quad.b().y()), Math.min(quad.c().y(), quad.d().y()));
-    }
-
-    private static float maxY(SpaceRendererFluidMesher.Quad quad) {
-        return Math.max(Math.max(quad.a().y(), quad.b().y()), Math.max(quad.c().y(), quad.d().y()));
     }
 
     private static SpaceRendererSectionSnapshot snapshotWithFluids(Cell... cells) {
