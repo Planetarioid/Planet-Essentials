@@ -204,7 +204,7 @@ public record SpaceRendererVanillaPassSnapshot(
         public static ScissorInput capture(ScissorState state) {
             Objects.requireNonNull(state, "state");
             return new ScissorInput(
-                    state.isEnabled(), state.getX(), state.getY(), state.getWidth(), state.getHeight());
+                    state.enabled(), state.x(), state.y(), state.width(), state.height());
         }
 
         public void applyTo(RenderPass pass) {
