@@ -25,7 +25,7 @@ public final class PrismTerrainVertexData {
             byte[] bytes, int count, float[] quadCenters) {
         sectionX=x; sectionY=y; sectionZ=z; materialId=material; this.stage=stage;
         // Builder transfers ownership of these freshly allocated immutable arrays.
-        this.bytes=bytes; vertexCount=count; this.quadCenters=quadCenters; contentHash=hash(this.bytes);
+        this.bytes=bytes; vertexCount=count; this.quadCenters=quadCenters; contentHash=hash(this.bytes, this.quadCenters);
     }
     public static Builder builder(int x,int y,int z,String material,PrismFrameStage stage) {
         return new Builder(x,y,z,material,stage);
@@ -58,8 +58,18 @@ public final class PrismTerrainVertexData {
     public String contentHash(){return contentHash;}
     public byte[] bytes(){return bytes.clone();}
     public ByteBuffer readOnlyBuffer(){return ByteBuffer.wrap(bytes).asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);}
-    private static String hash(byte[] bytes) {
-        try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); }
+    private static String hash(byte[] bytes, float[] centers) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(bytes);
+            if (centers != null) {
+                ByteBuffer centerBytes = ByteBuffer.allocate(Math.multiplyExact(centers.length, Float.BYTES))
+                        .order(ByteOrder.LITTLE_ENDIAN);
+                for (float center : centers) centerBytes.putFloat(center);
+                digest.update(centerBytes.array());
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        }
         catch (NoSuchAlgorithmException impossible) { throw new IllegalStateException("SHA-256 is unavailable", impossible); }
     }
 

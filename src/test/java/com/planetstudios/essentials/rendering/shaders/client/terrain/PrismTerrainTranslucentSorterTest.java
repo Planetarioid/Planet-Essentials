@@ -20,6 +20,19 @@ class PrismTerrainTranslucentSorterTest {
         assertArrayEquals(new short[]{4,5,6,6,7,4, 0,1,2,2,3,0},indices);
     }
 
+    @Test void sortsRetainedSectionLocalCentersUsingWorldCameraCoordinates() {
+        short[] indices = PrismTerrainTranslucentSorter.sortedIndices(
+                new float[]{0,0,1, 0,0,8}, 2,0,0, 32,0,0);
+        assertArrayEquals(new short[]{4,5,6,6,7,4, 0,1,2,2,3,0}, indices);
+    }
+
+    @Test void rejectsInvalidRetainedCenterArrays() {
+        assertThrows(IllegalArgumentException.class, () ->
+                PrismTerrainTranslucentSorter.sortedIndices(new float[]{0,1},0,0,0,0,0,0));
+        assertThrows(IllegalArgumentException.class, () ->
+                PrismTerrainTranslucentSorter.sortedIndices(new float[]{0,Float.NaN,0},0,0,0,0,0,0));
+    }
+
     @Test void rejectsPayloadsWithoutSortMetadata() {
         var data=PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT)
                 .addQuad(v(0,0,0),v(1,0,0),v(1,1,0),v(0,1,0)).build();

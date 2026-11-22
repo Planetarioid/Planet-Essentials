@@ -15,12 +15,23 @@ public final class PrismTerrainGpuMesh implements AutoCloseable {
     private final long gpuBytes;
     private final String sourceHash;
     private final GpuBuffer vertexBuffer;
+    private final float[] quadCenters;
     private boolean closed;
 
     private PrismTerrainGpuMesh(PrismTerrainVertexData data, GpuBuffer vertexBuffer) {
         sectionX=data.sectionX(); sectionY=data.sectionY(); sectionZ=data.sectionZ();
         materialId=data.materialId(); stage=data.stage(); vertexCount=data.vertexCount();
         gpuBytes=data.byteSize(); sourceHash=data.contentHash(); this.vertexBuffer=vertexBuffer;
+        if (data.hasQuadCenters()) {
+            quadCenters = new float[Math.multiplyExact(data.quadCount(), 3)];
+            for (int i = 0; i < data.quadCount(); i++) {
+                quadCenters[i * 3] = data.quadCenterX(i);
+                quadCenters[i * 3 + 1] = data.quadCenterY(i);
+                quadCenters[i * 3 + 2] = data.quadCenterZ(i);
+            }
+        } else {
+            quadCenters = null;
+        }
     }
     public static PrismTerrainGpuMesh upload(GpuDevice device, PrismTerrainVertexData data) {
         RenderSystem.assertOnRenderThread();
@@ -43,6 +54,14 @@ public final class PrismTerrainGpuMesh implements AutoCloseable {
     public com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage stage(){return stage;}
     public int vertexCount(){return vertexCount;}
     public long gpuBytes(){return gpuBytes;}
+    public boolean hasQuadCenters() { return quadCenters != null; }
+    /** Returns fresh camera-dependent far-to-near indices for this translucent mesh. */
+    public short[] sortedIndices(double cameraX, double cameraY, double cameraZ) {
+        if (closed) throw new IllegalStateException("Prism terrain GPU mesh is closed");
+        if (quadCenters == null) throw new IllegalStateException("Terrain GPU mesh has no translucent sort centers");
+        return PrismTerrainTranslucentSorter.sortedIndices(
+                quadCenters, sectionX, sectionY, sectionZ, cameraX, cameraY, cameraZ);
+    }
     public boolean matches(PrismTerrainVertexData data) {
         return !closed && sourceHash.equals(data.contentHash());
     }

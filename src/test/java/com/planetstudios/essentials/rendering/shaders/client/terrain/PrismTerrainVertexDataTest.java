@@ -39,6 +39,16 @@ class PrismTerrainVertexDataTest {
         assertEquals(first.contentHash(), same.contentHash());
         assertNotEquals(first.contentHash(), changed.contentHash());
     }
+    @Test void contentHashIncludesTranslucentSortCenters() {
+        var vertices = PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT)
+                .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1));
+        var first = vertices.quadCenters(new float[]{0.5f,0.5f,0.0f}).build();
+        var second = PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT)
+                .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1))
+                .quadCenters(new float[]{0.5f,0.5f,1.0f}).build();
+        assertEquals(first.byteSize(), second.byteSize());
+        assertNotEquals(first.contentHash(), second.contentHash());
+    }
     @Test void retainsImmutableTranslucentQuadCentersInCpuBudget() {
         float[] centers={0,0,1, 0,0,8};
         var builder=PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT)
