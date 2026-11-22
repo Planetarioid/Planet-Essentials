@@ -82,7 +82,7 @@ public final class SpaceRendererGpuCache implements AutoCloseable {
         while (iterator.hasNext()) {
             var entry = iterator.next();
             if (entry.getKey().section.dimensionId().equals(dimension)) {
-                currentBytes -= entry.getValue().bytes; entry.getValue().mesh.close(); iterator.remove(); removed++;
+                currentBytes -= entry.getValue().bytes; retire(entry.getValue().mesh); iterator.remove(); removed++;
             }
         }
         return removed;
