@@ -73,13 +73,31 @@ public final class SpaceRendererCaptureRuntime {
 
     private static java.util.Optional<List<SpaceRendererMesh>> buildSectionMeshes(
             SpaceRendererSectionSnapshot snapshot) {
-        List<SpaceRendererMesh> meshes = new ArrayList<>();
-        SpaceRendererBlockModelMesher.build(snapshot).ifPresent(batches -> {
-            for (var batch : batches) meshes.add(SpaceRendererMesh.build(batch.data(), batch.layer()));
-        });
-        SpaceRendererFluidMesher.buildTerrainPayload(snapshot).ifPresent(batch ->
-                meshes.add(SpaceRendererMesh.build(batch.data(), batch.layer())));
-        return meshes.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(List.copyOf(meshes));
+        List<SpaceRendererBlockModelMesher.LayeredPayload> batches = new ArrayList<>(
+                SpaceRendererBlockModelMesher.build(snapshot).orElse(List.of()));
+        SpaceRendererFluidMesher.buildTerrainPayload(snapshot).ifPresent(batches::add);
+        if (batches.isEmpty()) return java.util.Optional.empty();
+
+        Map<ChunkSectionLayer, List<PrismTerrainVertexData>> byLayer = new java.util.EnumMap<>(ChunkSectionLayer.class);
+        for (var batch : batches) {
+            byLayer.computeIfAbsent(batch.layer(), ignored -> new ArrayList<>()).add(batch.data());
+        }
+        List<SpaceRendererMesh> meshes = new ArrayList<>(byLayer.size());
+        for (var entry : byLayer.entrySet()) {
+            List<PrismTerrainVertexData> payloads = entry.getValue();
+            PrismTerrainVertexData data;
+            if (payloads.size() == 1) {
+                data = payloads.getFirst();
+            } else {
+                PrismTerrainVertexData first = payloads.getFirst();
+                var builder = PrismTerrainVertexData.builder(first.sectionX(), first.sectionY(), first.sectionZ(),
+                        first.materialId(), first.stage());
+                for (PrismTerrainVertexData payload : payloads) builder.append(payload);
+                data = builder.build();
+            }
+            meshes.add(SpaceRendererMesh.build(data, entry.getKey()));
+        }
+        return java.util.Optional.of(List.copyOf(meshes));
     }
 
     public static SpaceRendererSectionSnapshot sectionSnapshot(SpaceRendererSectionManager.SectionKey key) {

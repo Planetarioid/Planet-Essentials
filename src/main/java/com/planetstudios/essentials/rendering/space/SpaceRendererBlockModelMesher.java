@@ -23,9 +23,8 @@ import java.util.Map;
  * Builds independent section geometry from Minecraft's baked block models.
  *
  * <p>This pass preserves baked quad geometry, atlas UVs, face normals, deterministic
- * model variants, corner-sampled block/sky light, biome/mod block tint, and a
- * conservative ambient-occlusion approximation. Translucent layers, fluids,
- * and block entities remain separate work.</p>
+ * model variants, corner-sampled block/sky light, biome/mod block tint, a
+ * conservative ambient-occlusion approximation, and translucent quad centers.</p>
  */
 public final class SpaceRendererBlockModelMesher {
     /** The vanilla block atlas used by baked block-model UV coordinates. */
@@ -43,6 +42,7 @@ public final class SpaceRendererBlockModelMesher {
         var key = snapshot.key();
         var builders = new EnumMap<ChunkSectionLayer, PrismTerrainVertexData.Builder>(ChunkSectionLayer.class);
         var quadCounts = new EnumMap<ChunkSectionLayer, Integer>(ChunkSectionLayer.class);
+        var translucentCenters = new EnumMap<ChunkSectionLayer, List<Float>>(ChunkSectionLayer.class);
         var blockRenderer = Minecraft.getInstance().getBlockRenderer();
 
         for (int y = 0; y < 16; y++) {
@@ -66,14 +66,16 @@ public final class SpaceRendererBlockModelMesher {
 
                     for (BlockModelPart part : parts) {
                         for (BakedQuad quad : part.getQuads(null)) {
-                            appendQuad(builder, snapshot, quad, x, y, z, packedLight);
+                            appendQuad(builder, snapshot, quad, x, y, z, packedLight,
+                                    needsSortCenters(layer) ? translucentCenters.computeIfAbsent(layer, ignored -> new java.util.ArrayList<>()) : null);
                             quadCounts.merge(layer, 1, Integer::sum);
                         }
                         for (Direction side : Direction.values()) {
                             if (snapshot.blockState(x + side.getStepX(), y + side.getStepY(),
                                     z + side.getStepZ()).isSolidRender()) continue;
                             for (BakedQuad quad : part.getQuads(side)) {
-                                appendQuad(builder, snapshot, quad, x, y, z, packedLight);
+                                appendQuad(builder, snapshot, quad, x, y, z, packedLight,
+                                    needsSortCenters(layer) ? translucentCenters.computeIfAbsent(layer, ignored -> new java.util.ArrayList<>()) : null);
                                 quadCounts.merge(layer, 1, Integer::sum);
                             }
                         }
@@ -86,10 +88,20 @@ public final class SpaceRendererBlockModelMesher {
         List<LayeredPayload> batches = new java.util.ArrayList<>(builders.size());
         for (Map.Entry<ChunkSectionLayer, PrismTerrainVertexData.Builder> entry : builders.entrySet()) {
             if (quadCounts.getOrDefault(entry.getKey(), 0) == 0) continue;
+            List<Float> centers = translucentCenters.get(entry.getKey());
+            if (centers != null && !centers.isEmpty()) {
+                float[] values = new float[centers.size()];
+                for (int i = 0; i < centers.size(); i++) values[i] = centers.get(i);
+                entry.getValue().quadCenters(values);
+            }
             batches.add(new LayeredPayload(entry.getKey(), entry.getValue().build()));
         }
         if (batches.isEmpty()) return Optional.empty();
         return Optional.of(List.copyOf(batches));
+    }
+
+    static boolean needsSortCenters(ChunkSectionLayer layer) {
+        return layer == ChunkSectionLayer.TRANSLUCENT || layer == ChunkSectionLayer.TRIPWIRE;
     }
 
     static PrismFrameStage stageFor(ChunkSectionLayer layer) {
@@ -111,7 +123,7 @@ public final class SpaceRendererBlockModelMesher {
 
     private static void appendQuad(PrismTerrainVertexData.Builder builder,
             SpaceRendererSectionSnapshot snapshot, BakedQuad quad,
-            int blockX, int blockY, int blockZ, int packedLight) {
+            int blockX, int blockY, int blockZ, int packedLight, List<Float> sortCenters) {
         Direction face = quad.direction();
         int packedNormal = (face.getStepX() & 0xFF)
                 | ((face.getStepY() & 0xFF) << 8)
@@ -131,6 +143,11 @@ public final class SpaceRendererBlockModelMesher {
                     lighting.packedLight(), NO_OVERLAY, packedNormal);
         }
         builder.addQuad(vertices[0], vertices[1], vertices[2], vertices[3]);
+        if (sortCenters != null) {
+            sortCenters.add((vertices[0].x() + vertices[1].x() + vertices[2].x() + vertices[3].x()) * 0.25f);
+            sortCenters.add((vertices[0].y() + vertices[1].y() + vertices[2].y() + vertices[3].y()) * 0.25f);
+            sortCenters.add((vertices[0].z() + vertices[1].z() + vertices[2].z() + vertices[3].z()) * 0.25f);
+        }
     }
 
     /** Multiplies resolved RGB tint by AO while keeping the AO alpha channel intact. */

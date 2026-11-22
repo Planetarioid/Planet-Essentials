@@ -62,6 +62,7 @@ public final class PrismTerrainVertexData {
         private int vertices;
         private boolean built;
         private float[] quadCenters;
+        private Boolean appendedPayloadsHaveCenters;
         private Builder(int x,int y,int z,String material,PrismFrameStage stage) {
             this.x=x; this.y=y; this.z=z; this.material=Objects.requireNonNull(material,"material");
             this.stage=Objects.requireNonNull(stage,"stage");
@@ -72,6 +73,7 @@ public final class PrismTerrainVertexData {
         }
         public Builder addQuad(PrismTerrainVertex a,PrismTerrainVertex b,PrismTerrainVertex c,PrismTerrainVertex d) {
             ensureMutable();
+            if (appendedPayloadsHaveCenters != null) throw new IllegalStateException("Cannot add individual quads after appending payloads");
             Objects.requireNonNull(a,"a"); Objects.requireNonNull(b,"b");
             Objects.requireNonNull(c,"c"); Objects.requireNonNull(d,"d");
             if(vertices>MAX_VERTICES-4) throw new IllegalStateException("Terrain vertex limit exceeded");
@@ -88,8 +90,45 @@ public final class PrismTerrainVertexData {
             quadCenters=centers.clone();
             return this;
         }
+        /** Appends a compatible immutable payload while preserving optional translucent sort centers. */
+        public Builder append(PrismTerrainVertexData source) {
+            ensureMutable();
+            Objects.requireNonNull(source, "source");
+            if (source.sectionX != x || source.sectionY != y || source.sectionZ != z
+                    || !source.materialId.equals(material) || source.stage != stage) {
+                throw new IllegalArgumentException("Terrain payload metadata must match before appending");
+            }
+            if (source.vertexCount == 0 || source.vertexCount % 4 != 0
+                    || vertices > MAX_VERTICES - source.vertexCount) {
+                throw new IllegalArgumentException("Appended terrain payload has an invalid or oversized vertex count");
+            }
+            if (quadCenters != null && appendedPayloadsHaveCenters == null) {
+                throw new IllegalStateException("Append must be the first geometry operation on this builder");
+            }
+            boolean hasCenters = source.quadCenters != null;
+            if (appendedPayloadsHaveCenters != null && appendedPayloadsHaveCenters != hasCenters) {
+                throw new IllegalArgumentException("Appended terrain payloads must agree on translucent sort centers");
+            }
+            if (vertices > 0 && appendedPayloadsHaveCenters == null) {
+                throw new IllegalStateException("Append must be the first geometry operation on this builder");
+            }
+            if (appendedPayloadsHaveCenters == null) appendedPayloadsHaveCenters = hasCenters;
+            ensureCapacityForBytes(Math.addExact(data.position(), source.bytes.length));
+            data.put(source.bytes);
+            vertices += source.vertexCount;
+            if (hasCenters) {
+                int oldLength = quadCenters == null ? 0 : quadCenters.length;
+                float[] combined = new float[Math.addExact(oldLength, source.quadCenters.length)];
+                if (quadCenters != null) System.arraycopy(quadCenters, 0, combined, 0, oldLength);
+                System.arraycopy(source.quadCenters, 0, combined, oldLength, source.quadCenters.length);
+                quadCenters = combined;
+            }
+            return this;
+        }
         private void ensureCapacityForQuad() {
-            int required = Math.addExact(data.position(), 4*STRIDE);
+            ensureCapacityForBytes(Math.addExact(data.position(), 4*STRIDE));
+        }
+        private void ensureCapacityForBytes(int required) {
             if(required>MAX_BYTES)throw new IllegalStateException("Terrain vertex byte limit exceeded");
             if(required<=data.capacity())return;
             int capacity=Math.min(MAX_BYTES,Math.max(required,Math.multiplyExact(data.capacity(),2)));

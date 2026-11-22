@@ -48,6 +48,37 @@ class PrismTerrainVertexDataTest {
         assertEquals(8,data.quadCenterZ(1));
         assertEquals(data.byteSize()+6*Float.BYTES,data.estimatedCpuBytes());
     }
+    @Test void appendsCompatiblePayloadsAndPreservesTheirTranslucentCenters() {
+        var first = PrismTerrainVertexData.builder(2,3,4,"minecraft:water",PrismFrameStage.BEFORE_TRANSLUCENT)
+                .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1))
+                .quadCenters(new float[]{0.5f,0.5f,0.0f}).build();
+        var second = PrismTerrainVertexData.builder(2,3,4,"minecraft:water",PrismFrameStage.BEFORE_TRANSLUCENT)
+                .addQuad(v(2,0,0,0,0),v(3,0,0,1,0),v(3,1,0,1,1),v(2,1,0,0,1))
+                .quadCenters(new float[]{2.5f,0.5f,0.0f}).build();
+
+        var merged = PrismTerrainVertexData.builder(2,3,4,"minecraft:water",PrismFrameStage.BEFORE_TRANSLUCENT)
+                .append(first).append(second).build();
+
+        assertEquals(8, merged.vertexCount());
+        assertEquals(2, merged.quadCount());
+        assertTrue(merged.hasQuadCenters());
+        assertEquals(0.5f, merged.quadCenterX(0));
+        assertEquals(2.5f, merged.quadCenterX(1));
+        assertEquals(first.byteSize() + second.byteSize(), merged.byteSize());
+    }
+    @Test void rejectsAppendingPayloadsWithDifferentSectionMaterialStageOrSortMetadata() {
+        var first = PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT)
+                .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1))
+                .quadCenters(new float[]{0.5f,0.5f,0.0f}).build();
+        var wrongSection = PrismTerrainVertexData.builder(1,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT)
+                .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1))
+                .quadCenters(new float[]{0.5f,0.5f,0.0f}).build();
+        var noCenters = PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT)
+                .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1)).build();
+        var builder = PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT);
+        assertThrows(IllegalArgumentException.class, () -> builder.append(wrongSection));
+        assertThrows(IllegalArgumentException.class, () -> builder.append(noCenters));
+    }
     @Test void growsItsBackingStorageOnlyAsRequiredForLargerVanillaSections() {
         var builder=PrismTerrainVertexData.builder(0,0,0,"example:stone",PrismFrameStage.BEFORE_ENTITIES);
         for(int i=0;i<20;i++) {
