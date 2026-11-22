@@ -66,7 +66,7 @@ public abstract class LevelRendererMixin {
         }
         PrismTerrainVanillaDrawIndex.capture(visibleSections, callback.getReturnValue());
         SpaceRendererCaptureRuntime.captureVisibleFrame(
-                this.level, callback.getReturnValue(), PrismTerrainVanillaDrawIndex.snapshot());
+                this.level, callback.getReturnValue(), PrismTerrainVanillaDrawIndex.snapshot(), camX, camY, camZ);
         if (!ShaderPackRuntime.isEnabled()) return;
     }
 

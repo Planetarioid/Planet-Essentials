@@ -183,7 +183,8 @@ public final class SpaceRendererCaptureRuntime {
      * incomplete coverage always leaves vanilla rendering in control.
      */
     public static SpaceRendererFrameSnapshot captureVisibleFrame(ClientLevel level,
-            ChunkSectionsToRender rendered, PrismTerrainVanillaDrawIndex.Snapshot drawIndex) {
+            ChunkSectionsToRender rendered, PrismTerrainVanillaDrawIndex.Snapshot drawIndex,
+            double cameraX, double cameraY, double cameraZ) {
         RenderSystem.assertOnRenderThread();
         long sequence = FRAME_SEQUENCE.incrementAndGet();
         if (sequence <= 0) throw new IllegalStateException("Space Renderer frame sequence exhausted");
@@ -227,7 +228,8 @@ public final class SpaceRendererCaptureRuntime {
             }
         }
         currentFrame = SpaceRendererFrameSnapshot.capture(sequence, inputs,
-                input -> GPU_CACHE.meshFor(input.section(), input.materialId(), input.stage(), layerFromLabel(input.layerId())));
+                input -> GPU_CACHE.meshFor(input.section(), input.materialId(), input.stage(), layerFromLabel(input.layerId())),
+                cameraX, cameraY, cameraZ);
         return currentFrame;
     }
 

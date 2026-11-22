@@ -12,6 +12,7 @@ class SpaceRendererFrameSnapshotTest {
         assertFalse(snapshot.isComplete());
         assertFalse(snapshot.maySubmit());
         assertEquals(0, snapshot.requiredDraws());
+        assertTrue(snapshot.preparedTranslucentDraws().isEmpty());
     }
 
     @Test void rejectsDuplicateVanillaDrawIdentity() {

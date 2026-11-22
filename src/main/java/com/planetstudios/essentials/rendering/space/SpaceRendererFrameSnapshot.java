@@ -20,13 +20,15 @@ public final class SpaceRendererFrameSnapshot {
     private final List<Draw> draws;
     private final int requiredDraws;
     private final int missingMeshes;
+    private final List<SortedTranslucentDraw> preparedTranslucentDraws;
 
     private SpaceRendererFrameSnapshot(long sequence, List<Draw> draws,
-            int requiredDraws, int missingMeshes) {
+            int requiredDraws, int missingMeshes, List<SortedTranslucentDraw> preparedTranslucentDraws) {
         this.sequence = sequence;
         this.draws = List.copyOf(draws);
         this.requiredDraws = requiredDraws;
         this.missingMeshes = missingMeshes;
+        this.preparedTranslucentDraws = List.copyOf(preparedTranslucentDraws);
     }
 
     public static SpaceRendererFrameSnapshot capture(long sequence,
@@ -51,12 +53,12 @@ public final class SpaceRendererFrameSnapshot {
             }
             resolved.add(new Draw(input, mesh));
         }
-        return new SpaceRendererFrameSnapshot(sequence, resolved, inputs.size(), missing);
+        return new SpaceRendererFrameSnapshot(sequence, resolved, inputs.size(), missing, List.of());
     }
 
     public static SpaceRendererFrameSnapshot empty(long sequence) {
         if (sequence <= 0) throw new IllegalArgumentException("Frame sequence must be positive");
-        return new SpaceRendererFrameSnapshot(sequence, List.of(), 0, 0);
+        return new SpaceRendererFrameSnapshot(sequence, List.of(), 0, 0, List.of());
     }
 
     public long sequence() { return sequence; }
@@ -69,6 +71,21 @@ public final class SpaceRendererFrameSnapshot {
                 && draws.stream().allMatch(draw -> draw.mesh().isOpen());
     }
     public boolean maySubmit() { return isComplete(); }
+    /** Camera-sorted translucent index plans captured for this frame, if camera-aware capture was used. */
+    public List<SortedTranslucentDraw> preparedTranslucentDraws() { return preparedTranslucentDraws; }
+
+    /** Captures and prepares translucent quad order using this frame's camera position. */
+    public static SpaceRendererFrameSnapshot capture(long sequence,
+            List<DrawInput> inputs, Function<DrawInput, PrismTerrainGpuMesh> meshLookup,
+            double cameraX, double cameraY, double cameraZ) {
+        if (!Double.isFinite(cameraX) || !Double.isFinite(cameraY) || !Double.isFinite(cameraZ)) {
+            throw new IllegalArgumentException("Camera position must be finite");
+        }
+        SpaceRendererFrameSnapshot base = capture(sequence, inputs, meshLookup);
+        if (!base.isComplete()) return base;
+        return new SpaceRendererFrameSnapshot(sequence, base.draws, base.requiredDraws,
+                base.missingMeshes, base.sortedTranslucentDraws(cameraX, cameraY, cameraZ));
+    }
 
     /**
      * Builds camera-dependent far-to-near indices for each translucent section.
