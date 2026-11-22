@@ -136,6 +136,8 @@ public final class SpaceRendererBlockModelMesher {
             long packedUv = quad.packedUV(i);
             VertexLighting lighting = vertexLighting(snapshot, blockX, blockY, blockZ,
                     position.x(), position.y(), position.z(), face, packedLight);
+            // Terrain positions are section-local. The frame's section UBO supplies
+            // the section origin relative to the camera at draw time.
             vertices[i] = new PrismTerrainVertex(
                     blockX + position.x(), blockY + position.y(), blockZ + position.z(),
                     unpackU(packedUv), unpackV(packedUv),

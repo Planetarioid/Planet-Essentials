@@ -18,10 +18,16 @@ The sources consume the existing 36-byte terrain vertex stream:
 | `UV1` | reserved | Overlay coordinates |
 | `Normal` | `vec3` | Reserved for future directional lighting |
 
-The vertex stage adds a camera-relative section origin before applying
-Minecraft's dynamic model-view and projection uniform buffers. It samples the
-lightmap and passes atlas coordinates and lit vertex color to the fragment
-stage.
+Both vanilla-captured terrain and the independent baked-model mesher preserve
+section-local vertex coordinates. The per-section std140 UBO contains one
+16-byte `vec4 SectionOrigin`, calculated as
+`(sectionX * 16 - cameraX, sectionY * 16 - cameraY, sectionZ * 16 - cameraZ, 0)`.
+The vertex stage adds this origin before applying Minecraft's dynamic model-view
+and projection uniform buffers. It samples the lightmap and passes atlas
+coordinates and lit vertex color to the fragment stage.
+
+`SpaceRendererSectionUniformData` owns the CPU-side encoding contract. The
+GPU upload and per-draw binding are the next integration step.
 
 ## Pipeline variants
 
