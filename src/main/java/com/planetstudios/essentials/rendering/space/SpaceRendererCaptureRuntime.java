@@ -8,6 +8,7 @@ import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrai
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVertexData;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
 import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
 import net.minecraft.core.SectionPos;
 
@@ -331,6 +332,15 @@ public final class SpaceRendererCaptureRuntime {
 
     /** Immutable validated draw batches for the current frame; not yet submitted to a render pass. */
     public static SpaceRendererDrawPlan currentDrawPlan() { return currentDrawPlan; }
+
+    /**
+     * Returns the current immutable draw-plan slice owned by a native Minecraft
+     * render group. The returned view borrows the same frame resources and must
+     * be consumed before the next visible-frame capture retires them.
+     */
+    public static SpaceRendererDrawPlan currentDrawPlanForGroup(ChunkSectionLayerGroup group) {
+        return currentDrawPlan.forGroup(Objects.requireNonNull(group, "group"));
+    }
 
     public static com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainGpuMesh gpuMesh(
             SpaceRendererSectionManager.SectionKey section, String material,

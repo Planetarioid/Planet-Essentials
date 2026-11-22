@@ -6,6 +6,7 @@ import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -25,6 +26,24 @@ public final class SpaceRendererDrawExecutor {
     private static final String LIGHTMAP_SAMPLER = "Sampler2";
 
     private SpaceRendererDrawExecutor() {}
+
+    /**
+     * Selects only the layers belonging to the supplied native Minecraft
+     * render group, then submits that immutable slice. This prevents callers
+     * from accidentally submitting layers owned by another group.
+     */
+    public static SubmissionResult submitGroup(RenderPass pass,
+            SpaceRendererDrawPlan framePlan,
+            ChunkSectionLayerGroup group,
+            SpaceRendererSectionUniformBuffer sectionUniforms,
+            double cameraX, double cameraY, double cameraZ,
+            GpuTextureView blockAtlas, GpuSampler blockAtlasSampler,
+            GpuTextureView lightmap, GpuSampler lightmapSampler) {
+        Objects.requireNonNull(framePlan, "framePlan");
+        Objects.requireNonNull(group, "group");
+        return submit(pass, framePlan.forGroup(group), sectionUniforms,
+                cameraX, cameraY, cameraZ, blockAtlas, blockAtlasSampler, lightmap, lightmapSampler);
+    }
 
     /**
      * Submits every draw in a complete immutable plan. The uniform arena is
