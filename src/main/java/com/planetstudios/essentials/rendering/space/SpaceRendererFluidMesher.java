@@ -82,8 +82,8 @@ public final class SpaceRendererFluidMesher {
         List<Float> centers = new ArrayList<>();
         for (FluidGeometry geometry : geometries) {
             for (Quad quad : geometry.quads()) {
-                builder.addQuad(toTerrainVertex(quad.a()), toTerrainVertex(quad.b()),
-                        toTerrainVertex(quad.c()), toTerrainVertex(quad.d()));
+                builder.addQuad(toTerrainVertex(quad.a(), quad.tintColor()), toTerrainVertex(quad.b(), quad.tintColor()),
+                        toTerrainVertex(quad.c(), quad.tintColor()), toTerrainVertex(quad.d(), quad.tintColor()));
                 centers.add((quad.a().x() + quad.b().x() + quad.c().x() + quad.d().x()) * 0.25f);
                 centers.add((quad.a().y() + quad.b().y() + quad.c().y() + quad.d().y()) * 0.25f);
                 centers.add((quad.a().z() + quad.b().z() + quad.c().z() + quad.d().z()) * 0.25f);
@@ -97,8 +97,8 @@ public final class SpaceRendererFluidMesher {
                 ChunkSectionLayer.TRANSLUCENT, builder.build()));
     }
 
-    private static PrismTerrainVertex toTerrainVertex(Vertex vertex) {
-        int color = vertexColor(vertex);
+    private static PrismTerrainVertex toTerrainVertex(Vertex vertex, int tintColor) {
+        int color = vertexColor(tintColor);
         int packedNormal = (Math.round(vertex.normalX()) & 0xFF)
                 | ((Math.round(vertex.normalY()) & 0xFF) << 8)
                 | ((Math.round(vertex.normalZ()) & 0xFF) << 16);
@@ -106,10 +106,10 @@ public final class SpaceRendererFluidMesher {
                 color, vertex.packedLight(), 0, packedNormal);
     }
 
-    private static int vertexColor(Vertex vertex) {
+    private static int vertexColor(int tintColor) {
         // Fluid handler colors are ARGB; Prism's packed vertex color uses the same
         // four byte channels in the renderer's existing normalized color attribute.
-        return vertex.tintColor() == -1 ? 0xFFFFFFFF : vertex.tintColor();
+        return tintColor == -1 ? 0xFFFFFFFF : tintColor;
     }
 
     static CornerHeights cornerHeights(SpaceRendererSectionSnapshot snapshot,
