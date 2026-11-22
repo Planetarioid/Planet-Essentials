@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.rendering.space;
 
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -59,5 +60,20 @@ class SpaceRendererDrawPlanTest {
         assertEquals(9, view.frameSequence());
         assertEquals(0, view.drawCount());
         assertTrue(view.batches().isEmpty());
+    }
+
+    @Test void groupViewUsesNativeGroupMembershipAndPreservesFrameIdentity() {
+        var plan = SpaceRendererDrawPlan.empty(11);
+        for (ChunkSectionLayerGroup group : ChunkSectionLayerGroup.values()) {
+            var view = plan.forGroup(group);
+            assertFalse(view.isReady());
+            assertEquals(plan.frameSequence(), view.frameSequence());
+            assertEquals(0, view.drawCount());
+            assertTrue(view.batches().isEmpty());
+        }
+    }
+
+    @Test void rejectsNullRenderGroup() {
+        assertThrows(NullPointerException.class, () -> SpaceRendererDrawPlan.empty(12).forGroup(null));
     }
 }

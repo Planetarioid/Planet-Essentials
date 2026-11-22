@@ -2,6 +2,7 @@ package com.planetstudios.essentials.rendering.space;
 
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainGpuMesh;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
 
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
@@ -103,10 +104,20 @@ public final class SpaceRendererDrawPlan {
     }
 
     /**
-     * Creates a view containing only the layers owned by one vanilla
-     * ChunkSectionLayerGroup. The supplied order is authoritative: batches
-     * are emitted in that exact order, while material-batch and translucent
-     * draw ordering within each layer remain unchanged.
+     * Creates a view for one native Minecraft render group. Layer membership
+     * and order come directly from ChunkSectionLayerGroup rather than a
+     * duplicated Space Renderer mapping.
+     */
+    public SpaceRendererDrawPlan forGroup(ChunkSectionLayerGroup group) {
+        Objects.requireNonNull(group, "group");
+        return forLayers(List.of(group.layers()));
+    }
+
+    /**
+     * Creates a view containing only the requested layers. The supplied order
+     * is authoritative: batches are emitted in that exact order, while
+     * material-batch and translucent draw ordering within each layer remain
+     * unchanged.
      *
      * <p>The returned view shares immutable draw and GPU-resource references
      * with the parent frame plan. It does not duplicate or own those resources.</p>
