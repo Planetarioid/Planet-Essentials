@@ -75,9 +75,11 @@ class PrismTerrainVertexDataTest {
                 .quadCenters(new float[]{0.5f,0.5f,0.0f}).build();
         var noCenters = PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT)
                 .addQuad(v(0,0,0,0,0),v(1,0,0,1,0),v(1,1,0,1,1),v(0,1,0,0,1)).build();
-        var builder = PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT);
-        assertThrows(IllegalArgumentException.class, () -> builder.append(wrongSection));
-        assertThrows(IllegalArgumentException.class, () -> builder.append(noCenters));
+        var wrongSectionBuilder = PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT);
+        assertThrows(IllegalArgumentException.class, () -> wrongSectionBuilder.append(wrongSection));
+        var mixedCentersBuilder = PrismTerrainVertexData.builder(0,0,0,"example:glass",PrismFrameStage.BEFORE_TRANSLUCENT)
+                .append(first);
+        assertThrows(IllegalArgumentException.class, () -> mixedCentersBuilder.append(noCenters));
     }
     @Test void growsItsBackingStorageOnlyAsRequiredForLargerVanillaSections() {
         var builder=PrismTerrainVertexData.builder(0,0,0,"example:stone",PrismFrameStage.BEFORE_ENTITIES);
