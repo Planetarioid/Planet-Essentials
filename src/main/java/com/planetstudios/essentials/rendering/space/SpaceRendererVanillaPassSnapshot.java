@@ -1,5 +1,7 @@
 package com.planetstudios.essentials.rendering.space;
 
+import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderPass;
@@ -13,16 +15,19 @@ import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
 import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
 import org.joml.Matrix4f;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * Captures the live Minecraft terrain group's target and texture resources.
+ * Captures the live Minecraft terrain group's target, texture resources, and
+ * currently available default-uniform resources.
  *
- * <p>This is deliberately a resource snapshot, not a claim of complete vanilla
- * render-state parity. It does not capture or replay viewport, scissor, blend,
- * depth, fog, or layer-pipeline state. The caller owns any pass opened from it.</p>
+ * <p>This is a resource snapshot, not a claim of complete vanilla render-state
+ * parity. It does not capture or replay viewport, scissor, blend, depth, or
+ * per-layer pipeline state. The caller owns any pass opened from it.</p>
  */
 public record SpaceRendererVanillaPassSnapshot(
         ChunkSectionLayerGroup group,
@@ -37,6 +42,7 @@ public record SpaceRendererVanillaPassSnapshot(
         GpuSampler lightmapSampler,
         List<ChunkSectionLayer> layers,
         Matrix4f modelView,
+        DefaultUniformInputs defaultUniforms,
         GpuDevice device) {
 
     public SpaceRendererVanillaPassSnapshot {
@@ -50,6 +56,7 @@ public record SpaceRendererVanillaPassSnapshot(
         Objects.requireNonNull(lightmapSampler, "lightmapSampler");
         Objects.requireNonNull(layers, "layers");
         Objects.requireNonNull(modelView, "modelView");
+        Objects.requireNonNull(defaultUniforms, "defaultUniforms");
         Objects.requireNonNull(device, "device");
         if (targetWidth <= 0 || targetHeight <= 0) {
             throw new IllegalArgumentException("Terrain target dimensions must be positive");
@@ -67,7 +74,7 @@ public record SpaceRendererVanillaPassSnapshot(
     }
 
     /**
-     * Captures only resources available at the native renderGroup boundary.
+     * Captures resources available at the native renderGroup boundary.
      * Must run on the render thread while the supplied group is current.
      */
     public static SpaceRendererVanillaPassSnapshot capture(
@@ -102,6 +109,11 @@ public record SpaceRendererVanillaPassSnapshot(
                 lightmapSampler,
                 layers,
                 new Matrix4f(RenderSystem.getModelViewMatrix()),
+                new DefaultUniformInputs(
+                        RenderSystem.getProjectionMatrixBuffer(),
+                        RenderSystem.getShaderFog(),
+                        RenderSystem.getGlobalSettingsUniform(),
+                        RenderSystem.getShaderLights()),
                 Objects.requireNonNull(RenderSystem.getDevice(), "active GPU device"));
     }
 
@@ -136,6 +148,46 @@ public record SpaceRendererVanillaPassSnapshot(
                 || target.getColorTextureView() != colorAttachment
                 || target.getDepthTextureView() != depthAttachment.orElse(null)) {
             throw new IllegalStateException("Captured terrain target changed after the group snapshot");
+        }
+    }
+
+    /** Nullable resources are retained explicitly rather than replaced with guessed defaults. */
+    public record DefaultUniformInputs(
+            GpuBufferSlice projection,
+            GpuBufferSlice fog,
+            GpuBuffer globals,
+            GpuBufferSlice lighting) {
+
+        public Set<String> availableNames() {
+            HashSet<String> names = new HashSet<>();
+            if (projection != null) names.add("Projection");
+            if (fog != null) names.add("Fog");
+            if (globals != null) names.add("Globals");
+            if (lighting != null) names.add("Lighting");
+            return Set.copyOf(names);
+        }
+
+        /** Rebinds exactly the default-uniform resources captured in this snapshot. */
+        public Set<String> bindTo(RenderPass pass) {
+            Objects.requireNonNull(pass, "pass");
+            HashSet<String> names = new HashSet<>();
+            if (projection != null) {
+                pass.setUniform("Projection", projection);
+                names.add("Projection");
+            }
+            if (fog != null) {
+                pass.setUniform("Fog", fog);
+                names.add("Fog");
+            }
+            if (globals != null) {
+                pass.setUniform("Globals", globals);
+                names.add("Globals");
+            }
+            if (lighting != null) {
+                pass.setUniform("Lighting", lighting);
+                names.add("Lighting");
+            }
+            return Set.copyOf(names);
         }
     }
 }
