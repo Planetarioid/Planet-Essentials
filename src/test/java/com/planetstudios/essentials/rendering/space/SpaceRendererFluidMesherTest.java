@@ -40,6 +40,29 @@ class SpaceRendererFluidMesherTest {
     }
 
     @Test
+    void convertsFluidGeometryIntoSharedTranslucentTerrainPayload() {
+        var atlas = "minecraft:textures/atlas/blocks.png";
+        var still = new SpaceRendererSectionSnapshot.FluidSprite(atlas, 0.1f, 0.2f, 0.3f, 0.4f);
+        var flowing = new SpaceRendererSectionSnapshot.FluidSprite(atlas, 0.5f, 0.6f, 0.9f, 0.8f);
+        var visual = new SpaceRendererSectionSnapshot.FluidVisual(still, flowing, null, 0xFF74AADD);
+        var snapshot = snapshotWithVisual(cell(4, 5, 6, "minecraft:water", 1.0f), visual);
+
+        var payload = SpaceRendererFluidMesher.buildTerrainPayload(snapshot).orElseThrow();
+
+        assertEquals(net.minecraft.client.renderer.chunk.ChunkSectionLayer.TRANSLUCENT, payload.layer());
+        assertEquals(com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage.BEFORE_TRANSLUCENT,
+                payload.data().stage());
+        assertEquals(atlas, payload.data().materialId());
+        assertEquals(5, payload.data().quadCount());
+        assertTrue(payload.data().hasQuadCenters());
+        assertEquals(15, payload.data().quadCount() * 3);
+        var vertices = payload.data().readOnlyBuffer().order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        assertEquals(0.1f, vertices.getFloat(12), 0.0001f);
+        assertEquals(0.2f, vertices.getFloat(16), 0.0001f);
+        assertEquals(0xFF74AADD, vertices.getInt(20));
+    }
+
+    @Test
     void emitsTopAndFourExposedSidesForAnIsolatedFluidCell() {
         var geometry = SpaceRendererFluidMesher.build(snapshotWithFluids(
                 cell(4, 5, 6, "minecraft:water", 1.0f))).getFirst();

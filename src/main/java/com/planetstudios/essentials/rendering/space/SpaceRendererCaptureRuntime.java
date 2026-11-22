@@ -65,11 +65,21 @@ public final class SpaceRendererCaptureRuntime {
             throw new IllegalArgumentException("Section snapshot does not match its build token");
         }
         if (!SNAPSHOTS.put(snapshot)) return false;
-        if (!MODEL_SCHEDULER.submit(token, 0.0, () ->
-                SpaceRendererBlockModelMesher.build(snapshot).map(batches -> batches.stream().map(batch -> SpaceRendererMesh.build(batch.data(), batch.layer())).toList()))) {
+        if (!MODEL_SCHEDULER.submit(token, 0.0, () -> buildSectionMeshes(snapshot))) {
             REJECTED_MESH_BUILDS.incrementAndGet();
         }
         return true;
+    }
+
+    private static java.util.Optional<List<SpaceRendererMesh>> buildSectionMeshes(
+            SpaceRendererSectionSnapshot snapshot) {
+        List<SpaceRendererMesh> meshes = new ArrayList<>();
+        SpaceRendererBlockModelMesher.build(snapshot).ifPresent(batches -> {
+            for (var batch : batches) meshes.add(SpaceRendererMesh.build(batch.data(), batch.layer()));
+        });
+        SpaceRendererFluidMesher.buildTerrainPayload(snapshot).ifPresent(batch ->
+                meshes.add(SpaceRendererMesh.build(batch.data(), batch.layer())));
+        return meshes.isEmpty() ? java.util.Optional.empty() : java.util.Optional.of(List.copyOf(meshes));
     }
 
     public static SpaceRendererSectionSnapshot sectionSnapshot(SpaceRendererSectionManager.SectionKey key) {

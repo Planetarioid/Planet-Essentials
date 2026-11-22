@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage;
+import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVertex;
+import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainVertexData;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+
 /**
  * Builds CPU-only fluid geometry from immutable section snapshots.
  *
@@ -58,6 +63,53 @@ public final class SpaceRendererFluidMesher {
             if (!entry.getValue().isEmpty()) result.add(new FluidGeometry(entry.getKey(), entry.getValue()));
         }
         return List.copyOf(result);
+    }
+
+    /**
+     * Converts captured fluid quads into the shared translucent terrain payload format.
+     * The payload is suitable for the existing bounded upload/cache path; actual draw
+     * submission remains gated by vanilla draw-list coverage.
+     */
+    public static java.util.Optional<SpaceRendererBlockModelMesher.LayeredPayload> buildTerrainPayload(
+            SpaceRendererSectionSnapshot snapshot) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        List<FluidGeometry> geometries = build(snapshot);
+        if (geometries.isEmpty()) return java.util.Optional.empty();
+
+        var key = snapshot.key();
+        var builder = PrismTerrainVertexData.builder(key.x(), key.y(), key.z(),
+                SpaceRendererBlockModelMesher.BLOCK_ATLAS_MATERIAL, PrismFrameStage.BEFORE_TRANSLUCENT);
+        List<Float> centers = new ArrayList<>();
+        for (FluidGeometry geometry : geometries) {
+            for (Quad quad : geometry.quads()) {
+                builder.addQuad(toTerrainVertex(quad.a()), toTerrainVertex(quad.b()),
+                        toTerrainVertex(quad.c()), toTerrainVertex(quad.d()));
+                centers.add((quad.a().x() + quad.b().x() + quad.c().x() + quad.d().x()) * 0.25f);
+                centers.add((quad.a().y() + quad.b().y() + quad.c().y() + quad.d().y()) * 0.25f);
+                centers.add((quad.a().z() + quad.b().z() + quad.c().z() + quad.d().z()) * 0.25f);
+            }
+        }
+        if (centers.isEmpty()) return java.util.Optional.empty();
+        float[] sortCenters = new float[centers.size()];
+        for (int i = 0; i < centers.size(); i++) sortCenters[i] = centers.get(i);
+        builder.quadCenters(sortCenters);
+        return java.util.Optional.of(new SpaceRendererBlockModelMesher.LayeredPayload(
+                ChunkSectionLayer.TRANSLUCENT, builder.build()));
+    }
+
+    private static PrismTerrainVertex toTerrainVertex(Vertex vertex) {
+        int color = vertexColor(vertex);
+        int packedNormal = (Math.round(vertex.normalX()) & 0xFF)
+                | ((Math.round(vertex.normalY()) & 0xFF) << 8)
+                | ((Math.round(vertex.normalZ()) & 0xFF) << 16);
+        return new PrismTerrainVertex(vertex.x(), vertex.y(), vertex.z(), vertex.u(), vertex.v(),
+                color, vertex.packedLight(), 0, packedNormal);
+    }
+
+    private static int vertexColor(Vertex vertex) {
+        // Fluid handler colors are ARGB; Prism's packed vertex color uses the same
+        // four byte channels in the renderer's existing normalized color attribute.
+        return vertex.tintColor() == -1 ? 0xFFFFFFFF : vertex.tintColor();
     }
 
     static CornerHeights cornerHeights(SpaceRendererSectionSnapshot snapshot,
