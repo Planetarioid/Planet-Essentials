@@ -43,6 +43,7 @@ public final class SpaceRendererCaptureRuntime {
     private static final AtomicLong FRAME_SEQUENCE = new AtomicLong();
     private static final SpaceRendererGpuCache GPU_CACHE = new SpaceRendererGpuCache();
     private static volatile SpaceRendererFrameSnapshot currentFrame = SpaceRendererFrameSnapshot.empty(1);
+    private static volatile SpaceRendererDrawPlan currentDrawPlan = SpaceRendererDrawPlan.empty(1);
     private static final List<SpaceRendererSortedIndexBuffer> SORTED_INDEX_BUFFERS = new ArrayList<>();
     private static long sortedIndexBytes;
     private static volatile boolean closed;
@@ -193,6 +194,7 @@ public final class SpaceRendererCaptureRuntime {
         long sequence = FRAME_SEQUENCE.incrementAndGet();
         closeSortedIndexBuffers();
         if (sequence <= 0) throw new IllegalStateException("Space Renderer frame sequence exhausted");
+        currentDrawPlan = SpaceRendererDrawPlan.empty(sequence);
         if (closed || level == null || rendered == null || drawIndex == null) {
             currentFrame = SpaceRendererFrameSnapshot.empty(sequence);
             return currentFrame;
@@ -236,6 +238,14 @@ public final class SpaceRendererCaptureRuntime {
                 input -> GPU_CACHE.meshFor(input.section(), input.materialId(), input.stage(), layerFromLabel(input.layerId())),
                 cameraX, cameraY, cameraZ);
         uploadSortedIndexBuffers(RenderSystem.getDevice());
+        if (currentFrame.isComplete()) {
+            try {
+                currentDrawPlan = SpaceRendererDrawPlan.prepare(currentFrame, currentSortedIndexBuffers());
+            } catch (RuntimeException failure) {
+                currentDrawPlan = SpaceRendererDrawPlan.empty(sequence);
+                PlanetEssentials.LOGGER.warn("Space Renderer could not prepare the current material draw plan", failure);
+            }
+        }
         return currentFrame;
     }
 
@@ -319,6 +329,9 @@ public final class SpaceRendererCaptureRuntime {
 
     public static SpaceRendererFrameSnapshot currentFrameSnapshot() { return currentFrame; }
 
+    /** Immutable validated draw batches for the current frame; not yet submitted to a render pass. */
+    public static SpaceRendererDrawPlan currentDrawPlan() { return currentDrawPlan; }
+
     public static com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainGpuMesh gpuMesh(
             SpaceRendererSectionManager.SectionKey section, String material,
             PrismFrameStage stage) {
@@ -351,7 +364,9 @@ public final class SpaceRendererCaptureRuntime {
         SNAPSHOTS.removeDimension(dimension);
         UPLOADS.removeDimension(dimension);
         closeSortedIndexBuffers();
-        currentFrame = SpaceRendererFrameSnapshot.empty(Math.max(1, FRAME_SEQUENCE.incrementAndGet()));
+        long sequence = Math.max(1, FRAME_SEQUENCE.incrementAndGet());
+        currentFrame = SpaceRendererFrameSnapshot.empty(sequence);
+        currentDrawPlan = SpaceRendererDrawPlan.empty(sequence);
         queueGpu(() -> GPU_CACHE.clearDimension(dimension));
     }
 
@@ -361,7 +376,9 @@ public final class SpaceRendererCaptureRuntime {
         UPLOADS.clear();
         if (RenderSystem.isOnRenderThread()) closeSortedIndexBuffers();
         else queueGpu(SpaceRendererCaptureRuntime::closeSortedIndexBuffers);
-        currentFrame = SpaceRendererFrameSnapshot.empty(Math.max(1, FRAME_SEQUENCE.incrementAndGet()));
+        long sequence = Math.max(1, FRAME_SEQUENCE.incrementAndGet());
+        currentFrame = SpaceRendererFrameSnapshot.empty(sequence);
+        currentDrawPlan = SpaceRendererDrawPlan.empty(sequence);
         queueGpu(GPU_CACHE::clear);
     }
 
