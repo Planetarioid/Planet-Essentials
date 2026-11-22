@@ -39,6 +39,26 @@ class SpaceRendererFrameSnapshotTest {
         assertTrue(snapshot.draws().isEmpty());
     }
 
+    @Test void rejectsRenderStageThatDoesNotMatchTranslucentLayer() {
+        Object draw = new Object();
+        var section = new SpaceRendererSectionManager.SectionKey("minecraft:overworld", 0, 0, 0);
+        assertThrows(IllegalArgumentException.class, () ->
+                new SpaceRendererFrameSnapshot.DrawInput(draw, section,
+                        "planet_essentials:terrain/vanilla/translucent",
+                        com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage.BEFORE_ENTITIES,
+                        "translucent", 0));
+    }
+
+    @Test void acceptsTranslucentDrawOnlyAtBeforeTranslucentStage() {
+        Object draw = new Object();
+        var section = new SpaceRendererSectionManager.SectionKey("minecraft:overworld", 0, 0, 0);
+        var input = new SpaceRendererFrameSnapshot.DrawInput(draw, section,
+                "planet_essentials:terrain/vanilla/translucent",
+                com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage.BEFORE_TRANSLUCENT,
+                "translucent", 0);
+        assertEquals("translucent", input.layerId());
+    }
+
     @Test void requiresPositiveFrameSequence() {
         assertThrows(IllegalArgumentException.class, () -> SpaceRendererFrameSnapshot.empty(0));
     }

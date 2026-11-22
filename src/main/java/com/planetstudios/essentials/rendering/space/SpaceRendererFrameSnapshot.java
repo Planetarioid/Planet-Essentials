@@ -2,6 +2,7 @@ package com.planetstudios.essentials.rendering.space;
 
 import com.planetstudios.essentials.rendering.shaders.client.PrismFrameStage;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainGpuMesh;
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +44,8 @@ public final class SpaceRendererFrameSnapshot {
                 throw new IllegalArgumentException("A vanilla draw identity may appear only once per frame");
             }
             PrismTerrainGpuMesh mesh = meshLookup.apply(input);
-            if (mesh == null || !mesh.isOpen() || mesh.vertexCount() <= 0 || mesh.vertexCount() % 4 != 0) {
+            if (mesh == null || !mesh.isOpen() || mesh.vertexCount() <= 0 || mesh.vertexCount() % 4 != 0
+                    || (requiresTranslucentSort(input.layerId()) && !mesh.hasQuadCenters())) {
                 missing++;
                 continue;
             }
@@ -68,6 +70,31 @@ public final class SpaceRendererFrameSnapshot {
     }
     public boolean maySubmit() { return isComplete(); }
 
+    /**
+     * Builds camera-dependent far-to-near indices for each translucent section.
+     * The section draw order remains the order captured from vanilla; only the
+     * quads inside each section are reordered.
+     */
+    public List<SortedTranslucentDraw> sortedTranslucentDraws(
+            double cameraX, double cameraY, double cameraZ) {
+        if (!isComplete()) throw new IllegalStateException("Incomplete terrain frame cannot be sorted for submission");
+        if (!Double.isFinite(cameraX) || !Double.isFinite(cameraY) || !Double.isFinite(cameraZ)) {
+            throw new IllegalArgumentException("Camera position must be finite");
+        }
+        List<SortedTranslucentDraw> sorted = new ArrayList<>();
+        for (Draw draw : draws) {
+            if (!requiresTranslucentSort(draw.input().layerId())) continue;
+            sorted.add(new SortedTranslucentDraw(draw,
+                    draw.mesh().sortedIndices(cameraX, cameraY, cameraZ)));
+        }
+        return List.copyOf(sorted);
+    }
+
+    private static boolean requiresTranslucentSort(String layerId) {
+        return ChunkSectionLayer.TRANSLUCENT.label().equals(layerId)
+                || ChunkSectionLayer.TRIPWIRE.label().equals(layerId);
+    }
+
     public record DrawInput(Object vanillaDraw, SpaceRendererSectionManager.SectionKey section,
             String materialId, PrismFrameStage stage, String layerId, int layerDrawIndex) {
         public DrawInput {
@@ -79,7 +106,21 @@ public final class SpaceRendererFrameSnapshot {
             if (layerId.isBlank() || layerDrawIndex < 0) {
                 throw new IllegalArgumentException("Invalid vanilla terrain draw metadata");
             }
+            if (requiresTranslucentSort(layerId) != (stage == PrismFrameStage.BEFORE_TRANSLUCENT)) {
+                throw new IllegalArgumentException("Terrain stage does not match the vanilla render layer");
+            }
         }
+    }
+
+    public record SortedTranslucentDraw(Draw draw, short[] indices) {
+        public SortedTranslucentDraw {
+            Objects.requireNonNull(draw, "draw");
+            indices = Objects.requireNonNull(indices, "indices").clone();
+            if (indices.length == 0 || indices.length % 6 != 0) {
+                throw new IllegalArgumentException("Sorted translucent indices must contain complete quads");
+            }
+        }
+        @Override public short[] indices() { return indices.clone(); }
     }
 
     public record Draw(DrawInput input, PrismTerrainGpuMesh mesh) {
