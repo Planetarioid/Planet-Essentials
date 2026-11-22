@@ -26,8 +26,15 @@ The vertex stage adds this origin before applying Minecraft's dynamic model-view
 and projection uniform buffers. It samples the lightmap and passes atlas
 coordinates and lit vertex color to the fragment stage.
 
-`SpaceRendererSectionUniformData` owns the CPU-side encoding contract. The
-GPU upload and per-draw binding are the next integration step.
+`SpaceRendererSectionUniformData` owns CPU-side encoding. The
+`SpaceRendererSectionUniformBuffer` uploads each vec4 into an aligned slice
+of a triple-buffered mapped GPU ring. Its per-frame capacity is bounded
+(default 4096 sections), and the ring rotates after submitted draws so in-flight
+uniform data is not overwritten. A draw binds the returned slice under
+`SpaceRendererSection`.
+
+The arena is implemented and unit-tested, but is not yet connected to the
+visible-frame draw executor.
 
 ## Pipeline variants
 
