@@ -58,20 +58,23 @@ public final class SpaceRendererDrawExecutor {
         int submitted = 0;
         sectionUniforms.beginFrame();
         try {
-            RenderSystem.bindDefaultUniforms(pass);
-            // DynamicTransforms is a per-draw uniform block; bind the current camera transform
-            // explicitly, with neutral model/color/texture transforms for section-local terrain.
+            // DynamicTransforms is shared by every section in this render group.
+            // The per-section origin is supplied separately by SpaceRendererSection.
             var dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(
                     RenderSystem.getModelViewMatrix(),
                     new Vector4f(1.0f),
                     new Vector3f(),
                     new Matrix4f());
-            pass.setUniform("DynamicTransforms", dynamicTransforms);
-            pass.bindTexture(BLOCK_ATLAS_SAMPLER, blockAtlas, blockAtlasSampler);
-            pass.bindTexture(LIGHTMAP_SAMPLER, lightmap, lightmapSampler);
 
             for (SpaceRendererDrawPlan.Batch batch : plan.batches()) {
-                var pipeline = pipelineForLayer(batch.layer());
+                // RenderPass uniform and sampler bindings are pipeline-scoped. Select
+                // the layer pipeline before applying its default and dynamic uniforms.
+                pass.setPipeline(pipelineForLayer(batch.layer()));
+                RenderSystem.bindDefaultUniforms(pass);
+                pass.setUniform("DynamicTransforms", dynamicTransforms);
+                pass.bindTexture(BLOCK_ATLAS_SAMPLER, blockAtlas, blockAtlasSampler);
+                pass.bindTexture(LIGHTMAP_SAMPLER, lightmap, lightmapSampler);
+
                 for (SpaceRendererDrawPlan.DrawCommand command : batch.draws()) {
                     var draw = command.draw();
                     var mesh = draw.mesh();
@@ -84,7 +87,6 @@ public final class SpaceRendererDrawExecutor {
                             section.x(), section.y(), section.z(), cameraX, cameraY, cameraZ);
                     SpaceRendererSectionUniformBuffer.bind(pass, uniformSlice);
 
-                    pass.setPipeline(pipeline);
                     pass.setVertexBuffer(0, mesh.vertexBuffer());
 
                     SpaceRendererSortedIndexBuffer sorted = command.sortedIndices();
