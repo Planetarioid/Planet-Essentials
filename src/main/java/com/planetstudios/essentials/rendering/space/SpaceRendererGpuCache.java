@@ -35,12 +35,12 @@ public final class SpaceRendererGpuCache implements AutoCloseable {
         PrismTerrainGpuMesh replacement = PrismTerrainGpuMesh.upload(device, source);
         Entry next = new Entry(replacement, bytes, source.contentHash());
         Entry previous = entries.remove(key);
-        if (previous != null) { currentBytes -= previous.bytes; previous.mesh.close(); }
+        if (previous != null) { currentBytes -= previous.bytes; retire(previous.mesh); }
         while (currentBytes > maxBytes - bytes) {
             Iterator<Map.Entry<Key, Entry>> iterator = entries.entrySet().iterator();
             if (!iterator.hasNext()) break;
             Entry eldest = iterator.next().getValue();
-            iterator.remove(); currentBytes -= eldest.bytes; eldest.mesh.close();
+            iterator.remove(); currentBytes -= eldest.bytes; retire(eldest.mesh);
         }
         entries.put(key, next); currentBytes += bytes; return true;
     }
@@ -60,7 +60,7 @@ public final class SpaceRendererGpuCache implements AutoCloseable {
         while (iterator.hasNext()) {
             var entry = iterator.next();
             if (entry.getKey().section.equals(section)) {
-                currentBytes -= entry.getValue().bytes; entry.getValue().mesh.close(); iterator.remove(); removed++;
+                currentBytes -= entry.getValue().bytes; retire(entry.getValue().mesh); iterator.remove(); removed++;
             }
         }
         return removed;
@@ -71,7 +71,7 @@ public final class SpaceRendererGpuCache implements AutoCloseable {
         while (iterator.hasNext()) {
             var entry = iterator.next(); var key = entry.getKey().section;
             if (key.dimensionId().equals(dimension) && key.x() == chunkX && key.z() == chunkZ) {
-                currentBytes -= entry.getValue().bytes; entry.getValue().mesh.close(); iterator.remove(); removed++;
+                currentBytes -= entry.getValue().bytes; retire(entry.getValue().mesh); iterator.remove(); removed++;
             }
         }
         return removed;
@@ -89,17 +89,21 @@ public final class SpaceRendererGpuCache implements AutoCloseable {
     }
     public void clear() {
         RenderSystem.assertOnRenderThread(); if (closed) return;
-        RuntimeException failure = null;
-        for (Entry entry : entries.values()) {
-            try { entry.mesh.close(); }
-            catch (RuntimeException problem) { if (failure == null) failure = problem; else failure.addSuppressed(problem); }
-        }
-        entries.clear(); currentBytes = 0;
-        if (failure != null) throw failure;
+        for (Entry entry : entries.values()) retire(entry.mesh);
+        entries.clear();
+        currentBytes = 0;
     }
     public int size() { RenderSystem.assertOnRenderThread(); ensureOpen(); return entries.size(); }
     public long currentBytes() { RenderSystem.assertOnRenderThread(); ensureOpen(); return currentBytes; }
     public long maxBytes() { return maxBytes; }
+    /**
+     * Keep replaced or evicted vertex allocations alive until all GPU commands
+     * already submitted against the previous frame have completed.
+     */
+    private static void retire(PrismTerrainGpuMesh mesh) {
+        RenderSystem.queueFencedTask(mesh::close);
+    }
+
     private void ensureOpen() { if (closed) throw new IllegalStateException("Space Renderer GPU cache is closed"); }
     @Override public void close() { RenderSystem.assertOnRenderThread(); if (closed) return; clear(); closed = true; }
     private record Key(SpaceRendererSectionManager.SectionKey section, String material, PrismFrameStage stage, ChunkSectionLayer layer) {}
