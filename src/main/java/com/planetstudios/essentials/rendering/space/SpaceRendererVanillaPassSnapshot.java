@@ -16,6 +16,7 @@ import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gl.ScissorState;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
 import net.minecraft.SharedConstants;
@@ -35,12 +36,12 @@ import java.util.Set;
 
 /**
  * Captures the live Minecraft terrain group's target, texture resources, and
- * currently available default-uniform resources, and each layer's native
- * fixed-function pipeline configuration.
+ * currently available default-uniform resources, each layer's native
+ * fixed-function pipeline configuration, and the render-type scissor state.
  *
  * <p>This is a capture snapshot, not a claim of complete vanilla render-state
- * parity. It does not yet replay viewport, scissor, or all backend state. The
- * caller owns any pass opened from it.</p>
+ * parity. It replays the captured scissor rectangle but does not yet replay
+ * viewport or all backend state. The caller owns any pass opened from it.</p>
  */
 public record SpaceRendererVanillaPassSnapshot(
         ChunkSectionLayerGroup group,
@@ -58,6 +59,7 @@ public record SpaceRendererVanillaPassSnapshot(
         boolean wireframe,
         Matrix4f modelView,
         DefaultUniformInputs defaultUniforms,
+        ScissorInput scissor,
         GpuDevice device) {
 
     public SpaceRendererVanillaPassSnapshot {
@@ -73,6 +75,7 @@ public record SpaceRendererVanillaPassSnapshot(
         Objects.requireNonNull(layerPipelines, "layerPipelines");
         Objects.requireNonNull(modelView, "modelView");
         Objects.requireNonNull(defaultUniforms, "defaultUniforms");
+        Objects.requireNonNull(scissor, "scissor");
         Objects.requireNonNull(device, "device");
         if (targetWidth <= 0 || targetHeight <= 0) {
             throw new IllegalArgumentException("Terrain target dimensions must be positive");
@@ -150,6 +153,7 @@ public record SpaceRendererVanillaPassSnapshot(
                         RenderSystem.getShaderFog(),
                         RenderSystem.getGlobalSettingsUniform(),
                         RenderSystem.getShaderLights()),
+                ScissorInput.capture(RenderSystem.getScissorStateForRenderTypeDraws()),
                 Objects.requireNonNull(RenderSystem.getDevice(), "active GPU device"));
     }
 
@@ -166,12 +170,14 @@ public record SpaceRendererVanillaPassSnapshot(
             throw new IllegalArgumentException("Render-pass debug label cannot be blank");
         }
         validateCurrent(currentDevice);
-        return currentDevice.createCommandEncoder().createRenderPass(
+        RenderPass pass = currentDevice.createCommandEncoder().createRenderPass(
                 () -> debugLabel,
                 colorAttachment,
                 java.util.OptionalInt.empty(),
                 depthAttachment.orElse(null),
                 java.util.OptionalDouble.empty());
+        scissor.applyTo(pass);
+        return pass;
     }
 
     /** Rejects resized/recreated targets and GPU-device changes after capture. */
@@ -184,6 +190,30 @@ public record SpaceRendererVanillaPassSnapshot(
                 || target.getColorTextureView() != colorAttachment
                 || target.getDepthTextureView() != depthAttachment.orElse(null)) {
             throw new IllegalStateException("Captured terrain target changed after the group snapshot");
+        }
+    }
+
+    /** Immutable snapshot of RenderSystem's render-type scissor rectangle. */
+    public record ScissorInput(boolean enabled, int x, int y, int width, int height) {
+        public ScissorInput {
+            if (enabled && (width <= 0 || height <= 0)) {
+                throw new IllegalArgumentException("Enabled scissor dimensions must be positive");
+            }
+        }
+
+        public static ScissorInput capture(ScissorState state) {
+            Objects.requireNonNull(state, "state");
+            return new ScissorInput(
+                    state.isEnabled(), state.getX(), state.getY(), state.getWidth(), state.getHeight());
+        }
+
+        public void applyTo(RenderPass pass) {
+            Objects.requireNonNull(pass, "pass");
+            if (enabled) {
+                pass.enableScissor(x, y, width, height);
+            } else {
+                pass.disableScissor();
+            }
         }
     }
 
