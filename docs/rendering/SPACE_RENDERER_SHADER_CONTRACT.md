@@ -30,11 +30,12 @@ coordinates and lit vertex color to the fragment stage.
 `SpaceRendererSectionUniformBuffer` uploads each vec4 into an aligned slice
 of a triple-buffered mapped GPU ring. Its per-frame capacity is bounded
 (default 4096 sections), and the ring rotates after submitted draws so in-flight
-uniform data is not overwritten. A draw binds the returned slice under
-`SpaceRendererSection`.
-
-The arena is implemented and unit-tested, but is not yet connected to the
-visible-frame draw executor.
+uniform data is not overwritten. `SpaceRendererDrawExecutor` now has an
+explicit submission path that binds each returned slice, selects the native
+pipeline for the vanilla layer, binds atlas/lightmap resources, and submits
+the matching vertex/index buffers. Translucent draws use their frame-owned
+camera-sorted short-index buffers; opaque and cutout draws use Minecraft's
+sequential QUADS index buffer.
 
 ## Pipeline variants
 
@@ -44,15 +45,16 @@ visible-frame draw executor.
 - Tripwire: blending enabled, threshold 0.1.
 
 All variants use the same vertex layout, block atlas sampler, lightmap sampler,
-and per-section uniform buffer. The draw executor must bind the section UBO
-before issuing a draw.
+and per-section uniform buffer.
 
 ## Current boundary
 
-The pipelines are registered during client initialization and are discoverable
-through Minecraft's static pipeline registry. The shader sources and Java
-pipeline descriptions are covered by unit tests. This does not yet prove that
-the game has compiled the GLSL or that a GPU draw works. Fog, exact vanilla
-overlay behavior, animated texture handling, resource-pack compatibility, and
-render-pass integration remain outstanding. Vanilla terrain rendering remains
-authoritative until complete-frame submission is ready.
+The draw executor is an implemented submission primitive, not yet wired into
+the live world-render callback. Its caller must supply an already-open render
+pass, main target, block atlas/lightmap texture views, and their samplers.
+This separation keeps vanilla terrain rendering authoritative while render
+target state, texture lifecycle, layer ordering, and runtime parity are
+validated. The shaders and Java pipeline descriptions compile in CI, but a
+successful build does not prove that a GPU draw works in-game. Fog, exact
+vanilla overlay behavior, animated texture handling, resource-pack compatibility,
+and full render-pass integration remain outstanding.
