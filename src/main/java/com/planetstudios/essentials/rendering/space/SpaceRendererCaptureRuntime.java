@@ -26,6 +26,8 @@ public final class SpaceRendererCaptureRuntime {
     private static final int MAX_UPLOAD_ENTRIES = 8192;
     private static final long MAX_UPLOAD_BYTES = 128L * 1024 * 1024;
     private static final long MAX_SNAPSHOT_BYTES = 32L * 1024 * 1024;
+    private static final long MAX_SORTED_INDEX_BYTES_PER_FRAME = 32L * 1024 * 1024;
+    private static final int MAX_SORTED_INDEX_DRAWS_PER_FRAME = 4096;
     private static final SpaceRendererSectionManager SECTIONS = new SpaceRendererSectionManager();
     private static final SpaceRendererSectionSnapshotCache SNAPSHOTS =
             new SpaceRendererSectionSnapshotCache(MAX_SNAPSHOT_BYTES);
@@ -41,6 +43,8 @@ public final class SpaceRendererCaptureRuntime {
     private static final AtomicLong FRAME_SEQUENCE = new AtomicLong();
     private static final SpaceRendererGpuCache GPU_CACHE = new SpaceRendererGpuCache();
     private static volatile SpaceRendererFrameSnapshot currentFrame = SpaceRendererFrameSnapshot.empty(1);
+    private static final List<SpaceRendererSortedIndexBuffer> SORTED_INDEX_BUFFERS = new ArrayList<>();
+    private static long sortedIndexBytes;
     private static volatile boolean closed;
 
     private SpaceRendererCaptureRuntime() {}
@@ -187,6 +191,7 @@ public final class SpaceRendererCaptureRuntime {
             double cameraX, double cameraY, double cameraZ) {
         RenderSystem.assertOnRenderThread();
         long sequence = FRAME_SEQUENCE.incrementAndGet();
+        closeSortedIndexBuffers();
         if (sequence <= 0) throw new IllegalStateException("Space Renderer frame sequence exhausted");
         if (closed || level == null || rendered == null || drawIndex == null) {
             currentFrame = SpaceRendererFrameSnapshot.empty(sequence);
@@ -230,7 +235,61 @@ public final class SpaceRendererCaptureRuntime {
         currentFrame = SpaceRendererFrameSnapshot.capture(sequence, inputs,
                 input -> GPU_CACHE.meshFor(input.section(), input.materialId(), input.stage(), layerFromLabel(input.layerId())),
                 cameraX, cameraY, cameraZ);
+        uploadSortedIndexBuffers(RenderSystem.getDevice());
         return currentFrame;
+    }
+
+    /**
+     * Uploads camera-sorted index plans as bounded, frame-owned GPU resources.
+     * This prepares indexed submission; it does not itself draw terrain.
+     */
+    private static void uploadSortedIndexBuffers(GpuDevice device) {
+        RenderSystem.assertOnRenderThread();
+        if (device == null || !currentFrame.isComplete()) return;
+        List<SpaceRendererFrameSnapshot.SortedTranslucentDraw> sorted =
+                currentFrame.preparedTranslucentDraws();
+        if (sorted.isEmpty() || sorted.size() > MAX_SORTED_INDEX_DRAWS_PER_FRAME) return;
+        long requiredBytes = 0;
+        for (var draw : sorted) {
+            requiredBytes += (long) draw.indices().length * Short.BYTES;
+            if (requiredBytes > MAX_SORTED_INDEX_BYTES_PER_FRAME) return;
+        }
+        try {
+            for (var draw : sorted) {
+                SpaceRendererSortedIndexBuffer uploaded = SpaceRendererSortedIndexBuffer.upload(device, draw);
+                SORTED_INDEX_BUFFERS.add(uploaded);
+                sortedIndexBytes += uploaded.gpuBytes();
+            }
+        } catch (RuntimeException | Error failure) {
+            closeSortedIndexBuffers();
+            PlanetEssentials.LOGGER.warn("Space Renderer sorted translucent index upload failed", failure);
+        }
+    }
+
+    private static void closeSortedIndexBuffers() {
+        RenderSystem.assertOnRenderThread();
+        RuntimeException failure = null;
+        for (SpaceRendererSortedIndexBuffer buffer : SORTED_INDEX_BUFFERS) {
+            try { buffer.close(); }
+            catch (RuntimeException closeFailure) {
+                if (failure == null) failure = closeFailure;
+                else failure.addSuppressed(closeFailure);
+            }
+        }
+        SORTED_INDEX_BUFFERS.clear();
+        sortedIndexBytes = 0;
+        if (failure != null) throw failure;
+    }
+
+    /** Borrowed resources valid only until the next visible-frame capture. */
+    public static List<SpaceRendererSortedIndexBuffer> currentSortedIndexBuffers() {
+        RenderSystem.assertOnRenderThread();
+        return List.copyOf(SORTED_INDEX_BUFFERS);
+    }
+
+    public static long currentSortedIndexBytes() {
+        RenderSystem.assertOnRenderThread();
+        return sortedIndexBytes;
     }
 
     private static ChunkSectionLayer layerFromLabel(String label) {
@@ -273,6 +332,7 @@ public final class SpaceRendererCaptureRuntime {
         SECTIONS.unloadDimension(dimension);
         SNAPSHOTS.removeDimension(dimension);
         UPLOADS.removeDimension(dimension);
+        closeSortedIndexBuffers();
         currentFrame = SpaceRendererFrameSnapshot.empty(Math.max(1, FRAME_SEQUENCE.incrementAndGet()));
         queueGpu(() -> GPU_CACHE.clearDimension(dimension));
     }
@@ -281,6 +341,8 @@ public final class SpaceRendererCaptureRuntime {
         SECTIONS.clearAll();
         SNAPSHOTS.clear();
         UPLOADS.clear();
+        if (RenderSystem.isOnRenderThread()) closeSortedIndexBuffers();
+        else queueGpu(SpaceRendererCaptureRuntime::closeSortedIndexBuffers);
         currentFrame = SpaceRendererFrameSnapshot.empty(Math.max(1, FRAME_SEQUENCE.incrementAndGet()));
         queueGpu(GPU_CACHE::clear);
     }
