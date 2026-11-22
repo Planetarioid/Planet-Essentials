@@ -16,17 +16,18 @@ class SpaceRendererShaderSourceTest {
             "/assets/planet_essentials/shaders/core/space_terrain.fsh";
 
     @Test
-    void builtInTerrainShaderSourcesArePackagedAndUseSpaceRendererBindings() throws IOException {
+    void builtInTerrainShaderSourcesArePackagedAndUseMinecraft12111Bindings() throws IOException {
         String vertex = read(VERTEX_PATH);
         String fragment = read(FRAGMENT_PATH);
 
-        assertTrue(vertex.startsWith("#version 150"));
-        assertTrue(fragment.startsWith("#version 150"));
-        assertTrue(vertex.contains("uniform mat4 ModelViewMat;"));
-        assertTrue(vertex.contains("uniform mat4 ProjMat;"));
+        assertTrue(vertex.startsWith("#version 330"));
+        assertTrue(fragment.startsWith("#version 330"));
+        assertTrue(vertex.contains("#moj_import <minecraft:dynamictransforms.glsl>"));
+        assertTrue(vertex.contains("#moj_import <minecraft:projection.glsl>"));
         assertTrue(vertex.contains("uniform SpaceRendererSection"));
         assertTrue(vertex.contains("uniform sampler2D Sampler2;"));
         assertTrue(fragment.contains("uniform sampler2D Sampler0;"));
+        assertTrue(fragment.contains("#ifdef ALPHA_CUTOUT"));
         assertTrue(vertex.contains("in vec3 Position;"));
         assertTrue(vertex.contains("in vec4 Color;"));
         assertTrue(vertex.contains("in vec2 UV0;"));

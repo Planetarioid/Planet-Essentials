@@ -1,34 +1,32 @@
-#version 150
+#version 330
 
-// Space Renderer built-in terrain vertex shader.
-// This shader is intentionally independent of the Prism shader-pack runtime.
+#moj_import <minecraft:dynamictransforms.glsl>
+#moj_import <minecraft:projection.glsl>
 
 in vec3 Position;
 in vec4 Color;
 in vec2 UV0;
 in ivec2 UV2;
+in vec3 Normal;
 
-uniform mat4 ModelViewMat;
-uniform mat4 ProjMat;
+uniform sampler2D Sampler2;
 
 layout(std140) uniform SpaceRendererSection {
     vec4 SectionOrigin;
 };
 
-uniform sampler2D Sampler2;
-
 out vec4 vertexColor;
 out vec2 texCoord0;
 
-vec4 sampleLightmap(ivec2 packedLight) {
+vec4 sampleLightmap(sampler2D lightMap, ivec2 packedLight) {
     vec2 uv = (vec2(packedLight) / 256.0) + vec2(0.5 / 16.0);
     uv = clamp(uv, vec2(0.5 / 16.0), vec2(15.5 / 16.0));
-    return texture(Sampler2, uv);
+    return texture(lightMap, uv);
 }
 
 void main() {
     vec3 cameraRelativePosition = Position + SectionOrigin.xyz;
     gl_Position = ProjMat * ModelViewMat * vec4(cameraRelativePosition, 1.0);
-    vertexColor = Color * sampleLightmap(UV2);
+    vertexColor = Color * sampleLightmap(Sampler2, UV2);
     texCoord0 = UV0;
 }

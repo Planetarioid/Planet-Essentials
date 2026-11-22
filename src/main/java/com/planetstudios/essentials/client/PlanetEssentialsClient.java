@@ -6,6 +6,7 @@ import com.planetstudios.essentials.hud.HudWidgetRenderer;
 import com.planetstudios.essentials.config.ServerProfileManager;
 import com.planetstudios.essentials.rendering.ChunkSchedulingPolicy;
 import com.planetstudios.essentials.rendering.space.SpaceRendererCaptureRuntime;
+import com.planetstudios.essentials.rendering.space.SpaceRendererTerrainPipelines;
 import com.planetstudios.essentials.rendering.shaders.client.terrain.PrismTerrainChunkLifecycleEvents;
 import com.planetstudios.essentials.textures.TextureAssetCatalog;
 import com.planetstudios.essentials.textures.TextureDecodeLimits;
@@ -46,6 +47,8 @@ public final class PlanetEssentialsClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EssentialsRuntime.initialize();
+        // Register Space Renderer pipelines independently of Prism shader packs.
+        SpaceRendererTerrainPipelines.initialize();
         // Keep the section/GPU cache lifecycle synchronized with real client chunk events.
         PrismTerrainChunkLifecycleEvents.registerFabricEvents();
 
