@@ -65,6 +65,33 @@ public final class SpaceRendererDrawExecutor {
     }
 
     /**
+     * Owns the complete native-group pass lifecycle: validate the captured
+     * resources, select only this group's layers, skip empty groups without
+     * opening a pass, and close the single no-clear pass even if submission
+     * fails. This is an explicit primitive; the live renderer hook remains
+     * responsible for choosing vanilla fallback before calling it.
+     */
+    public static SubmissionResult submitCapturedGroup(
+            SpaceRendererDrawPlan framePlan,
+            SpaceRendererVanillaPassSnapshot snapshot,
+            SpaceRendererSectionUniformBuffer sectionUniforms,
+            double cameraX, double cameraY, double cameraZ) {
+        RenderSystem.assertOnRenderThread();
+        Objects.requireNonNull(framePlan, "framePlan");
+        Objects.requireNonNull(snapshot, "snapshot");
+        snapshot.validateCurrent(RenderSystem.getDevice());
+        SpaceRendererDrawPlan groupPlan = framePlan.forGroup(snapshot.group());
+        if (!groupPlan.isReady() || groupPlan.drawCount() <= 0) {
+            return new SubmissionResult(groupPlan.frameSequence(), 0);
+        }
+        try (RenderPass pass = snapshot.openPass(
+                RenderSystem.getDevice(), "Planet Essentials Space Renderer " + snapshot.group())) {
+            return submitGroup(pass, groupPlan, snapshot, sectionUniforms,
+                    cameraX, cameraY, cameraZ);
+        }
+    }
+
+    /**
      * Submits every draw in a complete immutable plan. The uniform arena is
      * rotated in a finally block after all attempted submissions, including
      * partial failures, so its next frame never overwrites an in-flight buffer.

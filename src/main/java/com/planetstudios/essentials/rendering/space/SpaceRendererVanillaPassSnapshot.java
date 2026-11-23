@@ -41,11 +41,12 @@ import java.util.Set;
 /**
  * Captures the live Minecraft terrain group's target, texture resources, and
  * currently available default-uniform resources, each layer's native
- * fixed-function pipeline configuration, and the render-type scissor state.
+ * fixed-function pipeline configuration, scissor state, and exact GL viewport.
  *
  * <p>This is a capture snapshot, not a claim of complete vanilla render-state
- * parity. It replays the captured scissor rectangle but does not yet replay
- * viewport or all backend state. The caller owns any pass opened from it.</p>
+ * parity. It replays the captured scissor rectangle and viewport, but fog,
+ * overlays, animated textures, and other backend state still need parity work.
+ * The caller owns any pass opened from it.</p>
  */
 public record SpaceRendererVanillaPassSnapshot(
         ChunkSectionLayerGroup group,

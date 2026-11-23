@@ -17,7 +17,7 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 ## Remaining work before replacement
 
 1. Complete backend-state parity, including viewport/scissor lifecycle and any state not represented by the public RenderPass API.
-2. Add a render-group submission owner that opens exactly one no-clear pass per native group, closes it safely, and guarantees whole-group vanilla fallback.
+2. Connect the render-group pass owner, which now opens exactly one no-clear pass per native group and closes it safely, to a live hook that guarantees whole-group vanilla fallback.
 3. Connect section snapshot creation to every supported chunk rebuild/change path and verify stale-result invalidation under world transitions.
 4. Preserve all vanilla terrain semantics: fog, overlays, lightmap behavior, animated textures, model layers, fluids, resource packs, and special blocks.
 5. Integrate the independent draw path at the synchronous native render-group boundary behind a fail-closed readiness gate.
@@ -47,8 +47,9 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 | Frame snapshots and native group draw plans | Implemented, CI passed |
 | Draw executor and captured-state group submission | Implemented, CI passed |
 | Vanilla target, textures, uniforms, layer pipeline and scissor capture | Implemented, CI passed |
-| Exact viewport capture/replay | Implemented in current change, CI pending |
-| Shared render-pass owner and live replacement hook | Not started |
+| Exact viewport capture/replay | Implemented, CI passed |
+| Shared render-pass owner for captured groups | Implemented, CI pending |
+| Live replacement hook and whole-group vanilla fallback | Not started |
 | Animated fluid textures and full overlay/fog parity | Not started |
 | Full visual parity, compatibility and performance validation | Not started |
 
