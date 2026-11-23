@@ -10,7 +10,7 @@ class SpaceRendererRenderGroupBridgeTest {
         var result = new SpaceRendererRenderGroupBridge.Preflight(
                 12, 8,
                 SpaceRendererRenderGroupBridge.FallbackReason.VANILLA_STATE_PARITY_UNVERIFIED,
-                true);
+                false);
 
         assertFalse(result.snapshotValidated());
         assertEquals(8, result.plannedDraws());
