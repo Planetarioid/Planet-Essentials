@@ -1,6 +1,6 @@
 # Space Renderer architecture
 
-Space Renderer is Planet Studios' independent terrain renderer for Space Client on Minecraft Java 1.21.11 and Fabric. It studies general high-performance rendering techniques, including section-oriented world representation, asynchronous mesh work, visibility traversal, shared GPU storage, and batched submissions. Its implementation is original and does not copy Sodium source code.
+Space Renderer is Planet Studios' independent terrain renderer for Planet Essentials on Minecraft Java 1.21.11 and Fabric. It studies general high-performance rendering techniques, including section-oriented world representation, asynchronous mesh work, visibility traversal, shared GPU storage, and batched submissions. Its implementation is original and does not copy Sodium source code.
 
 ## Current foundations
 

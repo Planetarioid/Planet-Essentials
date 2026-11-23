@@ -1,10 +1,10 @@
-# Space Client
+# Planet Essentials
 
 **The unified Minecraft client experience by Planet Studios.**
 
-Space Client is a Fabric mod for Minecraft Java Edition **1.21.11**, targeting Java 21. It combines settings, HUD tools, diagnostics, profiles, and client optimization systems.
+Planet Essentials is a Fabric mod for Minecraft Java Edition **1.21.11**, targeting Java 21. It combines settings, HUD tools, diagnostics, profiles, and client optimization systems.
 
-Its custom terrain and graphics initiative is named **Space Renderer**. Space Renderer is an independent rendering engine project, not a Sodium fork and not a completed renderer yet.
+Its independent terrain-rendering initiative is named **Space Renderer**. Space Renderer is an independent rendering engine project, not a Sodium fork and not a completed renderer yet.
 
 ## Development status
 
