@@ -27,6 +27,31 @@ class SpaceRendererVanillaPassSnapshotTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new SpaceRendererVanillaPassSnapshot.ScissorInput(true, 0, 0, 0, 10));
     }
+    @Test void capturedStateReadinessRequiresResourcesPipelineParityAndNonWireframeMode() {
+        var ready = new SpaceRendererVanillaPassSnapshot.CapturedStateReadinessReport(
+                java.util.Set.of(), Map.of(), false);
+        assertTrue(ready.capturedStateMatches());
+
+        var missingUniform = new SpaceRendererVanillaPassSnapshot.CapturedStateReadinessReport(
+                java.util.Set.of("uniform:Fog"), Map.of(), false);
+        assertFalse(missingUniform.capturedStateMatches());
+
+        var pipelineMismatch = new SpaceRendererVanillaPassSnapshot.CapturedStateReadinessReport(
+                java.util.Set.of(),
+                Map.of(net.minecraft.client.renderer.chunk.ChunkSectionLayer.TRANSLUCENT,
+                        List.of("blend")), false);
+        assertFalse(pipelineMismatch.capturedStateMatches());
+
+        var wireframe = new SpaceRendererVanillaPassSnapshot.CapturedStateReadinessReport(
+                java.util.Set.of(), Map.of(), true);
+        assertFalse(wireframe.capturedStateMatches());
+
+        assertThrows(UnsupportedOperationException.class,
+                () -> missingUniform.missingResources().clear());
+        assertThrows(UnsupportedOperationException.class,
+                () -> pipelineMismatch.pipelineDifferences().clear());
+    }
+
     @Test void pipelineParityReportOnlyMatchesWhenEveryLayerHasNoDifferences() {
         var matching = new SpaceRendererVanillaPassSnapshot.PipelineParityReport(Map.of());
         assertTrue(matching.matches());
