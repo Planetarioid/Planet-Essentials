@@ -11,6 +11,7 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 - GPU mesh ownership/cache, bounded upload handoff, render-thread uploads, and fenced retirement.
 - Immutable visible-frame capture, native render-group draw plans, material-aware batching, and camera-sorted translucent index buffers.
 - Native terrain shader pipelines, section-uniform uploads, and a draw executor.
+- Native 1.21.11 fog uniform integration and spherical/cylindrical fog evaluation in the Space Renderer terrain shaders; runtime visual parity still requires in-game verification.
 - Vanilla render-group snapshots for attachments, atlas/lightmap, default uniforms, per-layer pipelines, scissor, and viewport.
 - Captured-state group submission API and a live, fail-closed render-group preflight hook. CI validates compilation and tests, not actual GPU rendering.
 
@@ -44,6 +45,7 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 | Visibility graph and conservative fallback | Implemented, CI passed |
 | GPU cache, upload queue and fenced retirement | Implemented, CI passed |
 | Native terrain pipelines and section uniforms | Implemented, CI passed |
+| Shader-side vanilla fog integration | Implemented, CI pending; runtime visual parity pending |
 | Frame snapshots and native group draw plans | Implemented, CI passed |
 | Draw executor and captured-state group submission | Implemented, CI passed |
 | Vanilla target, textures, uniforms, layer pipeline and scissor capture | Implemented, CI passed |

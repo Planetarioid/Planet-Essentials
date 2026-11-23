@@ -26,6 +26,7 @@ public final class SpaceRendererTerrainPipelines {
             .withSampler("Sampler2")
             .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
             .withUniform("Projection", UniformType.UNIFORM_BUFFER)
+            .withUniform("Fog", UniformType.UNIFORM_BUFFER)
             .withUniform("SpaceRendererSection", UniformType.UNIFORM_BUFFER)
             .withVertexFormat(PrismTerrainVertexLayout.minecraftVertexFormat(), VertexFormat.Mode.QUADS)
             .buildSnippet();

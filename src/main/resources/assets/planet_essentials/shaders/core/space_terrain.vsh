@@ -2,6 +2,7 @@
 
 #moj_import <minecraft:dynamictransforms.glsl>
 #moj_import <minecraft:projection.glsl>
+#moj_import <minecraft:fog.glsl>
 
 in vec3 Position;
 in vec4 Color;
@@ -15,6 +16,8 @@ layout(std140) uniform SpaceRendererSection {
     vec4 SectionOrigin;
 };
 
+out float sphericalVertexDistance;
+out float cylindricalVertexDistance;
 out vec4 vertexColor;
 out vec2 texCoord0;
 
@@ -27,6 +30,8 @@ vec4 sampleLightmap(sampler2D lightMap, ivec2 packedLight) {
 void main() {
     vec3 cameraRelativePosition = Position + SectionOrigin.xyz;
     gl_Position = ProjMat * ModelViewMat * vec4(cameraRelativePosition, 1.0);
+    sphericalVertexDistance = fog_spherical_distance(cameraRelativePosition);
+    cylindricalVertexDistance = fog_cylindrical_distance(cameraRelativePosition);
     vertexColor = Color * sampleLightmap(Sampler2, UV2);
     texCoord0 = UV0;
 }

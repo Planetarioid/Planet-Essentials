@@ -24,9 +24,14 @@ class SpaceRendererShaderSourceTest {
         assertTrue(fragment.startsWith("#version 330"));
         assertTrue(vertex.contains("#moj_import <minecraft:dynamictransforms.glsl>"));
         assertTrue(vertex.contains("#moj_import <minecraft:projection.glsl>"));
+        assertTrue(vertex.contains("#moj_import <minecraft:fog.glsl>"));
+        assertTrue(vertex.contains("fog_spherical_distance(cameraRelativePosition)"));
+        assertTrue(vertex.contains("fog_cylindrical_distance(cameraRelativePosition)"));
         assertTrue(vertex.contains("uniform SpaceRendererSection"));
         assertTrue(vertex.contains("uniform sampler2D Sampler2;"));
         assertTrue(fragment.contains("uniform sampler2D Sampler0;"));
+        assertTrue(fragment.contains("#moj_import <minecraft:fog.glsl>"));
+        assertTrue(fragment.contains("apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance"));
         assertTrue(fragment.contains("#ifdef ALPHA_CUTOUT"));
         assertTrue(vertex.contains("in vec3 Position;"));
         assertTrue(vertex.contains("in vec4 Color;"));
