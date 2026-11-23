@@ -1,7 +1,6 @@
 package com.planetstudios.essentials.rendering.space;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuSampler;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
 import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
@@ -23,11 +22,10 @@ public final class SpaceRendererRenderGroupBridge {
 
     /** Called synchronously from ChunkSectionsToRender.renderGroup HEAD. */
     public static Preflight preflight(ChunkSectionsToRender input,
-            ChunkSectionLayerGroup group, GpuSampler blockAtlasSampler) {
+            ChunkSectionLayerGroup group) {
         RenderSystem.assertOnRenderThread();
         Objects.requireNonNull(input, "input");
         Objects.requireNonNull(group, "group");
-        Objects.requireNonNull(blockAtlasSampler, "blockAtlasSampler");
 
         SpaceRendererDrawPlan groupPlan = SpaceRendererCaptureRuntime.currentDrawPlanForGroup(group);
         if (!groupPlan.isReady() || groupPlan.drawCount() == 0) {
@@ -35,38 +33,26 @@ public final class SpaceRendererRenderGroupBridge {
                     FallbackReason.FRAME_NOT_READY, false));
         }
 
-        int vanillaDrawCount = 0;
+        long vanillaDrawCount = 0;
         for (ChunkSectionLayer layer : group.layers()) {
             var draws = input.drawsPerLayer().get(layer);
             if (draws == null) {
                 return publish(new Preflight(groupPlan.frameSequence(), groupPlan.drawCount(),
                         FallbackReason.INCOMPLETE_GROUP_COVERAGE, false));
             }
-            vanillaDrawCount = Math.addExact(vanillaDrawCount, draws.size());
+            vanillaDrawCount += draws.size();
         }
         if (vanillaDrawCount != groupPlan.drawCount()) {
             return publish(new Preflight(groupPlan.frameSequence(), groupPlan.drawCount(),
                     FallbackReason.INCOMPLETE_GROUP_COVERAGE, false));
         }
 
-        try {
-            SpaceRendererVanillaPassSnapshot snapshot =
-                    SpaceRendererVanillaPassSnapshot.capture(input, group, blockAtlasSampler);
-            snapshot.validateCurrent(RenderSystem.getDevice());
-            if (!snapshot.layers().equals(java.util.List.of(group.layers()))) {
-                return publish(new Preflight(groupPlan.frameSequence(), groupPlan.drawCount(),
-                        FallbackReason.INCOMPLETE_GROUP_COVERAGE, false));
-            }
-
-            // Fog is captured, but overlay, animated-texture and special-model
-            // parity are not yet complete or verified. Never take over on
-            // capture completeness alone.
-            return publish(new Preflight(groupPlan.frameSequence(), groupPlan.drawCount(),
-                    FallbackReason.VANILLA_STATE_PARITY_UNVERIFIED, true));
-        } catch (RuntimeException captureFailure) {
-            return publish(new Preflight(groupPlan.frameSequence(), groupPlan.drawCount(),
-                    FallbackReason.SNAPSHOT_UNAVAILABLE, false));
-        }
+        // Snapshot capture currently performs a synchronous GL viewport query and
+        // resource inspection, but the snapshot is not consumed by this observer.
+        // Defer that work until the submission gate can validate and immediately
+        // use it. This keeps the live render-group hook to bounded CPU checks.
+        return publish(new Preflight(groupPlan.frameSequence(), groupPlan.drawCount(),
+                FallbackReason.VANILLA_STATE_PARITY_UNVERIFIED, false));
     }
 
     private static Preflight publish(Preflight result) {

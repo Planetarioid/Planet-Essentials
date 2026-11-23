@@ -12,8 +12,19 @@ class SpaceRendererRenderGroupBridgeTest {
                 SpaceRendererRenderGroupBridge.FallbackReason.VANILLA_STATE_PARITY_UNVERIFIED,
                 true);
 
-        assertTrue(result.snapshotValidated());
+        assertFalse(result.snapshotValidated());
         assertEquals(8, result.plannedDraws());
+        assertFalse(result.mayReplaceVanilla());
+    }
+
+    @Test
+    void parityPreflightDefersUnusedSnapshotCapture() {
+        var result = new SpaceRendererRenderGroupBridge.Preflight(
+                15, 6,
+                SpaceRendererRenderGroupBridge.FallbackReason.VANILLA_STATE_PARITY_UNVERIFIED,
+                false);
+
+        assertFalse(result.snapshotValidated());
         assertFalse(result.mayReplaceVanilla());
     }
 

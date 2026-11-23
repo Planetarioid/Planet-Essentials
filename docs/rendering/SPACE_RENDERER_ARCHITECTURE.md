@@ -49,7 +49,7 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 | Vanilla target, textures, uniforms, layer pipeline and scissor capture | Implemented, CI passed |
 | Exact viewport capture/replay | Implemented, CI passed |
 | Shared render-pass owner for captured groups | Implemented, CI passed |
-| Live render-group preflight and fail-closed fallback gate | Implemented, CI pending |
+| Live render-group preflight and fail-closed fallback gate | Implemented, CI passed |
 | Live Space Renderer submission and whole-group vanilla takeover | Not started |
 | Animated fluid textures and full overlay/fog parity | Not started |
 | Full visual parity, compatibility and performance validation | Not started |

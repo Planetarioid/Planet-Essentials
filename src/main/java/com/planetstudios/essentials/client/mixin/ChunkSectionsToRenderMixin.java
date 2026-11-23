@@ -20,7 +20,7 @@ public abstract class ChunkSectionsToRenderMixin {
             ChunkSectionLayerGroup group, GpuSampler sampler, CallbackInfo callback) {
         if (!ShaderPackRuntime.isEnabled()) {
             SpaceRendererRenderGroupBridge.preflight(
-                    (ChunkSectionsToRender) (Object) this, group, sampler);
+                    (ChunkSectionsToRender) (Object) this, group);
             return;
         }
         PrismTerrainRenderGroupBoundary.begin((ChunkSectionsToRender) (Object) this, group, sampler);
