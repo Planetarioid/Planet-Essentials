@@ -221,6 +221,56 @@ public record SpaceRendererVanillaPassSnapshot(
         return new PipelineParityReport(differences);
     }
 
+    /**
+     * Reports whether the captured native group contains the resources needed
+     * to reproduce its backend bindings. This is deliberately narrower than
+     * full visual parity: shader behavior, animated textures, overlays, and
+     * runtime GPU-state parity still require separate validation.
+     */
+    public CapturedStateReadinessReport assessCapturedStateReadiness() {
+        java.util.Set<String> requiredUniforms = java.util.Set.of(
+                "Projection", "Fog", "Globals", "Lighting");
+        java.util.Set<String> availableUniforms = defaultUniforms.availableNames();
+        java.util.Set<String> missingUniforms = new java.util.HashSet<>(requiredUniforms);
+        missingUniforms.removeAll(availableUniforms);
+
+        java.util.Set<String> missingResources = new java.util.HashSet<>();
+        if (depthAttachment.isEmpty()) missingResources.add("depth-attachment");
+        if (!missingUniforms.isEmpty()) {
+            missingUniforms.forEach(name -> missingResources.add("uniform:" + name));
+        }
+
+        PipelineParityReport pipelineParity = compareFixedFunctionPipelineState();
+        return new CapturedStateReadinessReport(
+                missingResources, pipelineParity.differences(), wireframe);
+    }
+
+    /**
+     * Immutable captured-state assessment. A matching report confirms only
+     * that the snapshot has the required resources and compared pipeline
+     * settings; it never authorizes cancelling vanilla rendering.
+     */
+    public record CapturedStateReadinessReport(
+            Set<String> missingResources,
+            Map<ChunkSectionLayer, List<String>> pipelineDifferences,
+            boolean wireframe) {
+        public CapturedStateReadinessReport {
+            Objects.requireNonNull(missingResources, "missingResources");
+            Objects.requireNonNull(pipelineDifferences, "pipelineDifferences");
+            missingResources = Set.copyOf(missingResources);
+            EnumMap<ChunkSectionLayer, List<String>> copy =
+                    new EnumMap<>(ChunkSectionLayer.class);
+            pipelineDifferences.forEach((layer, values) ->
+                    copy.put(Objects.requireNonNull(layer, "layer"),
+                            List.copyOf(Objects.requireNonNull(values, "differences"))));
+            pipelineDifferences = Collections.unmodifiableMap(copy);
+        }
+
+        public boolean capturedStateMatches() {
+            return missingResources.isEmpty() && pipelineDifferences.isEmpty() && !wireframe;
+        }
+    }
+
     /** Immutable result; an empty difference map means compared state matches. */
     public record PipelineParityReport(Map<ChunkSectionLayer, List<String>> differences) {
         public PipelineParityReport {
