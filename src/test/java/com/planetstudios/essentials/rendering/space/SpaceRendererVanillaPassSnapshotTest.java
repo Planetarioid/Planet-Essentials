@@ -2,6 +2,9 @@ package com.planetstudios.essentials.rendering.space;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class SpaceRendererVanillaPassSnapshotTest {
@@ -24,4 +27,18 @@ class SpaceRendererVanillaPassSnapshotTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new SpaceRendererVanillaPassSnapshot.ScissorInput(true, 0, 0, 0, 10));
     }
+    @Test void pipelineParityReportOnlyMatchesWhenEveryLayerHasNoDifferences() {
+        var matching = new SpaceRendererVanillaPassSnapshot.PipelineParityReport(Map.of());
+        assertTrue(matching.matches());
+
+        var mismatching = new SpaceRendererVanillaPassSnapshot.PipelineParityReport(
+                Map.of(net.minecraft.client.renderer.chunk.ChunkSectionLayer.SOLID,
+                        List.of("depth-test", "blend")));
+        assertFalse(mismatching.matches());
+        assertEquals(List.of("depth-test", "blend"),
+                mismatching.differences().get(net.minecraft.client.renderer.chunk.ChunkSectionLayer.SOLID));
+        assertThrows(UnsupportedOperationException.class,
+                () -> mismatching.differences().clear());
+    }
+
 }

@@ -13,6 +13,7 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 - Native terrain shader pipelines, section-uniform uploads, and a draw executor.
 - Native 1.21.11 fog uniform integration and spherical/cylindrical fog evaluation in the Space Renderer terrain shaders; runtime visual parity still requires in-game verification.
 - Vanilla render-group snapshots for attachments, atlas/lightmap, default uniforms, per-layer pipelines, scissor, and viewport.
+- Per-layer fixed-function pipeline parity diagnostics comparing depth, blend, culling, write masks, polygon mode, logic ops, and polygon offset; mismatches are reported by native layer and must retain vanilla fallback.
 - Captured-state group submission API and a live, fail-closed render-group preflight hook. CI validates compilation and tests, not actual GPU rendering.
 
 ## Remaining work before replacement
@@ -50,6 +51,7 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 | Draw executor and captured-state group submission | Implemented, CI passed |
 | Vanilla target, textures, uniforms, layer pipeline and scissor capture | Implemented, CI passed |
 | Exact viewport capture/replay | Implemented, CI passed |
+| Fixed-function pipeline parity diagnostics | Implemented, CI pending; runtime backend parity pending |
 | Shared render-pass owner for captured groups | Implemented, CI passed |
 | Live render-group preflight and fail-closed fallback gate | Implemented, CI passed |
 | Live Space Renderer submission and whole-group vanilla takeover | Not started |

@@ -189,6 +189,55 @@ public record SpaceRendererVanillaPassSnapshot(
         return pass;
     }
 
+    /**
+     * Compares every applied vanilla layer's fixed-function state with the
+     * independent Space Renderer pipeline selected for that same layer.
+     *
+     * <p>Shader identifiers and vertex layouts intentionally differ. This
+     * comparison covers only backend state that must remain equivalent:
+     * depth test/write, culling, blending, color masks, polygon mode, logic
+     * operation, and polygon offset. A mismatch is diagnostic and must keep
+     * the whole native group on vanilla.</p>
+     */
+    public PipelineParityReport compareFixedFunctionPipelineState() {
+        EnumMap<ChunkSectionLayer, List<String>> differences =
+                new EnumMap<>(ChunkSectionLayer.class);
+        for (ChunkSectionLayer layer : layers) {
+            LayerPipelineInput vanilla = layerPipelines.get(layer);
+            if (!vanilla.pipelineApplied()) continue;
+            PipelineState candidate = PipelineState.capture(
+                    SpaceRendererDrawExecutor.pipelineForLayer(layer));
+            List<String> layerDifferences = vanilla.state().orElseThrow()
+                    .fixedFunctionDifferences(candidate);
+            if (wireframe) {
+                List<String> withWireframe = new java.util.ArrayList<>(layerDifferences);
+                withWireframe.add("wireframe-mode");
+                layerDifferences = List.copyOf(withWireframe);
+            }
+            if (!layerDifferences.isEmpty()) {
+                differences.put(layer, layerDifferences);
+            }
+        }
+        return new PipelineParityReport(differences);
+    }
+
+    /** Immutable result; an empty difference map means compared state matches. */
+    public record PipelineParityReport(Map<ChunkSectionLayer, List<String>> differences) {
+        public PipelineParityReport {
+            Objects.requireNonNull(differences, "differences");
+            EnumMap<ChunkSectionLayer, List<String>> copy =
+                    new EnumMap<>(ChunkSectionLayer.class);
+            differences.forEach((layer, values) ->
+                    copy.put(Objects.requireNonNull(layer, "layer"),
+                            List.copyOf(Objects.requireNonNull(values, "differences"))));
+            differences = Collections.unmodifiableMap(copy);
+        }
+
+        public boolean matches() {
+            return differences.isEmpty();
+        }
+    }
+
     /** Rejects resized/recreated targets and GPU-device changes after capture. */
     public void validateCurrent(GpuDevice currentDevice) {
         RenderSystem.assertOnRenderThread();
@@ -306,6 +355,23 @@ public record SpaceRendererVanillaPassSnapshot(
                     pipeline.isWriteDepth(), pipeline.getColorLogic(),
                     pipeline.getDepthBiasScaleFactor(), pipeline.getDepthBiasConstant(),
                     pipeline.getVertexFormat(), pipeline.getVertexFormatMode());
+        }
+
+        /** Returns named fixed-function fields that differ from a candidate pipeline. */
+        public List<String> fixedFunctionDifferences(PipelineState candidate) {
+            Objects.requireNonNull(candidate, "candidate");
+            List<String> differences = new java.util.ArrayList<>();
+            if (!depthTest.equals(candidate.depthTest)) differences.add("depth-test");
+            if (!polygonMode.equals(candidate.polygonMode)) differences.add("polygon-mode");
+            if (cull != candidate.cull) differences.add("cull");
+            if (!blend.equals(candidate.blend)) differences.add("blend");
+            if (writeColor != candidate.writeColor) differences.add("color-write");
+            if (writeAlpha != candidate.writeAlpha) differences.add("alpha-write");
+            if (writeDepth != candidate.writeDepth) differences.add("depth-write");
+            if (!colorLogic.equals(candidate.colorLogic)) differences.add("color-logic");
+            if (Float.compare(depthBiasScale, candidate.depthBiasScale) != 0) differences.add("depth-bias-scale");
+            if (Float.compare(depthBiasConstant, candidate.depthBiasConstant) != 0) differences.add("depth-bias-constant");
+            return List.copyOf(differences);
         }
     }
 
