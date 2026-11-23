@@ -12,12 +12,12 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 - Immutable visible-frame capture, native render-group draw plans, material-aware batching, and camera-sorted translucent index buffers.
 - Native terrain shader pipelines, section-uniform uploads, and a draw executor.
 - Vanilla render-group snapshots for attachments, atlas/lightmap, default uniforms, per-layer pipelines, scissor, and viewport.
-- Captured-state group submission API. CI validates compilation and tests, not actual GPU rendering.
+- Captured-state group submission API and a live, fail-closed render-group preflight hook. CI validates compilation and tests, not actual GPU rendering.
 
 ## Remaining work before replacement
 
 1. Complete backend-state parity, including viewport/scissor lifecycle and any state not represented by the public RenderPass API.
-2. Connect the render-group pass owner, which now opens exactly one no-clear pass per native group and closes it safely, to a live hook that guarantees whole-group vanilla fallback.
+2. Upgrade the live preflight hook into a submission hook only after every vanilla state facet is implemented and runtime-verified. It currently observes group coverage and snapshots state, but deliberately never cancels vanilla.
 3. Connect section snapshot creation to every supported chunk rebuild/change path and verify stale-result invalidation under world transitions.
 4. Preserve all vanilla terrain semantics: fog, overlays, lightmap behavior, animated textures, model layers, fluids, resource packs, and special blocks.
 5. Integrate the independent draw path at the synchronous native render-group boundary behind a fail-closed readiness gate.
@@ -48,8 +48,9 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 | Draw executor and captured-state group submission | Implemented, CI passed |
 | Vanilla target, textures, uniforms, layer pipeline and scissor capture | Implemented, CI passed |
 | Exact viewport capture/replay | Implemented, CI passed |
-| Shared render-pass owner for captured groups | Implemented, CI pending |
-| Live replacement hook and whole-group vanilla fallback | Not started |
+| Shared render-pass owner for captured groups | Implemented, CI passed |
+| Live render-group preflight and fail-closed fallback gate | Implemented, CI pending |
+| Live Space Renderer submission and whole-group vanilla takeover | Not started |
 | Animated fluid textures and full overlay/fog parity | Not started |
 | Full visual parity, compatibility and performance validation | Not started |
 

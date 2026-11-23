@@ -81,8 +81,9 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [x] Native terrain shader pipelines, section uniform ring, and draw executor
 - [x] Captured-state group submission API
 - [x] Vanilla target, atlas/lightmap, default uniform, per-layer pipeline, scissor, and viewport capture/replay
-- [ ] Single-owner render-pass bridge with whole-group fallback
-- [ ] Live Space Renderer submission at the native render-group boundary
+- [x] Live native render-group preflight hook with immutable frame/coverage checks and fail-closed vanilla fallback
+- [x] Snapshot validation at the native render-group boundary without suppressing vanilla
+- [ ] Enable Space Renderer submission at the native render-group boundary after complete vanilla-state parity
 - [ ] Full fog, overlay, animated texture, and special-block parity
 - [ ] Runtime visual parity, mod compatibility, GPU validation, and benchmarks
 
