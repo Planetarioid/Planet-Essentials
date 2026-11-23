@@ -1,6 +1,7 @@
 package com.planetstudios.essentials.rendering.space;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
+import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
@@ -224,7 +225,7 @@ public record SpaceRendererVanillaPassSnapshot(
 
         public void apply() {
             RenderSystem.assertOnRenderThread();
-            RenderSystem.viewport(x, y, width, height);
+            GlStateManager._viewport(x, y, width, height);
         }
     }
 
