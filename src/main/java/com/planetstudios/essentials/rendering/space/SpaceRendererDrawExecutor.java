@@ -46,6 +46,25 @@ public final class SpaceRendererDrawExecutor {
     }
 
     /**
+     * Submits one native group using only the resources captured at that
+     * group's boundary. The caller must open the pass from the same snapshot.
+     */
+    public static SubmissionResult submitGroup(RenderPass pass,
+            SpaceRendererDrawPlan framePlan,
+            SpaceRendererVanillaPassSnapshot snapshot,
+            SpaceRendererSectionUniformBuffer sectionUniforms,
+            double cameraX, double cameraY, double cameraZ) {
+        RenderSystem.assertOnRenderThread();
+        Objects.requireNonNull(snapshot, "snapshot");
+        snapshot.validateCurrent(RenderSystem.getDevice());
+        return submitInternal(pass, framePlan.forGroup(snapshot.group()), sectionUniforms,
+                cameraX, cameraY, cameraZ,
+                snapshot.blockAtlas(), snapshot.blockAtlasSampler(),
+                snapshot.lightmap(), snapshot.lightmapSampler(),
+                snapshot.defaultUniforms(), snapshot.modelView());
+    }
+
+    /**
      * Submits every draw in a complete immutable plan. The uniform arena is
      * rotated in a finally block after all attempted submissions, including
      * partial failures, so its next frame never overwrites an in-flight buffer.
@@ -56,6 +75,18 @@ public final class SpaceRendererDrawExecutor {
             double cameraX, double cameraY, double cameraZ,
             GpuTextureView blockAtlas, GpuSampler blockAtlasSampler,
             GpuTextureView lightmap, GpuSampler lightmapSampler) {
+        return submitInternal(pass, plan, sectionUniforms, cameraX, cameraY, cameraZ,
+                blockAtlas, blockAtlasSampler, lightmap, lightmapSampler, null, null);
+    }
+
+    private static SubmissionResult submitInternal(RenderPass pass,
+            SpaceRendererDrawPlan plan,
+            SpaceRendererSectionUniformBuffer sectionUniforms,
+            double cameraX, double cameraY, double cameraZ,
+            GpuTextureView blockAtlas, GpuSampler blockAtlasSampler,
+            GpuTextureView lightmap, GpuSampler lightmapSampler,
+            SpaceRendererVanillaPassSnapshot.DefaultUniformInputs capturedUniforms,
+            Matrix4f capturedModelView) {
         RenderSystem.assertOnRenderThread();
         Objects.requireNonNull(pass, "pass");
         Objects.requireNonNull(plan, "plan");
@@ -80,7 +111,7 @@ public final class SpaceRendererDrawExecutor {
             // DynamicTransforms is shared by every section in this render group.
             // The per-section origin is supplied separately by SpaceRendererSection.
             var dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(
-                    RenderSystem.getModelViewMatrix(),
+                    capturedModelView == null ? RenderSystem.getModelViewMatrix() : capturedModelView,
                     new Vector4f(1.0f),
                     new Vector3f(),
                     new Matrix4f());
@@ -89,7 +120,11 @@ public final class SpaceRendererDrawExecutor {
                 // RenderPass uniform and sampler bindings are pipeline-scoped. Select
                 // the layer pipeline before applying its default and dynamic uniforms.
                 pass.setPipeline(pipelineForLayer(batch.layer()));
-                RenderSystem.bindDefaultUniforms(pass);
+                if (capturedUniforms == null) {
+                    RenderSystem.bindDefaultUniforms(pass);
+                } else {
+                    capturedUniforms.bindTo(pass);
+                }
                 pass.setUniform("DynamicTransforms", dynamicTransforms);
                 pass.bindTexture(BLOCK_ATLAS_SAMPLER, blockAtlas, blockAtlasSampler);
                 pass.bindTexture(LIGHTMAP_SAMPLER, lightmap, lightmapSampler);
