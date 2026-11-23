@@ -1,51 +1,57 @@
 # Space Renderer architecture
 
-Space Renderer is Planet Studios' independent terrain renderer for Planet Essentials on Minecraft Java 1.21.11 and Fabric. It studies general high-performance rendering techniques, including section-oriented world representation, asynchronous mesh work, visibility traversal, shared GPU storage, and batched submissions. Its implementation is original and does not copy Sodium source code.
+Space Renderer is Planet Studios' independent terrain renderer for Planet Essentials on Minecraft Java 1.21.11 and Fabric. It is an original implementation of a section-based terrain pipeline, not a Sodium fork and not yet a complete replacement for Minecraft's renderer.
 
-## Current foundations
+## Implemented foundations
 
-- **Section identity and revisions:** dimension-aware section keys and monotonic build tokens reject stale worker results.
-- **Mesh scheduling:** bounded in-flight priority queue for CPU-only immutable mesh construction. Completed results are polled by the client/render coordination layer.
-- **Visibility graph:** section connectivity traversal crosses only mutually open faces. Unknown data or visit-limit truncation requests a safe frustum-only fallback.
-- **GPU region allocation:** aligned best-fit allocation with range coalescing.
-- **GPU region ownership:** transactional replacement reservations preserve old section data until a new upload is committed.
+- Revision-safe, dimension-aware section identity and lifecycle management.
+- Immutable block-state and model snapshots with bounded memory accounting.
+- Bounded asynchronous CPU meshing, including baked block models, biome tint, packed light, ambient occlusion, and fluids.
+- Conservative visibility traversal with safe frustum fallback.
+- GPU mesh ownership/cache, bounded upload handoff, render-thread uploads, and fenced retirement.
+- Immutable visible-frame capture, native render-group draw plans, material-aware batching, and camera-sorted translucent index buffers.
+- Native terrain shader pipelines, section-uniform uploads, and a draw executor.
+- Vanilla render-group snapshots for attachments, atlas/lightmap, default uniforms, per-layer pipelines, scissor, and viewport.
+- Captured-state group submission API. CI validates compilation and tests, not actual GPU rendering.
 
-These are standalone foundations. They are not yet connected to Minecraft's complete chunk rebuild, visibility, or GPU upload lifecycle.
+## Remaining work before replacement
 
-## Required architecture
+1. Complete backend-state parity, including viewport/scissor lifecycle and any state not represented by the public RenderPass API.
+2. Add a render-group submission owner that opens exactly one no-clear pass per native group, closes it safely, and guarantees whole-group vanilla fallback.
+3. Connect section snapshot creation to every supported chunk rebuild/change path and verify stale-result invalidation under world transitions.
+4. Preserve all vanilla terrain semantics: fog, overlays, lightmap behavior, animated textures, model layers, fluids, resource packs, and special blocks.
+5. Integrate the independent draw path at the synchronous native render-group boundary behind a fail-closed readiness gate.
+6. Validate visual parity on supported GPU drivers and with ordinary Fabric mods before enabling replacement by default.
+7. Benchmark frame-time distributions, CPU meshing, upload pressure, GPU memory, and translucent sorting against vanilla.
 
-1. World and section manager integrated with chunk load, unload, block changes, and dimension changes.
-2. Immutable chunk snapshots and parallel mesh building with bounded work queues and cancellation.
-3. Correct visibility graph generation from section occlusion data, plus frustum and conservative occlusion culling.
-4. Shared GPU vertex/index storage, render-thread uploads, fences or safe retirement, and fragmentation management.
-5. Opaque, cutout, and translucent render lists with material-aware batching.
-6. Full terrain takeover with safe vanilla fallback and correct lighting, biome tint, fluids, animated textures, block entities, and resource packs.
-7. Profiling of CPU mesh build, culling, uploads, draw submission, GPU time, and frame-time percentiles.
+## Correctness rules
 
-## Safety and correctness rules
+- Worker threads consume immutable snapshots and produce CPU-only mesh data.
+- GPU creation, mutation, upload, and disposal remain on the render thread.
+- Every asynchronous result is checked against its current section revision before upload.
+- Unknown or incomplete visibility data must not hide terrain.
+- Replaced GPU allocations remain alive until prior commands have passed a GPU fence.
+- Translucent sorting and native layer ordering must match Minecraft's behavior.
+- Vanilla remains authoritative until the full render group can be replaced without missing draws or state.
 
-- Worker threads only consume immutable snapshots and produce CPU mesh data.
-- All GPU resource creation, mutation, upload, and disposal stays on the render thread.
-- Every result must be checked against its section revision before upload.
-- Unknown visibility or incomplete graph state must not hide terrain.
-- Replaced GPU ranges remain allocated until replacement uploads have succeeded.
-- Translucent sorting and render-layer semantics must match Minecraft's expectations.
-- Vanilla remains the fallback until visual parity and compatibility tests pass.
+## Current stage
 
-## Implementation stages
-
-| Stage | Deliverable | Status |
-|---|---|---|
-| 1 | Section identity and revision manager | Implemented, awaiting CI verification |
-| 2 | Bounded asynchronous mesh-build scheduler | Implemented, awaiting CI verification |
-| 3 | Conservative visibility graph | Implemented, awaiting CI verification |
-| 4 | Aligned GPU-region allocator and ownership manager | Implemented, awaiting CI verification |
-| 5 | Minecraft chunk lifecycle and mesh-builder integration | Not started |
-| 6 | Shared GPU buffers and render-thread upload pipeline | Not started |
-| 7 | Layered render lists and batched draw submission | Partial foundations |
-| 8 | Complete terrain takeover, fallback, and visual parity | Not started |
-| 9 | Compatibility and repeatable performance benchmarks | Not started |
+| Component | Status |
+|---|---|
+| Section manager and bounded mesh scheduler | Implemented, CI passed |
+| Block-state snapshots and baked-model mesher | Implemented, CI passed |
+| Lighting, AO, biome tint and fluid geometry | Implemented, CI passed |
+| Visibility graph and conservative fallback | Implemented, CI passed |
+| GPU cache, upload queue and fenced retirement | Implemented, CI passed |
+| Native terrain pipelines and section uniforms | Implemented, CI passed |
+| Frame snapshots and native group draw plans | Implemented, CI passed |
+| Draw executor and captured-state group submission | Implemented, CI passed |
+| Vanilla target, textures, uniforms, layer pipeline and scissor capture | Implemented, CI passed |
+| Exact viewport capture/replay | Implemented in current change, CI pending |
+| Shared render-pass owner and live replacement hook | Not started |
+| Animated fluid textures and full overlay/fog parity | Not started |
+| Full visual parity, compatibility and performance validation | Not started |
 
 ## License boundary
 
-Sodium's repository is public, but its current source is distributed under PolyForm Shield 1.0.0, not an unrestricted permissive license. Space Renderer therefore implements general rendering concepts independently rather than copying or repackaging Sodium code. Review the official [Sodium repository](https://github.com/CaffeineMC/sodium) and [license](https://github.com/CaffeineMC/sodium/blob/dev/LICENSE.md) before any source reuse.
+Sodium's public repository currently uses PolyForm Shield 1.0.0 rather than an unrestricted permissive license. Space Renderer therefore implements general rendering concepts independently instead of copying or repackaging Sodium source code. Review the official [Sodium repository](https://github.com/CaffeineMC/sodium) and [license](https://github.com/CaffeineMC/sodium/blob/dev/LICENSE.md) before any source reuse.

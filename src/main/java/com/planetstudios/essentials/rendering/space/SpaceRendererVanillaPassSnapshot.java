@@ -17,6 +17,9 @@ import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.systems.ScissorState;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.system.MemoryStack;
+import java.nio.IntBuffer;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
 import net.minecraft.SharedConstants;
@@ -60,6 +63,7 @@ public record SpaceRendererVanillaPassSnapshot(
         Matrix4f modelView,
         DefaultUniformInputs defaultUniforms,
         ScissorInput scissor,
+        ViewportInput viewport,
         GpuDevice device) {
 
     public SpaceRendererVanillaPassSnapshot {
@@ -76,6 +80,7 @@ public record SpaceRendererVanillaPassSnapshot(
         Objects.requireNonNull(modelView, "modelView");
         Objects.requireNonNull(defaultUniforms, "defaultUniforms");
         Objects.requireNonNull(scissor, "scissor");
+        Objects.requireNonNull(viewport, "viewport");
         Objects.requireNonNull(device, "device");
         if (targetWidth <= 0 || targetHeight <= 0) {
             throw new IllegalArgumentException("Terrain target dimensions must be positive");
@@ -154,6 +159,7 @@ public record SpaceRendererVanillaPassSnapshot(
                         RenderSystem.getGlobalSettingsUniform(),
                         RenderSystem.getShaderLights()),
                 ScissorInput.capture(RenderSystem.getScissorStateForRenderTypeDraws()),
+                ViewportInput.capture(),
                 Objects.requireNonNull(RenderSystem.getDevice(), "active GPU device"));
     }
 
@@ -177,6 +183,7 @@ public record SpaceRendererVanillaPassSnapshot(
                 depthAttachment.orElse(null),
                 java.util.OptionalDouble.empty());
         scissor.applyTo(pass);
+        viewport.apply();
         return pass;
     }
 
@@ -190,6 +197,34 @@ public record SpaceRendererVanillaPassSnapshot(
                 || target.getColorTextureView() != colorAttachment
                 || target.getDepthTextureView() != depthAttachment.orElse(null)) {
             throw new IllegalStateException("Captured terrain target changed after the group snapshot");
+        }
+    }
+
+    /**
+     * Exact OpenGL viewport captured at the native render-group boundary.
+     * RenderPass has no viewport setter, so the value is restored explicitly
+     * after opening our pass. Capture is render-thread-only and fails closed
+     * if the active graphics context cannot report a valid viewport.
+     */
+    public record ViewportInput(int x, int y, int width, int height) {
+        public ViewportInput {
+            if (x < 0 || y < 0 || width <= 0 || height <= 0) {
+                throw new IllegalArgumentException("Invalid captured terrain viewport");
+            }
+        }
+
+        public static ViewportInput capture() {
+            RenderSystem.assertOnRenderThread();
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                IntBuffer values = stack.mallocInt(4);
+                GL11.glGetIntegerv(GL11.GL_VIEWPORT, values);
+                return new ViewportInput(values.get(0), values.get(1), values.get(2), values.get(3));
+            }
+        }
+
+        public void apply() {
+            RenderSystem.assertOnRenderThread();
+            RenderSystem.viewport(x, y, width, height);
         }
     }
 

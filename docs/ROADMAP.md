@@ -72,6 +72,20 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [x] GPU-fenced temporary translucent index ring and tripwire-after-translucent grouping
 - [~] In-game verification of translucent sorting and terrain-layer parity
 
+## 3A. Space Renderer independent terrain engine
+- [x] Revision-safe section lifecycle, bounded async mesh scheduler, immutable section snapshots
+- [x] Independent baked-model meshing, packed light, ambient occlusion, biome tint, and fluid geometry
+- [x] Conservative visibility traversal and safe frustum fallback
+- [x] GPU cache, bounded upload queue, render-thread upload, and fenced resource retirement
+- [x] Immutable visible-frame snapshots, material-aware draw plans, translucent sorting, and native group slicing
+- [x] Native terrain shader pipelines, section uniform ring, and draw executor
+- [x] Captured-state group submission API
+- [x] Vanilla target, atlas/lightmap, default uniform, per-layer pipeline, scissor, and viewport capture/replay
+- [ ] Single-owner render-pass bridge with whole-group fallback
+- [ ] Live Space Renderer submission at the native render-group boundary
+- [ ] Full fog, overlay, animated texture, and special-block parity
+- [ ] Runtime visual parity, mod compatibility, GPU validation, and benchmarks
+
 ## 4. Prism texture subsystem
 - [x] Bounded resource discovery, PNG validation, async decode, immutable pixel cache, reload/shutdown lifecycle, CPU mip generation
 - [x] Opt-in GPU texture adapter, mip uploads, pending NativeImage cleanup, vanilla identifier fallback API
