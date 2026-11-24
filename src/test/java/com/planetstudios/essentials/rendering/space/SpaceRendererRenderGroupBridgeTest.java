@@ -1,6 +1,11 @@
 package com.planetstudios.essentials.rendering.space;
 
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -9,22 +14,32 @@ class SpaceRendererRenderGroupBridgeTest {
     void preflightNeverEnablesReplacementBeforeParityIsVerified() {
         var result = new SpaceRendererRenderGroupBridge.Preflight(
                 12, 8,
-                SpaceRendererRenderGroupBridge.FallbackReason.VANILLA_STATE_PARITY_UNVERIFIED,
-                false);
+                SpaceRendererRenderGroupBridge.FallbackReason.RUNTIME_PARITY_UNVERIFIED,
+                true);
 
-        assertFalse(result.snapshotValidated());
+        assertTrue(result.snapshotValidated());
         assertEquals(8, result.plannedDraws());
         assertFalse(result.mayReplaceVanilla());
     }
 
     @Test
-    void parityPreflightDefersUnusedSnapshotCapture() {
+    void capturedStateMismatchIsReportedAndImmutable() {
         var result = new SpaceRendererRenderGroupBridge.Preflight(
-                15, 6,
-                SpaceRendererRenderGroupBridge.FallbackReason.VANILLA_STATE_PARITY_UNVERIFIED,
+                16, 5,
+                SpaceRendererRenderGroupBridge.FallbackReason.CAPTURED_STATE_MISMATCH,
+                true,
+                Set.of("uniform:Fog"),
+                Map.of(ChunkSectionLayer.TRANSLUCENT, List.of("blend")),
                 false);
 
-        assertFalse(result.snapshotValidated());
+        assertTrue(result.snapshotValidated());
+        assertEquals(Set.of("uniform:Fog"), result.missingResources());
+        assertEquals(List.of("blend"),
+                result.pipelineDifferences().get(ChunkSectionLayer.TRANSLUCENT));
+        assertThrows(UnsupportedOperationException.class,
+                () -> result.missingResources().clear());
+        assertThrows(UnsupportedOperationException.class,
+                () -> result.pipelineDifferences().clear());
         assertFalse(result.mayReplaceVanilla());
     }
 
