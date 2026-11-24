@@ -288,6 +288,37 @@ public record SpaceRendererVanillaPassSnapshot(
         }
     }
 
+    /**
+     * Rejects resized/recreated targets and GPU-device changes after capture.
+     * This overload additionally verifies the live vanilla atlas and lightmap
+     * bindings before a caller may use the snapshot for a group submission.
+     */
+    public void validateCurrent(GpuDevice currentDevice,
+            ChunkSectionsToRender input, GpuSampler currentBlockAtlasSampler) {
+        validateCurrent(currentDevice);
+        Objects.requireNonNull(input, "input");
+        Objects.requireNonNull(currentBlockAtlasSampler, "currentBlockAtlasSampler");
+        Minecraft minecraft = Minecraft.getInstance();
+        GpuTextureView currentLightmap = Objects.requireNonNull(
+                minecraft.gameRenderer.lightTexture().getTextureView(), "current terrain lightmap");
+        GpuSampler currentLightmapSampler = RenderSystem.getSamplerCache()
+                .getClampToEdge(FilterMode.LINEAR);
+        if (group.outputTarget() != target
+                || !hasSameBindingIdentity(blockAtlas, input.textureView(),
+                        blockAtlasSampler, currentBlockAtlasSampler)
+                || !hasSameBindingIdentity(lightmap, currentLightmap,
+                        lightmapSampler, currentLightmapSampler)) {
+            throw new IllegalStateException("Captured terrain texture or sampler bindings changed");
+        }
+    }
+
+    /** Identity comparison is intentional: equal-looking GPU handles are not interchangeable resources. */
+    static boolean hasSameBindingIdentity(Object capturedView, Object currentView,
+            Object capturedSampler, Object currentSampler) {
+        return capturedView != null && capturedView == currentView
+                && capturedSampler != null && capturedSampler == currentSampler;
+    }
+
     /** Rejects resized/recreated targets and GPU-device changes after capture. */
     public void validateCurrent(GpuDevice currentDevice) {
         RenderSystem.assertOnRenderThread();

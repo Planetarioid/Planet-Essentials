@@ -66,4 +66,23 @@ class SpaceRendererVanillaPassSnapshotTest {
                 () -> mismatching.differences().clear());
     }
 
+
+    @Test void textureAndSamplerBindingsRequireExactResourceIdentity() {
+        Object capturedView = new Object();
+        Object capturedSampler = new Object();
+        Object differentView = new Object();
+        Object differentSampler = new Object();
+
+        assertTrue(SpaceRendererVanillaPassSnapshot.hasSameBindingIdentity(
+                capturedView, capturedView, capturedSampler, capturedSampler));
+        assertFalse(SpaceRendererVanillaPassSnapshot.hasSameBindingIdentity(
+                capturedView, differentView, capturedSampler, capturedSampler));
+        assertFalse(SpaceRendererVanillaPassSnapshot.hasSameBindingIdentity(
+                capturedView, capturedView, capturedSampler, differentSampler));
+        assertFalse(SpaceRendererVanillaPassSnapshot.hasSameBindingIdentity(
+                null, null, capturedSampler, capturedSampler));
+        assertFalse(SpaceRendererVanillaPassSnapshot.hasSameBindingIdentity(
+                capturedView, capturedView, null, null));
+    }
+
 }

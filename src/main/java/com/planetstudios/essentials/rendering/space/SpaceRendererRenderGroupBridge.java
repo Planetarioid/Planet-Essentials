@@ -61,7 +61,7 @@ public final class SpaceRendererRenderGroupBridge {
         try {
             SpaceRendererVanillaPassSnapshot snapshot =
                     SpaceRendererVanillaPassSnapshot.capture(input, group, blockAtlasSampler);
-            snapshot.validateCurrent(RenderSystem.getDevice());
+            snapshot.validateCurrent(RenderSystem.getDevice(), input, blockAtlasSampler);
             SpaceRendererVanillaPassSnapshot.CapturedStateReadinessReport report =
                     snapshot.assessCapturedStateReadiness();
             FallbackReason reason = report.capturedStateMatches()
