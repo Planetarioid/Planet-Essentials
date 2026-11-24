@@ -63,4 +63,65 @@ class SpaceRendererRenderGroupBridgeTest {
 
         assertFalse(result.mayReplaceVanilla());
     }
+
+    @Test
+    void exactVanillaDrawIdentitiesAreRequiredForEveryGroupLayer() {
+        Object solidA = new Object();
+        Object solidB = new Object();
+        Object translucentA = new Object();
+        var vanilla = Map.of(
+                ChunkSectionLayer.SOLID, List.of(solidA, solidB),
+                ChunkSectionLayer.TRANSLUCENT, List.of(translucentA));
+        var planned = Map.of(
+                ChunkSectionLayer.SOLID, List.of(solidB, solidA),
+                ChunkSectionLayer.TRANSLUCENT, List.of(translucentA));
+
+        assertTrue(SpaceRendererRenderGroupBridge.hasCompleteGroupCoverage(
+                List.of(ChunkSectionLayer.SOLID, ChunkSectionLayer.TRANSLUCENT),
+                vanilla, planned));
+    }
+
+    @Test
+    void sameDrawCountWithDifferentIdentityFailsClosed() {
+        Object vanillaDraw = new Object();
+        Object differentPlannedDraw = new Object();
+        var vanilla = Map.of(ChunkSectionLayer.SOLID, List.of(vanillaDraw));
+        var planned = Map.of(ChunkSectionLayer.SOLID, List.of(differentPlannedDraw));
+
+        assertFalse(SpaceRendererRenderGroupBridge.hasCompleteGroupCoverage(
+                List.of(ChunkSectionLayer.SOLID), vanilla, planned));
+    }
+
+    @Test
+    void duplicateDrawIdentityFailsClosed() {
+        Object draw = new Object();
+        var vanilla = Map.of(ChunkSectionLayer.SOLID, List.of(draw, draw));
+        var planned = Map.of(ChunkSectionLayer.SOLID, List.of(draw, draw));
+
+        assertFalse(SpaceRendererRenderGroupBridge.hasCompleteGroupCoverage(
+                List.of(ChunkSectionLayer.SOLID), vanilla, planned));
+    }
+
+    @Test
+    void plannedLayerOutsideNativeGroupFailsClosed() {
+        Object draw = new Object();
+        var vanilla = Map.of(ChunkSectionLayer.SOLID, List.of(draw));
+        var planned = Map.of(
+                ChunkSectionLayer.SOLID, List.of(draw),
+                ChunkSectionLayer.TRANSLUCENT, List.of(new Object()));
+
+        assertFalse(SpaceRendererRenderGroupBridge.hasCompleteGroupCoverage(
+                List.of(ChunkSectionLayer.SOLID), vanilla, planned));
+    }
+
+    @Test
+    void missingNativeLayerListFailsClosed() {
+        var vanilla = Map.of(ChunkSectionLayer.SOLID, List.of());
+        var planned = Map.<ChunkSectionLayer, List<Object>>of();
+
+        assertFalse(SpaceRendererRenderGroupBridge.hasCompleteGroupCoverage(
+                List.of(ChunkSectionLayer.SOLID, ChunkSectionLayer.TRANSLUCENT),
+                vanilla, planned));
+    }
+
 }

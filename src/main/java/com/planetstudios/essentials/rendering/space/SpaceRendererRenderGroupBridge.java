@@ -7,11 +7,13 @@ import net.minecraft.client.renderer.chunk.ChunkSectionLayerGroup;
 import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
 
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.IdentityHashMap;
 
 /**
  * Live, fail-closed preflight at Minecraft's native render-group boundary.
@@ -41,17 +43,19 @@ public final class SpaceRendererRenderGroupBridge {
                     FallbackReason.FRAME_NOT_READY, false));
         }
 
-        Map<ChunkSectionLayer, Integer> plannedByLayer = new EnumMap<>(ChunkSectionLayer.class);
+        EnumMap<ChunkSectionLayer, List<Object>> plannedDrawsByLayer =
+                new EnumMap<>(ChunkSectionLayer.class);
         for (SpaceRendererDrawPlan.Batch batch : groupPlan.batches()) {
-            plannedByLayer.merge(batch.layer(), batch.draws().size(), Math::addExact);
-        }
-        for (ChunkSectionLayer layer : group.layers()) {
-            List<?> vanillaDraws = input.drawsPerLayer().get(layer);
-            if (vanillaDraws == null
-                    || vanillaDraws.size() != plannedByLayer.getOrDefault(layer, 0)) {
-                return publish(new Preflight(groupPlan.frameSequence(), groupPlan.drawCount(),
-                        FallbackReason.INCOMPLETE_GROUP_COVERAGE, false));
+            List<Object> plannedDraws = plannedDrawsByLayer.computeIfAbsent(
+                    batch.layer(), ignored -> new java.util.ArrayList<>());
+            for (SpaceRendererDrawPlan.DrawCommand command : batch.draws()) {
+                plannedDraws.add(command.draw().input().vanillaDraw());
             }
+        }
+        if (!hasCompleteGroupCoverage(List.of(group.layers()),
+                input.drawsPerLayer(), plannedDrawsByLayer)) {
+            return publish(new Preflight(groupPlan.frameSequence(), groupPlan.drawCount(),
+                    FallbackReason.INCOMPLETE_GROUP_COVERAGE, false));
         }
 
         try {
@@ -70,6 +74,43 @@ public final class SpaceRendererRenderGroupBridge {
             return publish(new Preflight(groupPlan.frameSequence(), groupPlan.drawCount(),
                     FallbackReason.SNAPSHOT_UNAVAILABLE, false));
         }
+    }
+
+    /**
+     * Verifies exact vanilla draw identity coverage for every layer in this
+     * native group. Count-only checks can accept a plan containing different
+     * draws, so both sides are compared with identity semantics and duplicates
+     * are rejected. Planned layers outside the group also fail closed.
+     */
+    static boolean hasCompleteGroupCoverage(List<ChunkSectionLayer> groupLayers,
+            Map<?, ?> vanillaDrawsByLayer,
+            Map<ChunkSectionLayer, List<Object>> plannedDrawsByLayer) {
+        Objects.requireNonNull(groupLayers, "groupLayers");
+        Objects.requireNonNull(vanillaDrawsByLayer, "vanillaDrawsByLayer");
+        Objects.requireNonNull(plannedDrawsByLayer, "plannedDrawsByLayer");
+        EnumSet<ChunkSectionLayer> expectedLayers =
+                EnumSet.noneOf(ChunkSectionLayer.class);
+        for (ChunkSectionLayer layer : groupLayers) {
+            if (layer == null || !expectedLayers.add(layer)) return false;
+        }
+        if (!expectedLayers.containsAll(plannedDrawsByLayer.keySet())) return false;
+
+        for (ChunkSectionLayer layer : expectedLayers) {
+            Object vanillaValue = vanillaDrawsByLayer.get(layer);
+            if (!(vanillaValue instanceof List<?> vanillaDraws)) return false;
+            List<Object> plannedDraws = plannedDrawsByLayer.getOrDefault(layer, List.of());
+            Set<Object> vanillaIdentities = Collections.newSetFromMap(new IdentityHashMap<>());
+            for (Object draw : vanillaDraws) {
+                if (draw == null || !vanillaIdentities.add(draw)) return false;
+            }
+            Set<Object> plannedIdentities = Collections.newSetFromMap(new IdentityHashMap<>());
+            for (Object draw : plannedDraws) {
+                if (draw == null || !plannedIdentities.add(draw)) return false;
+            }
+            if (vanillaIdentities.size() != plannedIdentities.size()
+                    || !vanillaIdentities.containsAll(plannedIdentities)) return false;
+        }
+        return true;
     }
 
     private static Preflight publish(Preflight result) {
