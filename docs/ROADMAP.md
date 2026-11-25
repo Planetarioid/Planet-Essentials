@@ -51,7 +51,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 ### Still required for vanilla terrain takeover
 - [x] Define and test a fail-closed vanilla render-pass state completeness contract
 - [x] Instrument the exact ChunkSectionsToRender.renderGroup boundary and capture group, sampler/atlas identity, ordered draw-list snapshots, index budget, and chunk-section uniform slices
-- [x] Snapshot vanilla output target/attachments, block atlas and lightmap bindings, default uniform resources, model-view matrix, per-layer pipeline identities/state, and exact vanilla draw order
+- [x] Snapshot vanilla output target/attachments, block atlas and lightmap bindings, default uniform resources, model-view matrix, per-layer pipeline identities/state, exact vanilla draw order, and revalidate viewport/scissor state
 - [x] Convert observed vanilla snapshot facts into fail-closed render-state evidence and report missing facets
 - [x] Connect captured render-group snapshots directly to replacement-plan preparation without suppressing vanilla draws
 - [x] Capture source-backed OpenGL viewport/scissor defaults, no-stencil attachment state, and BLOCK-format overlay absence; unknown backends remain fail-closed
@@ -80,7 +80,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [x] Immutable visible-frame snapshots, material-aware draw plans, translucent sorting, and native group slicing
 - [x] Native terrain shader pipelines, section uniform ring, and draw executor
 - [x] Captured-state group submission API
-- [x] Vanilla target, atlas/lightmap, default uniform, per-layer pipeline, explicit color/depth clear options wired into pass creation, with unsupported stencil requests rejected, scissor, and viewport capture/replay
+- [x] Vanilla target, atlas/lightmap, default uniform, per-layer pipeline, explicit color/depth clear options, and viewport/scissor capture, replay, and submission-time revalidation
 - [x] Live native render-group preflight hook with immutable frame/coverage checks and fail-closed vanilla fallback
 - [x] Snapshot validation at the native render-group boundary without suppressing vanilla
 - [ ] Enable Space Renderer submission at the native render-group boundary after complete vanilla-state parity

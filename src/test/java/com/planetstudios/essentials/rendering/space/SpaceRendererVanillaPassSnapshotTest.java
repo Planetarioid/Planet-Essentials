@@ -27,6 +27,22 @@ class SpaceRendererVanillaPassSnapshotTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new SpaceRendererVanillaPassSnapshot.ScissorInput(true, 0, 0, 0, 10));
     }
+
+    @Test void viewportAndScissorMustRemainUnchangedAfterCapture() {
+        var viewport = new SpaceRendererVanillaPassSnapshot.ViewportInput(0, 0, 1920, 1080);
+        var scissor = new SpaceRendererVanillaPassSnapshot.ScissorInput(true, 10, 20, 400, 300);
+        assertTrue(SpaceRendererVanillaPassSnapshot.hasSameViewportAndScissorState(
+                viewport, new SpaceRendererVanillaPassSnapshot.ViewportInput(0, 0, 1920, 1080),
+                scissor, new SpaceRendererVanillaPassSnapshot.ScissorInput(true, 10, 20, 400, 300)));
+        assertFalse(SpaceRendererVanillaPassSnapshot.hasSameViewportAndScissorState(
+                viewport, new SpaceRendererVanillaPassSnapshot.ViewportInput(0, 0, 1280, 720),
+                scissor, scissor));
+        assertFalse(SpaceRendererVanillaPassSnapshot.hasSameViewportAndScissorState(
+                viewport, viewport, scissor,
+                new SpaceRendererVanillaPassSnapshot.ScissorInput(false, 0, 0, 0, 0)));
+        assertFalse(SpaceRendererVanillaPassSnapshot.hasSameViewportAndScissorState(
+                null, viewport, scissor, scissor));
+    }
     @Test void terrainPassOptionsPreserveNoClearAndNoStencilContract() {
         var options = SpaceRendererVanillaPassSnapshot.PassOptions.vanillaTerrain();
         assertTrue(options.colorClear().isEmpty());

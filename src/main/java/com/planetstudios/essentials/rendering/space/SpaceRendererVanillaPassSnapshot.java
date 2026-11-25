@@ -338,6 +338,19 @@ public record SpaceRendererVanillaPassSnapshot(
                 || target.getDepthTextureView() != depthAttachment.orElse(null)) {
             throw new IllegalStateException("Captured terrain target changed after the group snapshot");
         }
+        if (!hasSameViewportAndScissorState(
+                viewport, ViewportInput.capture(),
+                scissor, ScissorInput.capture(RenderSystem.getScissorStateForRenderTypeDraws()))) {
+            throw new IllegalStateException("Captured terrain viewport or scissor state changed");
+        }
+    }
+
+    /** Value comparison for the two clipping states that must remain stable through group submission. */
+    static boolean hasSameViewportAndScissorState(
+            ViewportInput capturedViewport, ViewportInput currentViewport,
+            ScissorInput capturedScissor, ScissorInput currentScissor) {
+        return capturedViewport != null && capturedViewport.equals(currentViewport)
+                && capturedScissor != null && capturedScissor.equals(currentScissor);
     }
 
     /**

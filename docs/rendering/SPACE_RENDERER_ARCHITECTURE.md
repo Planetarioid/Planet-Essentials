@@ -12,9 +12,9 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 - Immutable visible-frame capture, native render-group draw plans, material-aware batching, and camera-sorted translucent index buffers.
 - Native terrain shader pipelines, section-uniform uploads, and a draw executor.
 - Native 1.21.11 fog uniform integration and spherical/cylindrical fog evaluation in the Space Renderer terrain shaders; runtime visual parity still requires in-game verification.
-- Vanilla render-group snapshots for attachments, atlas/lightmap, default uniforms, per-layer pipelines, explicit color/depth clear options wired into pass creation, with unsupported stencil requests rejected, scissor, and viewport.
+- Vanilla render-group snapshots for attachments, atlas/lightmap, default uniforms, per-layer pipelines, explicit color/depth clear options, and viewport/scissor state revalidation at submission.
 - Per-layer fixed-function pipeline parity diagnostics comparing depth, blend, culling, write masks, polygon mode, logic ops, and polygon offset; mismatches are reported by native layer and must retain vanilla fallback.
-- Captured-state group submission API and a live, fail-closed render-group preflight hook that now captures the active vanilla pass, validates target identity, checks exact vanilla draw identity coverage within every group layer (not just matching counts), revalidates atlas/lightmap texture and sampler identity against live vanilla inputs, and publishes missing-resource and fixed-function mismatch diagnostics. CI validates compilation and tests, not actual GPU rendering.
+- Captured-state group submission API and a live, fail-closed render-group preflight hook that now captures the active vanilla pass, validates target identity plus unchanged viewport/scissor state, checks exact vanilla draw identity coverage within every group layer (not just matching counts), revalidates atlas/lightmap texture and sampler identity against live vanilla inputs, and publishes missing-resource and fixed-function mismatch diagnostics. CI validates compilation and tests, not actual GPU rendering.
 
 ## Remaining work before replacement
 
