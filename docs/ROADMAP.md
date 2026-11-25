@@ -80,7 +80,7 @@ Statuses: [ ] not started, [~] in progress / needs runtime validation, [x] imple
 - [x] Immutable visible-frame snapshots, material-aware draw plans, translucent sorting, and native group slicing
 - [x] Native terrain shader pipelines, section uniform ring, and draw executor
 - [x] Captured-state group submission API
-- [x] Vanilla target, atlas/lightmap, default uniform, per-layer pipeline, explicit no-clear/no-stencil pass options, scissor, and viewport capture/replay
+- [x] Vanilla target, atlas/lightmap, default uniform, per-layer pipeline, explicit color/depth clear options wired into pass creation, with unsupported stencil requests rejected, scissor, and viewport capture/replay
 - [x] Live native render-group preflight hook with immutable frame/coverage checks and fail-closed vanilla fallback
 - [x] Snapshot validation at the native render-group boundary without suppressing vanilla
 - [ ] Enable Space Renderer submission at the native render-group boundary after complete vanilla-state parity

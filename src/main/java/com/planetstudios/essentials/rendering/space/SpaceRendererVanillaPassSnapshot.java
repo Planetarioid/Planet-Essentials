@@ -171,10 +171,11 @@ public record SpaceRendererVanillaPassSnapshot(
     }
 
     /**
-     * Opens a no-clear pass on the captured attachments. This is suitable for
-     * an additive experiment only; it does not by itself reproduce every
-     * vanilla pass-state setting. Never open one pass per layer in a multi-layer
-     * group because attachment clear operations could erase earlier draws.
+     * Opens a pass using the captured attachment options. This does not by
+     * itself reproduce every vanilla pass-state setting. Never open one pass
+     * per layer in a multi-layer group because a requested clear could erase
+     * earlier draws. The current RenderPass API has no stencil-attachment
+     * parameter, so stencil requests are rejected rather than silently ignored.
      */
     public RenderPass openPass(GpuDevice currentDevice, String debugLabel) {
         RenderSystem.assertOnRenderThread();
@@ -183,12 +184,13 @@ public record SpaceRendererVanillaPassSnapshot(
             throw new IllegalArgumentException("Render-pass debug label cannot be blank");
         }
         validateCurrent(currentDevice);
+        passOptions.validateForPass(depthAttachment.isPresent());
         RenderPass pass = currentDevice.createCommandEncoder().createRenderPass(
                 () -> debugLabel,
                 colorAttachment,
-                java.util.OptionalInt.empty(),
+                passOptions.colorClear(),
                 depthAttachment.orElse(null),
-                java.util.OptionalDouble.empty());
+                passOptions.depthClear());
         scissor.applyTo(pass);
         viewport.apply();
         return pass;
@@ -368,14 +370,25 @@ public record SpaceRendererVanillaPassSnapshot(
 
     /**
      * Exact attachment options used by the independent group pass. Vanilla
-     * terrain groups do not clear the shared target, and this API deliberately
-     * opens a color/depth-only pass with no stencil attachment.
+     * terrain groups do not clear the shared target. The current RenderPass API
+     * exposes color and depth attachments but no stencil-attachment argument.
      */
     public record PassOptions(OptionalInt colorClear, OptionalDouble depthClear,
             boolean stencilAttachment) {
         public PassOptions {
             Objects.requireNonNull(colorClear, "colorClear");
             Objects.requireNonNull(depthClear, "depthClear");
+        }
+
+        public void validateForPass(boolean hasDepthAttachment) {
+            if (depthClear.isPresent() && !hasDepthAttachment) {
+                throw new IllegalStateException(
+                        "A depth clear was requested without a depth attachment");
+            }
+            if (stencilAttachment) {
+                throw new UnsupportedOperationException(
+                        "The active RenderPass API does not expose a stencil attachment");
+            }
         }
 
         public static PassOptions vanillaTerrain() {

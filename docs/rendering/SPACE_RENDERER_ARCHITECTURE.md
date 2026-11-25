@@ -12,7 +12,7 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 - Immutable visible-frame capture, native render-group draw plans, material-aware batching, and camera-sorted translucent index buffers.
 - Native terrain shader pipelines, section-uniform uploads, and a draw executor.
 - Native 1.21.11 fog uniform integration and spherical/cylindrical fog evaluation in the Space Renderer terrain shaders; runtime visual parity still requires in-game verification.
-- Vanilla render-group snapshots for attachments, atlas/lightmap, default uniforms, per-layer pipelines, explicit no-clear/no-stencil pass options, scissor, and viewport.
+- Vanilla render-group snapshots for attachments, atlas/lightmap, default uniforms, per-layer pipelines, explicit color/depth clear options wired into pass creation, with unsupported stencil requests rejected, scissor, and viewport.
 - Per-layer fixed-function pipeline parity diagnostics comparing depth, blend, culling, write masks, polygon mode, logic ops, and polygon offset; mismatches are reported by native layer and must retain vanilla fallback.
 - Captured-state group submission API and a live, fail-closed render-group preflight hook that now captures the active vanilla pass, validates target identity, checks exact vanilla draw identity coverage within every group layer (not just matching counts), revalidates atlas/lightmap texture and sampler identity against live vanilla inputs, and publishes missing-resource and fixed-function mismatch diagnostics. CI validates compilation and tests, not actual GPU rendering.
 
@@ -49,7 +49,7 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 | Shader-side vanilla fog integration | Implemented, CI passed; runtime visual parity pending |
 | Frame snapshots and native group draw plans | Implemented, CI passed |
 | Draw executor and captured-state group submission | Implemented, CI passed |
-| Vanilla target, atlas/lightmap texture and sampler identity validation, uniforms, layer pipeline, no-clear/no-stencil pass options and scissor capture | Implemented, CI pending; runtime parity pending |
+| Vanilla target, atlas/lightmap texture and sampler identity validation, uniforms, layer pipeline, color/depth clear options wired into pass creation and unsupported stencil rejection and scissor capture | Implemented, CI pending; runtime parity pending |
 | Exact viewport capture/replay | Implemented, CI passed |
 | Fixed-function pipeline parity diagnostics | Implemented, CI passed; runtime backend parity pending |
 | Shared render-pass owner for captured groups | Implemented, CI passed |

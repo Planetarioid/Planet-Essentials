@@ -32,8 +32,23 @@ class SpaceRendererVanillaPassSnapshotTest {
         assertTrue(options.colorClear().isEmpty());
         assertTrue(options.depthClear().isEmpty());
         assertFalse(options.stencilAttachment());
+        assertDoesNotThrow(() -> options.validateForPass(true));
+        assertDoesNotThrow(() -> options.validateForPass(false));
         assertThrows(NullPointerException.class, () ->
                 new SpaceRendererVanillaPassSnapshot.PassOptions(null, java.util.OptionalDouble.empty(), false));
+    }
+
+    @Test void passOptionsRejectUnsupportedOrInvalidAttachmentRequests() {
+        var colorAndDepthClear = new SpaceRendererVanillaPassSnapshot.PassOptions(
+                java.util.OptionalInt.of(0x10203040), java.util.OptionalDouble.of(1.0), false);
+        assertDoesNotThrow(() -> colorAndDepthClear.validateForPass(true));
+        assertThrows(IllegalStateException.class,
+                () -> colorAndDepthClear.validateForPass(false));
+
+        var stencil = new SpaceRendererVanillaPassSnapshot.PassOptions(
+                java.util.OptionalInt.empty(), java.util.OptionalDouble.empty(), true);
+        assertThrows(UnsupportedOperationException.class,
+                () -> stencil.validateForPass(true));
     }
 
     @Test void capturedStateReadinessRequiresResourcesPipelineParityAndNonWireframeMode() {
