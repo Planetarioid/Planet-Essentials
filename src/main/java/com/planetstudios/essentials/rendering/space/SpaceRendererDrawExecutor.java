@@ -205,13 +205,26 @@ public final class SpaceRendererDrawExecutor {
     static void validatePlanBeforeSubmission(SpaceRendererDrawPlan plan,
             SpaceRendererSectionUniformBuffer sectionUniforms,
             double cameraX, double cameraY, double cameraZ) {
-        Objects.requireNonNull(plan, "plan");
         Objects.requireNonNull(sectionUniforms, "sectionUniforms");
         if (!Double.isFinite(cameraX) || !Double.isFinite(cameraY) || !Double.isFinite(cameraZ)) {
             throw new IllegalArgumentException("Camera coordinates must be finite");
         }
+        validatePlanResources(plan, sectionUniforms.maxSectionsPerFrame());
+    }
+
+    /**
+     * Checks plan-owned GPU resources and structural invariants without
+     * requiring a live uniform arena. The live render-group bridge uses this
+     * before attempting to capture pass state; the executor repeats it
+     * immediately before submission to close the time-of-check gap.
+     */
+    static void validatePlanResources(SpaceRendererDrawPlan plan, int maxSectionsPerFrame) {
+        Objects.requireNonNull(plan, "plan");
+        if (maxSectionsPerFrame <= 0) {
+            throw new IllegalArgumentException("Section uniform capacity must be positive");
+        }
         if (!plan.isReady() || plan.drawCount() <= 0) return;
-        if (plan.drawCount() > sectionUniforms.maxSectionsPerFrame()) {
+        if (plan.drawCount() > maxSectionsPerFrame) {
             throw new IllegalArgumentException("Visible draw plan exceeds the section uniform frame capacity");
         }
 

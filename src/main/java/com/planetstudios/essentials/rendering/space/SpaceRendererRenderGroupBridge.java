@@ -43,6 +43,14 @@ public final class SpaceRendererRenderGroupBridge {
                     FallbackReason.FRAME_NOT_READY, false));
         }
 
+        try {
+            SpaceRendererDrawExecutor.validatePlanResources(
+                    groupPlan, SpaceRendererSectionUniformBuffer.DEFAULT_MAX_SECTIONS_PER_FRAME);
+        } catch (RuntimeException invalidPlan) {
+            return publish(new Preflight(groupPlan.frameSequence(), groupPlan.drawCount(),
+                    FallbackReason.DRAW_PLAN_INVALID, false));
+        }
+
         EnumMap<ChunkSectionLayer, List<Object>> plannedDrawsByLayer =
                 new EnumMap<>(ChunkSectionLayer.class);
         for (SpaceRendererDrawPlan.Batch batch : groupPlan.batches()) {
@@ -127,6 +135,7 @@ public final class SpaceRendererRenderGroupBridge {
         NOT_OBSERVED,
         FRAME_NOT_READY,
         INCOMPLETE_GROUP_COVERAGE,
+        DRAW_PLAN_INVALID,
         SNAPSHOT_UNAVAILABLE,
         CAPTURED_STATE_MISMATCH,
         RUNTIME_PARITY_UNVERIFIED

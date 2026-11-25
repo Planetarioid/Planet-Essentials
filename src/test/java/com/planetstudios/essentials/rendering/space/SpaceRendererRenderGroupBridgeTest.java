@@ -44,6 +44,26 @@ class SpaceRendererRenderGroupBridgeTest {
     }
 
     @Test
+    void invalidDrawPlanHasItsOwnFailClosedReason() {
+        var result = new SpaceRendererRenderGroupBridge.Preflight(
+                17, 3,
+                SpaceRendererRenderGroupBridge.FallbackReason.DRAW_PLAN_INVALID,
+                false);
+
+        assertFalse(result.snapshotValidated());
+        assertFalse(result.mayReplaceVanilla());
+    }
+
+    @Test
+    void resourcePreflightRejectsInvalidCapacityBeforeAnyPassCanOpen() {
+        var empty = SpaceRendererDrawPlan.empty(18);
+        assertThrows(IllegalArgumentException.class,
+                () -> SpaceRendererDrawExecutor.validatePlanResources(empty, 0));
+        assertDoesNotThrow(
+                () -> SpaceRendererDrawExecutor.validatePlanResources(empty, 1));
+    }
+
+    @Test
     void unavailableSnapshotFailsClosed() {
         var result = new SpaceRendererRenderGroupBridge.Preflight(
                 13, 4,
