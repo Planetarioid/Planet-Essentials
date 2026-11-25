@@ -84,6 +84,8 @@ public final class SpaceRendererDrawExecutor {
         if (!groupPlan.isReady() || groupPlan.drawCount() <= 0) {
             return new SubmissionResult(groupPlan.frameSequence(), 0);
         }
+        validatePlanBeforeSubmission(groupPlan, sectionUniforms,
+                cameraX, cameraY, cameraZ);
         try (RenderPass pass = snapshot.openPass(
                 RenderSystem.getDevice(), "Planet Essentials Space Renderer " + snapshot.group())) {
             return submitGroup(pass, groupPlan, snapshot, sectionUniforms,
@@ -122,15 +124,10 @@ public final class SpaceRendererDrawExecutor {
         Objects.requireNonNull(blockAtlasSampler, "blockAtlasSampler");
         Objects.requireNonNull(lightmap, "lightmap");
         Objects.requireNonNull(lightmapSampler, "lightmapSampler");
-        if (!Double.isFinite(cameraX) || !Double.isFinite(cameraY) || !Double.isFinite(cameraZ)) {
-            throw new IllegalArgumentException("Camera coordinates must be finite");
-        }
         if (!plan.isReady() || plan.drawCount() <= 0) {
             return new SubmissionResult(plan.frameSequence(), 0);
         }
-        if (plan.drawCount() > sectionUniforms.maxSectionsPerFrame()) {
-            throw new IllegalArgumentException("Visible draw plan exceeds the section uniform frame capacity");
-        }
+        validatePlanBeforeSubmission(plan, sectionUniforms, cameraX, cameraY, cameraZ);
 
         int submitted = 0;
         sectionUniforms.beginFrame();
@@ -192,6 +189,60 @@ public final class SpaceRendererDrawExecutor {
             return new SubmissionResult(plan.frameSequence(), submitted);
         } finally {
             sectionUniforms.endFrame();
+        }
+    }
+
+    /**
+     * Performs every currently CPU-checkable validation before opening a
+     * captured render pass or beginning the section-uniform frame. This keeps
+     * stale meshes, invalid translucent indices, unsupported layers, and
+     * capacity errors from surfacing halfway through a group submission.
+     *
+     * <p>GPU/driver failures can still occur after the first draw. The live
+     * renderer must therefore retain vanilla until a separate all-or-nothing
+     * takeover protocol has been runtime-verified.</p>
+     */
+    static void validatePlanBeforeSubmission(SpaceRendererDrawPlan plan,
+            SpaceRendererSectionUniformBuffer sectionUniforms,
+            double cameraX, double cameraY, double cameraZ) {
+        Objects.requireNonNull(plan, "plan");
+        Objects.requireNonNull(sectionUniforms, "sectionUniforms");
+        if (!Double.isFinite(cameraX) || !Double.isFinite(cameraY) || !Double.isFinite(cameraZ)) {
+            throw new IllegalArgumentException("Camera coordinates must be finite");
+        }
+        if (!plan.isReady() || plan.drawCount() <= 0) return;
+        if (plan.drawCount() > sectionUniforms.maxSectionsPerFrame()) {
+            throw new IllegalArgumentException("Visible draw plan exceeds the section uniform frame capacity");
+        }
+
+        int validatedDraws = 0;
+        for (SpaceRendererDrawPlan.Batch batch : plan.batches()) {
+            pipelineForLayer(batch.layer());
+            if (batch.translucent() != SpaceRendererDrawPlan.requiresSortedIndices(batch.layer())) {
+                throw new IllegalArgumentException("Terrain batch translucency does not match its vanilla layer");
+            }
+            for (SpaceRendererDrawPlan.DrawCommand command : batch.draws()) {
+                var draw = command.draw();
+                var mesh = draw.mesh();
+                if (!mesh.isOpen() || mesh.vertexCount() <= 0 || mesh.vertexCount() % 4 != 0
+                        || command.indexCount() != SpaceRendererDrawPlan.indexCount(mesh.vertexCount())) {
+                    throw new IllegalStateException("Space Renderer draw plan contains an invalid or retired mesh");
+                }
+                SpaceRendererSortedIndexBuffer sorted = command.sortedIndices();
+                if (batch.translucent()) {
+                    if (sorted == null || !sorted.isOpen()
+                            || sorted.draw() != draw || sorted.indexCount() != command.indexCount()) {
+                        throw new IllegalStateException(
+                                "Translucent draw has no valid frame-owned sorted index buffer");
+                    }
+                } else if (sorted != null) {
+                    throw new IllegalStateException("Opaque draw unexpectedly owns sorted indices");
+                }
+                validatedDraws = Math.addExact(validatedDraws, 1);
+            }
+        }
+        if (validatedDraws != plan.drawCount()) {
+            throw new IllegalStateException("Space Renderer draw plan count does not match its batches");
         }
     }
 
