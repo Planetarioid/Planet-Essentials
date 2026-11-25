@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalDouble;
 import java.util.Set;
 
 /**
@@ -53,6 +55,7 @@ public record SpaceRendererVanillaPassSnapshot(
         RenderTarget target,
         GpuTextureView colorAttachment,
         Optional<GpuTextureView> depthAttachment,
+        PassOptions passOptions,
         int targetWidth,
         int targetHeight,
         GpuTextureView blockAtlas,
@@ -73,6 +76,7 @@ public record SpaceRendererVanillaPassSnapshot(
         Objects.requireNonNull(target, "target");
         Objects.requireNonNull(colorAttachment, "colorAttachment");
         Objects.requireNonNull(depthAttachment, "depthAttachment");
+        Objects.requireNonNull(passOptions, "passOptions");
         Objects.requireNonNull(blockAtlas, "blockAtlas");
         Objects.requireNonNull(blockAtlasSampler, "blockAtlasSampler");
         Objects.requireNonNull(lightmap, "lightmap");
@@ -145,6 +149,7 @@ public record SpaceRendererVanillaPassSnapshot(
                 target,
                 color,
                 Optional.ofNullable(target.getDepthTextureView()),
+                PassOptions.vanillaTerrain(),
                 target.width,
                 target.height,
                 Objects.requireNonNull(input.textureView(), "terrain block atlas"),
@@ -236,6 +241,7 @@ public record SpaceRendererVanillaPassSnapshot(
 
         java.util.Set<String> missingResources = new java.util.HashSet<>();
         if (depthAttachment.isEmpty()) missingResources.add("depth-attachment");
+        if (passOptions.stencilAttachment()) missingResources.add("stencil-attachment");
         if (!missingUniforms.isEmpty()) {
             missingUniforms.forEach(name -> missingResources.add("uniform:" + name));
         }
@@ -357,6 +363,23 @@ public record SpaceRendererVanillaPassSnapshot(
         public void apply() {
             RenderSystem.assertOnRenderThread();
             GlStateManager._viewport(x, y, width, height);
+        }
+    }
+
+    /**
+     * Exact attachment options used by the independent group pass. Vanilla
+     * terrain groups do not clear the shared target, and this API deliberately
+     * opens a color/depth-only pass with no stencil attachment.
+     */
+    public record PassOptions(OptionalInt colorClear, OptionalDouble depthClear,
+            boolean stencilAttachment) {
+        public PassOptions {
+            Objects.requireNonNull(colorClear, "colorClear");
+            Objects.requireNonNull(depthClear, "depthClear");
+        }
+
+        public static PassOptions vanillaTerrain() {
+            return new PassOptions(OptionalInt.empty(), OptionalDouble.empty(), false);
         }
     }
 

@@ -27,6 +27,15 @@ class SpaceRendererVanillaPassSnapshotTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new SpaceRendererVanillaPassSnapshot.ScissorInput(true, 0, 0, 0, 10));
     }
+    @Test void terrainPassOptionsPreserveNoClearAndNoStencilContract() {
+        var options = SpaceRendererVanillaPassSnapshot.PassOptions.vanillaTerrain();
+        assertTrue(options.colorClear().isEmpty());
+        assertTrue(options.depthClear().isEmpty());
+        assertFalse(options.stencilAttachment());
+        assertThrows(NullPointerException.class, () ->
+                new SpaceRendererVanillaPassSnapshot.PassOptions(null, java.util.OptionalDouble.empty(), false));
+    }
+
     @Test void capturedStateReadinessRequiresResourcesPipelineParityAndNonWireframeMode() {
         var ready = new SpaceRendererVanillaPassSnapshot.CapturedStateReadinessReport(
                 java.util.Set.of(), Map.of(), false);
