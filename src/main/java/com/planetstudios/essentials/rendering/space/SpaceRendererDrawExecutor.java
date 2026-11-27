@@ -126,7 +126,7 @@ public final class SpaceRendererDrawExecutor {
         } catch (RuntimeException failure) {
             return new SubmissionAttempt(framePlan.frameSequence(),
                     SpaceRendererSubmissionGuard.State.FAILED_BEFORE_SUBMISSION,
-                    0, true, failure.getClass().getName(), failure.getMessage());
+                    0, true, failure.getClass().getName(), String.valueOf(failure.getMessage()));
         }
 
         SpaceRendererSubmissionGuard guard =
@@ -150,7 +150,12 @@ public final class SpaceRendererDrawExecutor {
             return attemptFromFailure(guard, failure);
         }
 
-        guard.complete(submitted.submittedDraws());
+        try {
+            guard.complete(submitted.submittedDraws());
+        } catch (RuntimeException failure) {
+            guard.failAfterSubmission();
+            return attemptFromFailure(guard, failure);
+        }
         return new SubmissionAttempt(submitted.frameSequence(), guard.state(),
                 submitted.submittedDraws(), false, null, null);
     }
@@ -159,7 +164,7 @@ public final class SpaceRendererDrawExecutor {
             SpaceRendererSubmissionGuard guard, RuntimeException failure) {
         return new SubmissionAttempt(guard.frameSequence(), guard.state(),
                 -1, guard.mayUseVanillaFallback(),
-                failure.getClass().getName(), failure.getMessage());
+                failure.getClass().getName(), String.valueOf(failure.getMessage()));
     }
 
     /** Immutable result of an all-or-nothing group attempt. */

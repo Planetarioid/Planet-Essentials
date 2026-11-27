@@ -50,7 +50,7 @@ class SpaceRendererSubmissionGuardTest {
     void illegalTransitionsAreRejected() {
         var guard = new SpaceRendererSubmissionGuard(8, 1);
 
-        assertThrows(IllegalStateException.class, guard::complete);
+        assertThrows(IllegalStateException.class, () -> guard.complete(1));
         assertThrows(IllegalStateException.class, guard::failAfterSubmission);
         guard.beginSubmission();
         assertThrows(IllegalStateException.class, guard::failBeforeSubmission);
