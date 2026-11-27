@@ -59,6 +59,30 @@ class SpaceRendererSubmissionGuardTest {
     }
 
     @Test
+    void skippedGroupIsDistinctFromFailureAndKeepsVanillaAvailable() {
+        var attempt = new SpaceRendererDrawExecutor.SubmissionAttempt(
+                9, SpaceRendererSubmissionGuard.State.SKIPPED,
+                0, true, null, null);
+
+        assertFalse(attempt.submitted());
+        assertTrue(attempt.vanillaFallbackSafe());
+        assertNull(attempt.failureType());
+        assertNull(attempt.failureMessage());
+    }
+
+    @Test
+    void submissionAttemptRejectsUnsafeFallbackClaims() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new SpaceRendererDrawExecutor.SubmissionAttempt(
+                        10, SpaceRendererSubmissionGuard.State.FAILED_AFTER_SUBMISSION,
+                        -1, true, "java.lang.IllegalStateException", "partial submission"));
+        assertThrows(IllegalArgumentException.class,
+                () -> new SpaceRendererDrawExecutor.SubmissionAttempt(
+                        10, SpaceRendererSubmissionGuard.State.COMPLETED,
+                        2, true, null, null));
+    }
+
+    @Test
     void rejectsInvalidFrameOrDrawCounts() {
         assertThrows(IllegalArgumentException.class,
                 () -> new SpaceRendererSubmissionGuard(0, 1));
