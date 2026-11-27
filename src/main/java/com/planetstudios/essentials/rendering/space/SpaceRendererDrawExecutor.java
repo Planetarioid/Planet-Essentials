@@ -162,8 +162,10 @@ public final class SpaceRendererDrawExecutor {
 
     private static SubmissionAttempt attemptFromFailure(
             SpaceRendererSubmissionGuard guard, RuntimeException failure) {
+        int submittedDraws = guard.state() == SpaceRendererSubmissionGuard.State.FAILED_BEFORE_SUBMISSION
+                ? 0 : -1;
         return new SubmissionAttempt(guard.frameSequence(), guard.state(),
-                -1, guard.mayUseVanillaFallback(),
+                submittedDraws, guard.mayUseVanillaFallback(),
                 failure.getClass().getName(), String.valueOf(failure.getMessage()));
     }
 
@@ -176,12 +178,25 @@ public final class SpaceRendererDrawExecutor {
                 throw new IllegalArgumentException("Invalid Space Renderer submission attempt");
             }
             Objects.requireNonNull(state, "state");
-            if (vanillaFallbackSafe != (state == SpaceRendererSubmissionGuard.State.FAILED_BEFORE_SUBMISSION
-                    || state == SpaceRendererSubmissionGuard.State.SKIPPED)) {
-                throw new IllegalArgumentException("Vanilla fallback safety does not match submission state");
-            }
             if ((failureType == null) != (failureMessage == null)) {
                 throw new IllegalArgumentException("Failure type and message must be supplied together");
+            }
+            boolean hasFailure = failureType != null;
+            switch (state) {
+                case SKIPPED -> requireOutcome(submittedDraws == 0 && vanillaFallbackSafe && !hasFailure);
+                case FAILED_BEFORE_SUBMISSION ->
+                        requireOutcome(submittedDraws == 0 && vanillaFallbackSafe && hasFailure);
+                case COMPLETED -> requireOutcome(submittedDraws > 0 && !vanillaFallbackSafe && !hasFailure);
+                case FAILED_AFTER_SUBMISSION ->
+                        requireOutcome(submittedDraws == -1 && !vanillaFallbackSafe && hasFailure);
+                case PREPARED, SUBMITTING ->
+                        throw new IllegalArgumentException("A submission attempt must have a terminal state");
+            }
+        }
+
+        private static void requireOutcome(boolean valid) {
+            if (!valid) {
+                throw new IllegalArgumentException("Submission result fields do not match its terminal state");
             }
         }
 
@@ -229,8 +244,6 @@ public final class SpaceRendererDrawExecutor {
         int submitted = 0;
         sectionUniforms.beginFrame();
         try {
-            // DynamicTransforms is shared by every section in this render group.
-            // The per-section origin is supplied separately by SpaceRendererSection.
             var dynamicTransforms = RenderSystem.getDynamicUniforms().writeTransform(
                     capturedModelView == null ? RenderSystem.getModelViewMatrix() : capturedModelView,
                     new Vector4f(1.0f),
@@ -238,8 +251,6 @@ public final class SpaceRendererDrawExecutor {
                     new Matrix4f());
 
             for (SpaceRendererDrawPlan.Batch batch : plan.batches()) {
-                // RenderPass uniform and sampler bindings are pipeline-scoped. Select
-                // the layer pipeline before applying its default and dynamic uniforms.
                 pass.setPipeline(pipelineForLayer(batch.layer()));
                 if (capturedUniforms == null) {
                     RenderSystem.bindDefaultUniforms(pass);
@@ -289,16 +300,6 @@ public final class SpaceRendererDrawExecutor {
         }
     }
 
-    /**
-     * Performs every currently CPU-checkable validation before opening a
-     * captured render pass or beginning the section-uniform frame. This keeps
-     * stale meshes, invalid translucent indices, unsupported layers, and
-     * capacity errors from surfacing halfway through a group submission.
-     *
-     * <p>GPU/driver failures can still occur after the first draw. The live
-     * renderer must therefore retain vanilla until a separate all-or-nothing
-     * takeover protocol has been runtime-verified.</p>
-     */
     static void validatePlanBeforeSubmission(SpaceRendererDrawPlan plan,
             SpaceRendererSectionUniformBuffer sectionUniforms,
             double cameraX, double cameraY, double cameraZ) {
@@ -309,12 +310,6 @@ public final class SpaceRendererDrawExecutor {
         validatePlanResources(plan, sectionUniforms.maxSectionsPerFrame());
     }
 
-    /**
-     * Checks plan-owned GPU resources and structural invariants without
-     * requiring a live uniform arena. The live render-group bridge uses this
-     * before attempting to capture pass state; the executor repeats it
-     * immediately before submission to close the time-of-check gap.
-     */
     static void validatePlanResources(SpaceRendererDrawPlan plan, int maxSectionsPerFrame) {
         Objects.requireNonNull(plan, "plan");
         if (maxSectionsPerFrame <= 0) {
@@ -356,7 +351,6 @@ public final class SpaceRendererDrawExecutor {
         }
     }
 
-    /** Maps vanilla chunk layers to the matching independent Space Renderer pipeline. */
     public static com.mojang.blaze3d.pipeline.RenderPipeline pipelineForLayer(ChunkSectionLayer layer) {
         Objects.requireNonNull(layer, "layer");
         if (layer == ChunkSectionLayer.SOLID) return SpaceRendererTerrainPipelines.SOLID;
@@ -366,7 +360,6 @@ public final class SpaceRendererDrawExecutor {
         throw new IllegalArgumentException("Unsupported vanilla terrain layer: " + layer);
     }
 
-    /** Immutable report for one attempted frame submission. */
     public record SubmissionResult(long frameSequence, int submittedDraws) {
         public SubmissionResult {
             if (frameSequence <= 0 || submittedDraws < 0) {

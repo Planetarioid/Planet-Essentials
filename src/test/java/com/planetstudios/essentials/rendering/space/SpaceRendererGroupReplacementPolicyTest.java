@@ -50,14 +50,11 @@ class SpaceRendererGroupReplacementPolicyTest {
     }
 
     @Test
-    void nonTerminalAttemptCannotChooseVanillaBehavior() {
-        var prepared = attempt(SpaceRendererSubmissionGuard.State.PREPARED, 0, false);
-        var submitting = attempt(SpaceRendererSubmissionGuard.State.SUBMITTING, 0, false);
-
-        assertThrows(IllegalArgumentException.class,
-                () -> SpaceRendererGroupReplacementPolicy.decide(prepared));
-        assertThrows(IllegalArgumentException.class,
-                () -> SpaceRendererGroupReplacementPolicy.decide(submitting));
+    void nonTerminalAttemptCannotBeRepresentedAsAResult() {
+        assertThrows(IllegalArgumentException.class, () -> new SpaceRendererDrawExecutor.SubmissionAttempt(
+                42, SpaceRendererSubmissionGuard.State.PREPARED, 0, false, null, null));
+        assertThrows(IllegalArgumentException.class, () -> new SpaceRendererDrawExecutor.SubmissionAttempt(
+                42, SpaceRendererSubmissionGuard.State.SUBMITTING, 0, false, null, null));
     }
 
     @Test
@@ -66,6 +63,22 @@ class SpaceRendererGroupReplacementPolicyTest {
                 () -> attempt(SpaceRendererSubmissionGuard.State.FAILED_AFTER_SUBMISSION, -1, true));
         assertThrows(IllegalArgumentException.class,
                 () -> attempt(SpaceRendererSubmissionGuard.State.COMPLETED, 4, true));
+    }
+
+    @Test
+    void invalidDrawCountsAndFailureDetailsAreRejected() {
+        assertThrows(IllegalArgumentException.class,
+                () -> attempt(SpaceRendererSubmissionGuard.State.COMPLETED, 0, false));
+        assertThrows(IllegalArgumentException.class,
+                () -> attempt(SpaceRendererSubmissionGuard.State.SKIPPED, -1, true));
+        assertThrows(IllegalArgumentException.class,
+                () -> new SpaceRendererDrawExecutor.SubmissionAttempt(
+                        42, SpaceRendererSubmissionGuard.State.FAILED_BEFORE_SUBMISSION,
+                        0, true, null, null));
+        assertThrows(IllegalArgumentException.class,
+                () -> new SpaceRendererDrawExecutor.SubmissionAttempt(
+                        42, SpaceRendererSubmissionGuard.State.FAILED_AFTER_SUBMISSION,
+                        -1, false, null, null));
     }
 
     private static SpaceRendererDrawExecutor.SubmissionAttempt attempt(

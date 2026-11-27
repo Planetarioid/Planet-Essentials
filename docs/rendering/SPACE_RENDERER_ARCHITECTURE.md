@@ -14,17 +14,18 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 - Native 1.21.11 fog uniform integration and spherical/cylindrical fog evaluation in the Space Renderer terrain shaders; runtime visual parity still requires in-game verification.
 - Vanilla render-group snapshots for attachments, atlas/lightmap, default uniforms, per-layer pipelines, explicit color/depth clear options, and viewport/scissor state revalidation at submission.
 - Per-layer fixed-function pipeline parity diagnostics comparing depth, blend, culling, write masks, polygon mode, logic ops, and polygon offset; mismatches are reported by native layer and must retain vanilla fallback.
-- Captured-state group submission API and a live, fail-closed render-group preflight hook that now captures the active vanilla pass, validates target identity plus unchanged viewport/scissor state, checks exact vanilla draw identity coverage within every group layer (not just matching counts), revalidates atlas/lightmap texture and sampler identity against live vanilla inputs, and publishes missing-resource and fixed-function mismatch diagnostics. CI validates compilation and tests, not actual GPU rendering.
+- Captured-state group submission API and a live, fail-closed render-group preflight hook that captures the active vanilla pass, validates target identity plus unchanged viewport/scissor state, checks exact vanilla draw identity coverage within every group layer, revalidates atlas/lightmap texture and sampler identity, and publishes missing-resource and fixed-function mismatch diagnostics.
+- A separately tested replacement-decision policy: skipped/pre-submission failures preserve vanilla; completed submissions cancel vanilla; indeterminate post-submission failures also cancel vanilla to avoid duplicate draws. This policy is not yet connected to the live hook.
 
 ## Remaining work before replacement
 
-1. Complete backend-state parity, including viewport/scissor lifecycle and any state not represented by the public RenderPass API.
-2. Upgrade the live preflight hook into a submission hook only after every vanilla state facet is implemented and runtime-verified. It now captures and assesses the current group, but deliberately never cancels vanilla.
+1. Complete backend-state parity, including state not represented by the public RenderPass API.
+2. Connect the live preflight to submission only after the renderer has a persistent, device-aware section-uniform buffer, live camera coordinates, and verified whole-group cancellation behavior. The live hook currently captures and assesses the group but deliberately never cancels vanilla.
 3. Connect section snapshot creation to every supported chunk rebuild/change path and verify stale-result invalidation under world transitions.
 4. Preserve all vanilla terrain semantics: fog, overlays, lightmap behavior, animated textures, model layers, fluids, resource packs, and special blocks.
-5. Integrate the independent draw path at the synchronous native render-group boundary behind a fail-closed readiness gate.
-6. Validate visual parity on supported GPU drivers and with ordinary Fabric mods before enabling replacement by default.
-7. Benchmark frame-time distributions, CPU meshing, upload pressure, GPU memory, and translucent sorting against vanilla.
+5. Validate visual parity on supported GPU drivers and with ordinary Fabric mods before enabling replacement by default.
+6. Benchmark frame-time distributions, CPU meshing, upload pressure, GPU memory, and translucent sorting against vanilla.
+7. Complete Prism internal-name migration and release/configuration cleanup.
 
 ## Correctness rules
 
@@ -34,6 +35,7 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 - Unknown or incomplete visibility data must not hide terrain.
 - Replaced GPU allocations remain alive until prior commands have passed a GPU fence.
 - Translucent sorting and native layer ordering must match Minecraft's behavior.
+- A terminal submission result must be internally consistent: completed results report a positive draw count; pre-submission failures report zero; post-submission failures report an indeterminate count.
 - Vanilla remains authoritative until the full render group can be replaced without missing draws or state.
 
 ## Current stage
@@ -49,13 +51,14 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 | Shader-side vanilla fog integration | Implemented, CI passed; runtime visual parity pending |
 | Frame snapshots and native group draw plans | Implemented, CI passed |
 | Draw executor and captured-state group submission | Implemented, CI passed |
-| Vanilla target, atlas/lightmap texture and sampler identity validation, uniforms, layer pipeline, color/depth clear options wired into pass creation and unsupported stencil rejection and scissor capture | Implemented, CI pending; runtime parity pending |
-| Exact viewport capture/replay | Implemented, CI passed |
+| Vanilla pass snapshots and state validation | Implemented, CI passed; runtime parity pending |
+| Exact viewport/scissor capture and replay | Implemented, CI passed |
 | Fixed-function pipeline parity diagnostics | Implemented, CI passed; runtime backend parity pending |
 | Shared render-pass owner for captured groups | Implemented, CI passed |
-| Live render-group preflight with exact draw-identity, plan-resource validation, live texture-binding validation, captured-state diagnostics and fail-closed fallback | Implemented, CI pending; runtime parity pending |
+| Live render-group preflight and diagnostics | Implemented, CI passed; replacement disabled |
+| Replacement decision policy and terminal-result validation | Implemented, CI passed |
 | Live Space Renderer submission and whole-group vanilla takeover | Not started |
-| Animated fluid textures and full overlay/fog parity | Not started |
+| Animated fluid textures and full overlay parity | Not started |
 | Full visual parity, compatibility and performance validation | Not started |
 
 ## License boundary
