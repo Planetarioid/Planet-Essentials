@@ -118,7 +118,7 @@ public final class SpaceRendererDrawExecutor {
             groupPlan = framePlan.forGroup(snapshot.group());
             if (!groupPlan.isReady() || groupPlan.drawCount() <= 0) {
                 return new SubmissionAttempt(framePlan.frameSequence(),
-                        SpaceRendererSubmissionGuard.State.FAILED_BEFORE_SUBMISSION,
+                        SpaceRendererSubmissionGuard.State.SKIPPED,
                         0, true, null, null);
             }
             validatePlanBeforeSubmission(groupPlan, sectionUniforms,
@@ -176,7 +176,8 @@ public final class SpaceRendererDrawExecutor {
                 throw new IllegalArgumentException("Invalid Space Renderer submission attempt");
             }
             Objects.requireNonNull(state, "state");
-            if (vanillaFallbackSafe != (state == SpaceRendererSubmissionGuard.State.FAILED_BEFORE_SUBMISSION)) {
+            if (vanillaFallbackSafe != (state == SpaceRendererSubmissionGuard.State.FAILED_BEFORE_SUBMISSION
+                    || state == SpaceRendererSubmissionGuard.State.SKIPPED)) {
                 throw new IllegalArgumentException("Vanilla fallback safety does not match submission state");
             }
             if ((failureType == null) != (failureMessage == null)) {
