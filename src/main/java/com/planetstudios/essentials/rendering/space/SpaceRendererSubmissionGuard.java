@@ -13,6 +13,7 @@ final class SpaceRendererSubmissionGuard {
         PREPARED,
         SUBMITTING,
         COMPLETED,
+        SKIPPED,
         FAILED_BEFORE_SUBMISSION,
         FAILED_AFTER_SUBMISSION
     }
