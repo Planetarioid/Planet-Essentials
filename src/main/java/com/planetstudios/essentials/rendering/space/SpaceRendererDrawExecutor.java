@@ -94,6 +94,97 @@ public final class SpaceRendererDrawExecutor {
     }
 
     /**
+     * Attempts one captured native-group submission and reports whether a
+     * caller may still safely fall back to vanilla.
+     *
+     * <p>All validation and pass creation happen before the guard enters
+     * SUBMITTING. Once draw submission begins, any exception is treated as
+     * indeterminate: some GPU work may already have been queued, so rendering
+     * vanilla as well could duplicate terrain.</p>
+     */
+    public static SubmissionAttempt attemptCapturedGroup(
+            SpaceRendererDrawPlan framePlan,
+            SpaceRendererVanillaPassSnapshot snapshot,
+            SpaceRendererSectionUniformBuffer sectionUniforms,
+            double cameraX, double cameraY, double cameraZ) {
+        RenderSystem.assertOnRenderThread();
+        Objects.requireNonNull(framePlan, "framePlan");
+        Objects.requireNonNull(snapshot, "snapshot");
+        Objects.requireNonNull(sectionUniforms, "sectionUniforms");
+
+        SpaceRendererDrawPlan groupPlan;
+        try {
+            snapshot.validateCurrent(RenderSystem.getDevice());
+            groupPlan = framePlan.forGroup(snapshot.group());
+            if (!groupPlan.isReady() || groupPlan.drawCount() <= 0) {
+                return new SubmissionAttempt(framePlan.frameSequence(),
+                        SpaceRendererSubmissionGuard.State.FAILED_BEFORE_SUBMISSION,
+                        0, true, null, null);
+            }
+            validatePlanBeforeSubmission(groupPlan, sectionUniforms,
+                    cameraX, cameraY, cameraZ);
+        } catch (RuntimeException failure) {
+            return new SubmissionAttempt(framePlan.frameSequence(),
+                    SpaceRendererSubmissionGuard.State.FAILED_BEFORE_SUBMISSION,
+                    0, true, failure.getClass().getName(), failure.getMessage());
+        }
+
+        SpaceRendererSubmissionGuard guard =
+                new SpaceRendererSubmissionGuard(groupPlan.frameSequence(), groupPlan.drawCount());
+        RenderPass pass;
+        try {
+            pass = snapshot.openPass(RenderSystem.getDevice(),
+                    "Planet Essentials Space Renderer " + snapshot.group());
+        } catch (RuntimeException failure) {
+            guard.failBeforeSubmission();
+            return attemptFromFailure(guard, failure);
+        }
+
+        SubmissionResult submitted;
+        guard.beginSubmission();
+        try (pass) {
+            submitted = submitGroup(pass, groupPlan, snapshot, sectionUniforms,
+                    cameraX, cameraY, cameraZ);
+        } catch (RuntimeException failure) {
+            guard.failAfterSubmission();
+            return attemptFromFailure(guard, failure);
+        }
+
+        guard.complete(submitted.submittedDraws());
+        return new SubmissionAttempt(submitted.frameSequence(), guard.state(),
+                submitted.submittedDraws(), false, null, null);
+    }
+
+    private static SubmissionAttempt attemptFromFailure(
+            SpaceRendererSubmissionGuard guard, RuntimeException failure) {
+        return new SubmissionAttempt(guard.frameSequence(), guard.state(),
+                -1, guard.mayUseVanillaFallback(),
+                failure.getClass().getName(), failure.getMessage());
+    }
+
+    /** Immutable result of an all-or-nothing group attempt. */
+    public record SubmissionAttempt(long frameSequence,
+            SpaceRendererSubmissionGuard.State state, int submittedDraws,
+            boolean vanillaFallbackSafe, String failureType, String failureMessage) {
+        public SubmissionAttempt {
+            if (frameSequence <= 0 || submittedDraws < -1) {
+                throw new IllegalArgumentException("Invalid Space Renderer submission attempt");
+            }
+            Objects.requireNonNull(state, "state");
+            if (vanillaFallbackSafe != (state == SpaceRendererSubmissionGuard.State.FAILED_BEFORE_SUBMISSION)) {
+                throw new IllegalArgumentException("Vanilla fallback safety does not match submission state");
+            }
+            if ((failureType == null) != (failureMessage == null)) {
+                throw new IllegalArgumentException("Failure type and message must be supplied together");
+            }
+        }
+
+        public boolean submitted() {
+            return state == SpaceRendererSubmissionGuard.State.COMPLETED;
+        }
+    }
+
+    /**
      * Submits every draw in a complete immutable plan. The uniform arena is
      * rotated in a finally block after all attempted submissions, including
      * partial failures, so its next frame never overwrites an in-flight buffer.

@@ -10,7 +10,7 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 - Conservative visibility traversal with safe frustum fallback.
 - GPU mesh ownership/cache, bounded upload handoff, render-thread uploads, and fenced retirement.
 - Immutable visible-frame capture, native render-group draw plans, material-aware batching, and camera-sorted translucent index buffers.
-- Native terrain shader pipelines, section-uniform uploads, and a draw executor.
+- Native terrain shader pipelines, section-uniform uploads, a draw executor, and a guarded captured-group attempt API that distinguishes safe pre-submit fallback from indeterminate post-submit failure.
 - Native 1.21.11 fog uniform integration and spherical/cylindrical fog evaluation in the Space Renderer terrain shaders; runtime visual parity still requires in-game verification.
 - Vanilla render-group snapshots for attachments, atlas/lightmap, default uniforms, per-layer pipelines, explicit color/depth clear options, and viewport/scissor state revalidation at submission.
 - Per-layer fixed-function pipeline parity diagnostics comparing depth, blend, culling, write masks, polygon mode, logic ops, and polygon offset; mismatches are reported by native layer and must retain vanilla fallback.
@@ -19,7 +19,7 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 ## Remaining work before replacement
 
 1. Complete backend-state parity, including viewport/scissor lifecycle and any state not represented by the public RenderPass API.
-2. Upgrade the live preflight hook into a submission hook only after every vanilla state facet is implemented and runtime-verified. It now captures and assesses the current group, but deliberately never cancels vanilla.
+2. Upgrade the live preflight hook into a submission hook only after every vanilla state facet is implemented and runtime-verified. The draw executor now exposes a guarded attempt API: validation/pass-open failures remain eligible for vanilla fallback, while any failure after submission starts is marked indeterminate and must not trigger a second vanilla draw.
 3. Connect section snapshot creation to every supported chunk rebuild/change path and verify stale-result invalidation under world transitions.
 4. Preserve all vanilla terrain semantics: fog, overlays, lightmap behavior, animated textures, model layers, fluids, resource packs, and special blocks.
 5. Integrate the independent draw path at the synchronous native render-group boundary behind a fail-closed readiness gate.
@@ -48,12 +48,12 @@ Space Renderer is Planet Studios' independent terrain renderer for Planet Essent
 | Native terrain pipelines and section uniforms | Implemented, CI passed |
 | Shader-side vanilla fog integration | Implemented, CI passed; runtime visual parity pending |
 | Frame snapshots and native group draw plans | Implemented, CI passed |
-| Draw executor and captured-state group submission | Implemented, CI passed |
+| Draw executor, captured-state group submission, and explicit pre-submit/post-submit fallback guard | Implemented, CI pending; runtime parity pending |
 | Vanilla target, atlas/lightmap texture and sampler identity validation, uniforms, layer pipeline, color/depth clear options wired into pass creation and unsupported stencil rejection and scissor capture | Implemented, CI pending; runtime parity pending |
 | Exact viewport capture/replay | Implemented, CI passed |
 | Fixed-function pipeline parity diagnostics | Implemented, CI passed; runtime backend parity pending |
 | Shared render-pass owner for captured groups | Implemented, CI passed |
-| Live render-group preflight with exact draw-identity, plan-resource validation, live texture-binding validation, captured-state diagnostics and fail-closed fallback | Implemented, CI pending; runtime parity pending |
+| Live render-group preflight with exact draw-identity, plan-resource validation, live texture-binding validation, captured-state diagnostics and fail-closed fallback | Implemented, CI passed; runtime parity pending |
 | Live Space Renderer submission and whole-group vanilla takeover | Not started |
 | Animated fluid textures and full overlay/fog parity | Not started |
 | Full visual parity, compatibility and performance validation | Not started |
